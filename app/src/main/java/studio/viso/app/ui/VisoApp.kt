@@ -646,7 +646,7 @@ private fun PreviewStage(player: ExoPlayer, item: StudioMedia?, isPlaying: Boole
             }.getOrNull()
         } else null
     }
-    Box(Modifier.fillMaxWidth().widthIn(max = 300.dp).aspectRatio(aspectRatio).align(Alignment.CenterHorizontally)
+    Box(Modifier.fillMaxWidth().widthIn(max = 300.dp).aspectRatio(aspectRatio).wrapContentWidth(Alignment.CenterHorizontally)
         .clip(RoundedCornerShape(22.dp)).background(Color(0xFF111827))
         .border(1.dp, Color(0xFF51447B), RoundedCornerShape(22.dp))) {
         when (item?.kind) {
