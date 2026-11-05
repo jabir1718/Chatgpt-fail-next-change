@@ -302,6 +302,10 @@ fun CreatorStudioApp() {
             visualizerMessage = "Import and select an audio or video source first."
             return
         }
+        if (!player.isPlaying) {
+            visualizerMessage = "Press Play on the selected source, then start live analysis."
+            return
+        }
         val started = audioReactiveEngine.start(player.audioSessionId)
         visualizerRunning = started
         if (started) visualizerMessage = "Live FFT and waveform capture active."
@@ -438,6 +442,8 @@ fun CreatorStudioApp() {
                         val active = media.getOrNull(selectedIndex)
                         if (active == null || active.kind == "IMAGE") {
                             visualizerMessage = "Import and select an audio or video source first."
+                        } else if (!player.isPlaying) {
+                            visualizerMessage = "Press Play on the selected source before starting live analysis."
                         } else if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
                             startLiveVisualizer()
                         } else {
