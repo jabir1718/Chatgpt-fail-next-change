@@ -71,7 +71,7 @@ A polished, original Android creator studio for TikTok, YouTube Shorts, Instagra
 
 ## M7 — Export/sharing/social
 - [x] H.264 + AAC MP4 visualizer export for audio + still images/PNG + source video picture layers and decodable embedded source-video audio (Run #173 CI build/tests/artifact verified; device codec compatibility and A/V sync acceptance open).
-- [ ] Configurable presets (9:16, 1:1, 4:5, 16:9), resolution/FPS/bitrate/codec.
+- [x] Visualizer export canvas presets (9:16, 1:1, 4:5, 16:9), 24/30/60 FPS and 4/8/12/20 Mbps H.264 bitrate; project-persisted settings (source committed; CI pending). Codec remains H.264 + AAC and is not user-selectable.
 - [x] Export progress/cancel and conservative storage preflight for audio/video visualizer export (Run #173 latest source build; retry/recovery remains open).
 - [ ] Android share-sheet fallback; direct social upload only through permitted official APIs/OAuth.
 **Gate:** Valid portrait/landscape files, share locally, official integrations only.
