@@ -32,13 +32,19 @@ data class TimelinePlaybackPlan(
                             .coerceIn(clip.sourceStartMs, clip.sourceEndMs)
                         val hasAudio = clip.kind == MediaKind.AUDIO || clip.kind == MediaKind.VIDEO
                         val muted = clip.audio.muted || track.muted
+                        val fadeGain = fadeEnvelope(
+                            elapsedMs = elapsed,
+                            durationMs = clip.durationMs,
+                            fadeInMs = clip.audio.fadeInMs,
+                            fadeOutMs = clip.audio.fadeOutMs
+                        )
                         ScheduledClip(
                             clip = clip,
                             trackId = track.id,
                             trackKind = track.kind,
                             trackMuted = track.muted,
                             sourcePositionMs = sourcePosition,
-                            effectiveVolume = if (hasAudio && !muted) clip.audio.volume else 0f,
+                            effectiveVolume = if (hasAudio && !muted) clip.audio.volume * fadeGain else 0f,
                             audible = hasAudio && !muted && clip.audio.volume > 0f
                         )
                     }
@@ -49,6 +55,22 @@ data class TimelinePlaybackPlan(
                 audioClips = active.filter { it.audible },
                 videoClips = active.filter { it.clip.kind == MediaKind.VIDEO }
             )
+        }
+
+        private fun fadeEnvelope(
+            elapsedMs: Long,
+            durationMs: Long,
+            fadeInMs: Long,
+            fadeOutMs: Long
+        ): Float {
+            val fadeInGain = if (fadeInMs > 0L) {
+                (elapsedMs.toFloat() / fadeInMs.toFloat()).coerceIn(0f, 1f)
+            } else 1f
+            val remainingMs = (durationMs - elapsedMs).coerceAtLeast(0L)
+            val fadeOutGain = if (fadeOutMs > 0L) {
+                (remainingMs.toFloat() / fadeOutMs.toFloat()).coerceIn(0f, 1f)
+            } else 1f
+            return fadeInGain * fadeOutGain
         }
     }
 }

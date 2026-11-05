@@ -77,4 +77,30 @@ class TimelinePlaybackPlanTest {
         assertTrue(plan.audioClips.isEmpty())
         assertTrue(plan.videoClips.isEmpty())
     }
+
+    @Test
+    fun fadeInAndFadeOutScaleEffectiveClipVolume() {
+        val asset = MediaAsset(uri = "content://audio/fade", displayName = "fade.mp3", kind = MediaKind.AUDIO)
+        val clip = TimelineClip(
+            mediaId = asset.id,
+            kind = MediaKind.AUDIO,
+            timelineStartMs = 1_000L,
+            durationMs = 4_000L,
+            audio = ClipAudioSettings(volume = 0.8f, fadeInMs = 1_000L, fadeOutMs = 1_000L)
+        )
+        val project = EditorProject(
+            assets = listOf(asset),
+            tracks = listOf(TimelineTrack(name = "Music", kind = TrackKind.AUDIO, clips = listOf(clip)))
+        )
+
+        val start = TimelinePlaybackPlan.at(project, 1_000L).audioClips.single()
+        val fadeInHalf = TimelinePlaybackPlan.at(project, 1_500L).audioClips.single()
+        val middle = TimelinePlaybackPlan.at(project, 2_500L).audioClips.single()
+        val fadeOutHalf = TimelinePlaybackPlan.at(project, 4_500L).audioClips.single()
+
+        assertEquals(0f, start.effectiveVolume, 0.0001f)
+        assertEquals(0.4f, fadeInHalf.effectiveVolume, 0.0001f)
+        assertEquals(0.8f, middle.effectiveVolume, 0.0001f)
+        assertEquals(0.4f, fadeOutHalf.effectiveVolume, 0.0001f)
+    }
 }
