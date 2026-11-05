@@ -617,15 +617,17 @@ private fun StudioPage(
 @Composable
 private fun PreviewStage(player: ExoPlayer, item: StudioMedia?, isPlaying: Boolean, onPlay: () -> Unit) {
     val context = LocalContext.current
-    val imageBitmap by produceState<ImageBitmap?>(initialValue = null, key1 = item?.uri) {
-        value = if (item?.kind == "IMAGE") withContext(Dispatchers.IO) {
+    val selectedImageUri = item?.takeIf { it.kind == "IMAGE" }?.uri
+    val imageBitmap by produceState<ImageBitmap?>(initialValue = null, key1 = selectedImageUri) {
+        val uri = selectedImageUri
+        value = if (uri != null) withContext(Dispatchers.IO) {
             runCatching {
                 val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                context.contentResolver.openInputStream(item.uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
+                context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
                 val largestSide = maxOf(bounds.outWidth, bounds.outHeight).coerceAtLeast(1)
                 val sample = (largestSide / 1600).coerceAtLeast(1)
                 val options = BitmapFactory.Options().apply { inSampleSize = sample }
-                context.contentResolver.openInputStream(item.uri)?.use { BitmapFactory.decodeStream(it, null, options)?.asImageBitmap() }
+                context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, options)?.asImageBitmap() }
             }.getOrNull()
         } else null
     }
