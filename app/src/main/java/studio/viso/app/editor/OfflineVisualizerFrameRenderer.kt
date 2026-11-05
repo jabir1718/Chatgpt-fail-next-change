@@ -45,7 +45,13 @@ class OfflineVisualizerFrameRenderer {
                         )
                     }
                 }
-                RenderLayerRole.IMAGE, RenderLayerRole.VIDEO -> {
+                RenderLayerRole.IMAGE -> {
+                    decodedFrames[layer.assetId]?.let { bitmap ->
+                        drawLayerBitmap(canvas, bitmap, layer.transform, framePlan.width, framePlan.height, 1f)
+                    }
+                    drawCaptions(canvas, layer.activeCaptions.map { it.text }, framePlan.width, framePlan.height)
+                }
+                RenderLayerRole.VIDEO -> {
                     decodedFrames[layer.clipId ?: layer.assetId]?.let { bitmap ->
                         drawLayerBitmap(canvas, bitmap, layer.transform, framePlan.width, framePlan.height, 1f)
                     }
