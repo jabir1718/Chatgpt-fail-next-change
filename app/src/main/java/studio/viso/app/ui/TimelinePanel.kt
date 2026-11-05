@@ -206,10 +206,10 @@ private fun ClipAudioControls(
             ) { Text(if (clip.audio.muted) "UNMUTE" else "MUTE", fontSize = 8.sp) }
         }
         Slider(
-            value = volumeValue.coerceIn(0f, 2f),
+            value = volumeValue.coerceIn(0f, 1f),
             onValueChange = { volumeValue = it },
             onValueChangeFinished = { onSettingsChange(clip.audio.copy(volume = volumeValue)) },
-            valueRange = 0f..2f,
+            valueRange = 0f..1f,
             colors = SliderDefaults.colors(thumbColor = TimelineAccent, activeTrackColor = TimelineAccent)
         )
         Text("PITCH  ${pitchValue.toInt()} semitones", color = Color(0xFFB7C4D8), fontSize = 9.sp)
