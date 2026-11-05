@@ -46,7 +46,7 @@ data class TimelinePlaybackPlan(
             return TimelinePlaybackPlan(
                 playheadMs = playheadMs,
                 activeClips = active,
-                audioClips = active.filter { it.clip.kind == MediaKind.AUDIO && it.audible },
+                audioClips = active.filter { it.audible },
                 videoClips = active.filter { it.clip.kind == MediaKind.VIDEO }
             )
         }
