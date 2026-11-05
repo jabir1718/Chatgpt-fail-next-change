@@ -9,6 +9,8 @@ import android.graphics.BitmapFactory
 import android.provider.OpenableColumns
 import java.io.File
 import java.util.UUID
+import java.util.concurrent.CancellationException
+import java.util.concurrent.atomic.AtomicBoolean
 import androidx.core.content.ContextCompat
 import com.creatorstudio.app.audio.AudioReactiveEngine
 import com.creatorstudio.app.audio.AndroidAudioProcessor
@@ -146,6 +148,7 @@ fun CreatorStudioApp() {
     var timelineMixing by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf("Import video, audio or PNG to begin") }
     var audioExporting by remember { mutableStateOf(false) }
+    var audioExportCancel by remember { mutableStateOf<AtomicBoolean?>(null) }
     var audioExportProgress by remember { mutableFloatStateOf(0f) }
     var audioExportMessage by remember { mutableStateOf("Choose a destination to export the timeline audio mix.") }
 
@@ -154,7 +157,9 @@ fun CreatorStudioApp() {
     ) { destinationUri ->
         if (destinationUri != null && !audioExporting) {
             val exportProject = project
+            val cancelFlag = AtomicBoolean(false)
             scope.launch {
+                audioExportCancel = cancelFlag
                 audioExporting = true
                 audioExportProgress = 0f
                 audioExportMessage = "Preparing offline audio mix..."
@@ -166,6 +171,7 @@ fun CreatorStudioApp() {
                             project = exportProject,
                             cacheDirectory = File(context.cacheDir, "creator-pcm-cache"),
                             outputFile = temporaryOutput,
+                            shouldCancel = { cancelFlag.get() },
                             onProgress = { value -> audioExportProgress = value }
                         )
                         val output = context.contentResolver.openOutputStream(destinationUri, "w")
@@ -176,9 +182,14 @@ fun CreatorStudioApp() {
                     }
                     audioExportMessage = "Audio mix saved successfully."
                 } catch (error: Exception) {
-                    audioExportMessage = "Export failed: ${error.message ?: "Unknown error"}"
+                    audioExportMessage = if (error is CancellationException) {
+                        "Export cancelled."
+                    } else {
+                        "Export failed: ${error.message ?: "Unknown error"}"
+                    }
                 } finally {
                     temporaryOutput.delete()
+                    audioExportCancel = null
                     audioExporting = false
                 }
             }
@@ -636,6 +647,7 @@ fun CreatorStudioApp() {
                     exporting = audioExporting,
                     progress = audioExportProgress,
                     message = audioExportMessage,
+                    onCancel = { audioExportCancel?.set(true); audioExportMessage = "Cancelling audio export..." },
                     onExport = {
                         val safeName = project.name.replace(Regex("[^A-Za-z0-9_-]"), "_").take(48).ifBlank { "CreatorStudio" }
                         audioMixExportLauncher.launch("${safeName}_AudioMix.m4a")
@@ -935,6 +947,7 @@ private fun AudioMixExportPage(
     exporting: Boolean,
     progress: Float,
     message: String,
+    onCancel: () -> Unit,
     onExport: () -> Unit
 ) {
     val hasAudioClips = project.tracks.any { track ->
@@ -963,7 +976,10 @@ private fun AudioMixExportPage(
         }
         if (exporting) {
             LinearProgressIndicator(progress = progress.coerceIn(0f, 1f), modifier = Modifier.fillMaxWidth())
-            Text("${(progress * 100).toInt()}%", color = Mint, fontSize = 12.sp)
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text("${(progress * 100).toInt()}%", color = Mint, fontSize = 12.sp, modifier = Modifier.weight(1f))
+                OutlinedButton(onClick = onCancel) { Text("CANCEL EXPORT") }
+            }
         }
         Text(message, color = if (message.startsWith("Export failed")) Pink else Color(0xFF9AA4B8), fontSize = 11.sp)
         Text(
