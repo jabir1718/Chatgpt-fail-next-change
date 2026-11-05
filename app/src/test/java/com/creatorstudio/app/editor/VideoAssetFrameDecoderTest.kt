@@ -12,12 +12,12 @@ class VideoAssetFrameDecoderTest {
 
     @Test
     fun scalesWideVideoToFitCanvasWithoutChangingAspectRatio() {
-        assertEquals(960 to 540, scaledVideoFrameSize(1920, 1080, 1080, 1920))
+        assertEquals(1080 to 607, scaledVideoFrameSize(1920, 1080, 1080, 1920))
     }
 
     @Test
     fun scalesPortraitVideoToFitCanvasWithoutChangingAspectRatio() {
-        assertEquals(540 to 960, scaledVideoFrameSize(1080, 1920, 1920, 1080))
+        assertEquals(607 to 1080, scaledVideoFrameSize(1080, 1920, 1920, 1080))
     }
 
     @Test

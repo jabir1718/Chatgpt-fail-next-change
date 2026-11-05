@@ -85,6 +85,6 @@ internal fun scaledVideoFrameSize(
     targetHeight: Int
 ): Pair<Int, Int> {
     require(sourceWidth > 0 && sourceHeight > 0 && targetWidth > 0 && targetHeight > 0)
-    val scale = minOf(targetWidth.toDouble() / sourceWidth, targetHeight.toDouble() / sourceHeight)
+    val scale = minOf(1.0, targetWidth.toDouble() / sourceWidth, targetHeight.toDouble() / sourceHeight)
     return maxOf(1, (sourceWidth * scale).toInt()) to maxOf(1, (sourceHeight * scale).toInt())
 }
