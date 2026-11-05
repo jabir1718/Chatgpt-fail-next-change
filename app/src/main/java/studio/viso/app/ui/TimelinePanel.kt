@@ -195,7 +195,9 @@ fun TimelinePanel(
         if (selected != null) {
             Text("SELECTED CLIP  •  ${project.assets.firstOrNull { it.id == selected.mediaId }?.displayName ?: selected.id}",
                 color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
-            val sourceTrackId = project.tracks.firstOrNull { row -> row.clips.any { it.id == selected.id } }?.id
+            val sourceTrack = project.tracks.firstOrNull { row -> row.clips.any { it.id == selected.id } }
+            val sourceTrackId = sourceTrack?.id
+            val selectedTrackLocked = sourceTrack?.locked == true
             val destinationKind = when (selected.kind) {
                 com.creatorstudio.app.editor.MediaKind.VIDEO -> TrackKind.VIDEO
                 com.creatorstudio.app.editor.MediaKind.AUDIO -> TrackKind.AUDIO
@@ -245,6 +247,7 @@ fun TimelinePanel(
                     onClick = {
                         onProjectChange(TimelineEditor.duplicateClip(project, selected.id))
                     },
+                    enabled = !selectedTrackLocked,
                     modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 3.dp)
                 ) { Icon(Icons.Default.ContentCopy, null, modifier = Modifier.size(14.dp)); Text("Copy", fontSize = 9.sp) }
                 OutlinedButton(
