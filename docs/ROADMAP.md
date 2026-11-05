@@ -24,14 +24,14 @@ A polished, original Android creator studio for TikTok, YouTube Shorts, Instagra
 - [x] Native live-preview five-band EQ, low-band bass boost and compressor (Run #140 CI-verified; phone audibility/support open).
 - [ ] Pitch-preserving time stretch, formant and independent pitch/tempo.
 - [ ] BPM/beat markers, limiter/normalization, voice effects, voiceover recording, extraction and mix bus.
-- [ ] Streaming/disk-backed source PCM decode adapter for offline export (source implemented; Run #146 caught a constructor-property syntax typo, corrected in the next commit; CI re-run pending).
+- [x] Streaming/disk-backed source PCM decode adapter for offline export (Run #147 CI-verified).
 - [x] Block-based offline PCM mixing core: timeline placement, linear interpolation, clip rate/gain/fades, track gain/mute/solo, EQ, compressor and peak limiting (source + Run #145 unit tests/build/artifact verified).
 - [x] AAC-LC audio-only encoding/muxing and project audio-mix export pipeline (Run #148 CI build/tests/artifact verified).
 - [x] Export tab audio-mix action with Android SAF save destination (Run #150 CI build/tests/artifact verified).
 - [x] Export progress and cancellation propagation (Run #152 CI build/tests/artifact verified).
 - [x] Conservative disk-space preflight for PCM cache + AAC output + safety reserve (Run #155 CI build/tests/artifact verified).
 - [ ] Preview/export mix parity, retry/recovery, and physical-device audio acceptance.
-**Current note:** OfflineAudioMixEngine consumes disk-backed PCM sources decoded by MediaExtractor/MediaCodec and is connected to AAC-LC M4A export. The visualizer MP4 pipeline reuses the same timeline audio mix for AAC and offline FFT analysis. Source-video embedded audio is not yet included in the visualizer MP4 stage; add an audio-only clip for the soundtrack.
+**Current note:** OfflineAudioMixEngine consumes disk-backed PCM sources decoded by MediaExtractor/MediaCodec and is connected to AAC-LC M4A export. The visualizer MP4 pipeline includes decodable audio from both audio clips and source-video clips in its timeline soundtrack for AAC output and offline FFT analysis. Video-only files with no audio stream are skipped; an audio-kind clip with missing/unreadable audio produces a clear failure. Run #173 verifies source compilation, configured tests, debug APK build and artifact upload. Physical-device A/V sync and codec behavior remain open.
 **Gate:** Two or more clips with independent settings render to a valid audio file, with no clipping and correct timing.
 
 ## M3 — Visualizer Studio (signature priority)
@@ -44,6 +44,7 @@ A polished, original Android creator studio for TikTok, YouTube Shorts, Instagra
 - [x] Still-image URI decoding with resolution/pixel budget and H.264/AAC MP4 track muxer (Run #164 CI build/tests/artifact verified).
 - [x] Still-image visualizer MP4 pipeline connects audio decode/mix/AAC, offline FFT analysis, PNG/image layers, Canvas frames, H.264 and AAC/H.264 muxing; Export Studio SAF action, progress and cancellation are wired (Run #168 CI build/artifact; Run #171 reverified latest integration).
 - [x] Add source video frame decoding and connect video clips to the offline visualizer MP4 compositor (Run #171 CI build/tests/artifact verified; device decoding/rotation/performance acceptance open).
+- [x] Include decodable embedded audio from source-video clips in the visualizer MP4 soundtrack; safely skip video-only sources with no audio stream and fail clearly for missing audio on audio-kind clips (Run #173 CI build/tests/artifact verified; device A/V sync acceptance open).
 - [ ] Background image/video, multiple independent foreground PNG/video layers and beat response.
 - [ ] Lyrics overlay, masks, blend modes, keyframes, presets and transitions.
 - [x] Deterministic frame composition planning contract (Run #141 CI build/tests/artifact verified).

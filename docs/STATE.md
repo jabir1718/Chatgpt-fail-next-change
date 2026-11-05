@@ -11,7 +11,9 @@ Last updated: 2026-11-06
 - Handoff instructions: `docs/CONTINUATION.md`
 
 ## Verified CI evidence
-- Latest completed successful run: Run #148, ID `42114352566`, commit `4689dce8e23380719fed9c41b15d2ed7cd3598d0`.
+- Latest completed successful run: Run #173, ID `42128206048`, commit `3b91c6cc7ddd229b286f66a8d36fe6d8ffcf275d`.
+- Run #173 completed successfully: source-video embedded audio selection/mixing, configured unit tests, Android debug APK build and artifact upload passed.
+- Run #173 artifact: `Creator-Studio-debug-apk`, 19,737,358 bytes, SHA-256 `008058bcf48bdbbcfa0f6a0a9bdc0a9ecb1139095b85534d0a95108f9625b9b0`.
 - Run #140 completed successfully: Android SDK setup, `assembleDebug`, configured tests, and APK artifact upload all succeeded.
 - Run #140 artifact: `Creator-Studio-debug-apk`, 19,643,832 bytes, SHA-256 `77f565128599e024f7d6c1e94d06d82021da940351ec7f6e54c0244848569d1a`.
 - Run #141 completed successfully: frame composition planning source, tests, debug APK build and artifact upload passed. Artifact size 19,648,872 bytes, SHA-256 `999f0c80914b62b32b246e53cc933c0a3fca6e2cc3838e6a84694454b9593390`.
@@ -41,7 +43,7 @@ Last updated: 2026-11-06
 - Native DynamicsProcessing is live preview only on supported Android versions/devices. Offline mixer DSP is a separate pure Kotlin implementation and has not yet been CI-verified.
 - Offline mixer currently consumes PCM buffers supplied by a decoder; it is not yet connected to MediaExtractor/MediaCodec streaming decode or AAC encoding/muxing.
 - Concurrent preview is not sample-accurate DSP/offline mix; multiple timeline video clips are not composited in synchronized playback.
-- Live visualizer analysis is real-time for active Android playback. The pure Kotlin offline analyzer derives per-frame RMS, FFT bands, waveform and beat pulses from the timeline mix (Run #157). `OfflineVisualizerFrameRenderer` draws Spectrum, Radial, Waveform, Rings and Particles with still/video bitmaps, captions, background and foreground beat scaling (Run #159). The bounded `OfflineH264VideoEncoder` encodes one rendered bitmap at a time; `ImageAssetBitmapLoader` handles still-image downsampling; `VideoAssetFrameDecoder` uses MediaMetadataRetriever for active source-video frames with bounded scaling; `OfflineAudioVideoMuxer` combines H.264/AAC. These are connected end-to-end to the Export Studio MP4 action and CI-verified in Run #171. Hardware codec support, rotation correctness, A/V sync, thermal behavior and performance remain device-unverified. Embedded audio inside source-video clips is not yet mixed by this visualizer export path; true 3D/GPU and preview/render parity remain open.
+- Live visualizer analysis is real-time for active Android playback. The pure Kotlin offline analyzer derives per-frame RMS, FFT bands, waveform and beat pulses from the timeline mix (Run #157). `OfflineVisualizerFrameRenderer` draws Spectrum, Radial, Waveform, Rings and Particles with still/video bitmaps, captions, background and foreground beat scaling (Run #159). The bounded `OfflineH264VideoEncoder` encodes one rendered bitmap at a time; `ImageAssetBitmapLoader` handles still-image downsampling; `VideoAssetFrameDecoder` uses MediaMetadataRetriever for active source-video frames with bounded scaling; `OfflineAudioVideoMuxer` combines H.264/AAC. These are connected end-to-end to the Export Studio MP4 action and CI-verified in Run #171. Hardware codec support, rotation correctness, A/V sync, thermal behavior and performance remain device-unverified. Decodable embedded audio inside source-video clips is mixed by this visualizer export path (Run #173); device A/V sync remains unverified. True 3D/GPU and preview/render parity remain open.
 - Automatic background removal, edge refinement, masks, chroma key, lyrics transcription, language/script conversion, karaoke sync and voice typing are not implemented.
 - Video transitions/effects/filters/reverse/speed ramps/keyframes/motion tracking and full multi-clip rendering are not implemented.
 - Audio M4A and audio-reactive visualizer MP4 pipelines are source-implemented and CI-verified; configurable export presets, retry/recovery, device acceptance and official social integrations remain open.
@@ -52,20 +54,18 @@ Last updated: 2026-11-06
 - M0: CI foundation/debug artifact pipeline complete; device install/launch acceptance open.
 - M1: Timeline/project foundation implemented and CI-verified through Run #140; device acceptance open.
 - M2: Partial. Waveform, timeline preview scheduling, native live EQ/bass/compressor and source-level offline PCM mixer are implemented; offline decoder/encoder and device verification open.
-- M3: Partial. Live and offline audio-reactive visualizers, still-image/source-video frame decoding, Canvas compositing and H.264/AAC MP4 export are source-implemented and CI-verified through Run #171; device acceptance, source-video embedded audio, true 3D/GPU and preview/export parity remain open.
+- M3: Partial. Live and offline audio-reactive visualizers, still-image/source-video frame decoding, Canvas compositing and H.264/AAC MP4 export including decodable source-video audio are source-implemented and CI-verified through Run #173; device acceptance, true 3D/GPU and preview/export parity remain open.
 - M4–M8: Not complete. See roadmap.
 
 ## Next engineering priorities
-1. Connect audio decoding/analysis, image loader, visualizer frame renderer, H.264 encoder and AAC/H.264 muxer into one still-image visualizer MP4 pipeline.
-2. Add source video frame decoding and integrate video clip layers.
-3. Verify complete export, cancellation and A/V sync on Android hardware.
-2. Implement streaming MediaExtractor/MediaCodec audio decoding into bounded PCM blocks, including seek/source-in and sample-rate/channel conversion.
-3. Add AAC encoder/muxer output and align encoded audio timestamps to video frame timestamps.
-4. Implement Android video/image frame decoding and GPU/Canvas composition in z-order from RenderCompositionPlan.
-5. Add offline visualizer analysis and foreground/background beat animation.
-6. Add schema v4 round-trip/backward compatibility tests and DSP failure/resource tests.
-7. Implement transcription, chroma key/background removal, video effects and export acceptance gates.
-8. Update state and roadmap with exact run/artifact evidence.
+1. Verify complete visualizer MP4 export, cancellation, source-video embedded-audio sync, rotation, codec compatibility and memory/performance on Android hardware.
+2. Add synchronized multi-video preview/compositing and preview/export parity.
+3. Implement independent multi-layer background/foreground image/video beat response, lyrics overlay, masks, blend modes and keyframes.
+4. Build true 3D/GPU visualizer renderer with capability detection and 2D fallback.
+5. Implement transcription with explicit Start/Stop, language detection and Urdu/Roman Urdu/Roman English script support.
+6. Implement subject cutout/background removal, edge refinement, chroma key and transparent PNG output.
+7. Add advanced video effects, transitions, reverse/speed ramps and export presets/recovery.
+8. Continue regression tests and update state/roadmap with exact CI/device evidence.
 
 ## Working rules
 - User does not want repeated start confirmations or to be asked to monitor builds/keep screen on.
