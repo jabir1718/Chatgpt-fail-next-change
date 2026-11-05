@@ -184,6 +184,34 @@ object TimelineEditor {
         return project.copy(updatedAtEpochMs = System.currentTimeMillis(), tracks = project.tracks.map { if (it.id == track.id) updated else it })
     }
 
+    /** Aligns a dragged clip edge to nearby clip edges, the playhead, or timeline zero. */
+    fun snapClipStart(
+        project: EditorProject,
+        clipId: String,
+        proposedStartMs: Long,
+        playheadMs: Long,
+        thresholdMs: Long = 220L
+    ): Long {
+        require(proposedStartMs >= 0L) { "Clip cannot start before zero" }
+        require(thresholdMs >= 0L) { "Snap threshold cannot be negative" }
+        val clip = project.tracks.asSequence().flatMap { it.clips.asSequence() }
+            .firstOrNull { it.id == clipId } ?: error("Clip not found")
+        val candidates = mutableListOf(0L, playheadMs.coerceAtLeast(0L))
+        if (playheadMs >= clip.durationMs) candidates.add(playheadMs - clip.durationMs)
+        project.tracks.asSequence().flatMap { it.clips.asSequence() }
+            .filterNot { it.id == clipId }
+            .forEach { other ->
+                candidates.add(other.timelineStartMs)
+                candidates.add(other.timelineEndMs)
+                if (other.timelineStartMs >= clip.durationMs) candidates.add(other.timelineStartMs - clip.durationMs)
+                if (other.timelineEndMs >= clip.durationMs) candidates.add(other.timelineEndMs - clip.durationMs)
+            }
+        return candidates.asSequence()
+            .filter { it >= 0L && kotlin.math.abs(it - proposedStartMs) <= thresholdMs }
+            .minByOrNull { kotlin.math.abs(it - proposedStartMs) }
+            ?: proposedStartMs
+    }
+
     fun moveClipToTrack(
         project: EditorProject,
         clipId: String,
