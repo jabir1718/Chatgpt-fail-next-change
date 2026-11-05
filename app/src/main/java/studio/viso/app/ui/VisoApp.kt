@@ -89,6 +89,8 @@ fun CreatorStudioApp() {
     var waveformSamples by remember { mutableStateOf(emptyList<Float>()) }
     var visualizerMode by remember { mutableStateOf("Spectrum") }
     var visualizerRunning by remember { mutableStateOf(false) }
+    var detectedBpm by remember { mutableStateOf<Int?>(null) }
+    var beatPulseCount by remember { mutableIntStateOf(0) }
     var visualizerMessage by remember { mutableStateOf("Select audio/video, start playback, then start live analysis.") }
     val undoStack = remember { mutableStateListOf<EditorProject>() }
     val redoStack = remember { mutableStateListOf<EditorProject>() }
@@ -128,6 +130,8 @@ fun CreatorStudioApp() {
         AudioReactiveEngine(
             onSpectrum = { spectrumLevels = it },
             onWaveform = { waveformSamples = it },
+            onBeat = { beatPulseCount++ },
+            onBpm = { detectedBpm = it },
             onError = { visualizerMessage = it; visualizerRunning = false }
         )
     }
@@ -425,6 +429,8 @@ fun CreatorStudioApp() {
                     waveform = waveformSamples,
                     mode = visualizerMode,
                     running = visualizerRunning,
+                    bpm = detectedBpm,
+                    beatPulse = beatPulseCount,
                     message = visualizerMessage,
                     onModeChange = { visualizerMode = it },
                     onStart = {
