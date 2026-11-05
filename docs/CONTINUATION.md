@@ -42,7 +42,7 @@ Build a serious, original Android creator studio for TikTok, YouTube, Instagram 
 8. Implement visualizer as the product's signature: audio FFT/RMS/onset pipeline, waveform/spectrum/radial/particles, GPU/3D renderer, background artwork, multiple foreground PNG layers, independent beat response and synced lyric overlay. Test preview/render parity.
 9. Implement lyrics/captions: speech/lyrics provider adapter, Start/Stop permissions, language detection, editable word timing, Urdu/Roman Urdu/Roman English, voice typing, karaoke and emoji.
 10. Test source-video embedded-audio A/V sync on Android hardware; the source integration is already CI-verified in Run #173.
-11. Add export presets and resolution/FPS/bitrate controls, then implement retry/recovery.
+11. Verify the newly committed export canvas/FPS/bitrate controls in CI, then implement export retry/recovery.
 12. Implement image segmentation/cutout, transparent PNG refinement, chroma key, compositing, transitions and effects.
 12. Add official supported social import/upload only where platform terms and API/OAuth permit; system share-sheet fallback.
 13. Run CI and inspect APK artifact; complete automated tests and static analysis. Keep release status honest.
