@@ -120,10 +120,17 @@ class RenderCompositionPlanTest {
             id = "video-clip", mediaId = video.id, kind = MediaKind.VIDEO,
             timelineStartMs = 0L, durationMs = 1_000L
         )
+        val laterClip = clip.copy(
+            id = "later-clip",
+            timelineStartMs = 1_500L,
+            durationMs = 500L,
+            sourceStartMs = 1_000L,
+            sourceEndMs = 1_500L
+        )
         val project = EditorProject(
             frameRate = 20,
             assets = listOf(video),
-            tracks = listOf(TimelineTrack(name = "Video", kind = TrackKind.VIDEO, clips = listOf(clip)))
+            tracks = listOf(TimelineTrack(name = "Video", kind = TrackKind.VIDEO, clips = listOf(clip, laterClip)))
         )
 
         val frameAtEnd = RenderCompositionPlan.frameAt(project, 20L)
