@@ -26,6 +26,7 @@ class OfflineH264VideoEncoder {
         outputFile: File,
         frameProvider: (Long) -> Bitmap,
         bitRate: Int = 8_000_000,
+        recycleFrames: Boolean = false,
         shouldCancel: () -> Boolean = { false },
         onProgress: (Float) -> Unit = {}
     ): H264VideoExportResult {
@@ -95,6 +96,7 @@ class OfflineH264VideoEncoder {
                                 writeYuv420Image(image, pixelBuffer, width, height)
                             } finally {
                                 image.close()
+                                if (recycleFrames && !bitmap.isRecycled) bitmap.recycle()
                             }
                             codec.queueInputBuffer(inputIndex, 0, width * height * 3 / 2, framePtsUs(nextFrame, frameRate), 0)
                             nextFrame++

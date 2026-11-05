@@ -31,7 +31,9 @@ object OfflineVisualizerAnalyzer {
     fun analyze(
         project: EditorProject,
         sources: Map<String, PcmAudioSource>,
-        fftSize: Int = 1_024
+        fftSize: Int = 1_024,
+        shouldCancel: () -> Boolean = { false },
+        onProgress: (Float) -> Unit = {}
     ): OfflineVisualizerAnalysis {
         require(fftSize >= 64 && fftSize.countOneBits() == 1) { "FFT size must be a power of two >= 64" }
         val totalFrames = RenderCompositionPlan.frameCount(project)
@@ -47,6 +49,7 @@ object OfflineVisualizerAnalyzer {
         var lastBeatMs = Long.MIN_VALUE / 2
 
         for (frameIndex in 0 until totalFrames) {
+            if (shouldCancel()) throw java.util.concurrent.CancellationException("Offline visualizer analysis cancelled")
             val startFrame = frameIndex * sampleRate / project.frameRate
             val nextStart = (frameIndex + 1L) * sampleRate / project.frameRate
             val hopFrames = (nextStart - startFrame).coerceAtLeast(1L)
@@ -85,6 +88,9 @@ object OfflineVisualizerAnalyzer {
                 beatDetected = beat,
                 beatPulse = pulse
             )
+            if (frameIndex % 8L == 0L || frameIndex == totalFrames - 1L) {
+                onProgress(((frameIndex + 1L).toDouble() / totalFrames).toFloat())
+            }
         }
 
         val bpm = if (beatTimes.size >= 2) {
