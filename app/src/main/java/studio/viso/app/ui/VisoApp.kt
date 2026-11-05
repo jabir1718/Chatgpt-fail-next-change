@@ -1110,7 +1110,7 @@ private fun ExportPage(
             fontSize = 11.sp
         )
         Text(
-            "H.264/AAC encoder availability and render performance depend on the Android device. This stage supports audio + still images/PNG + source video frames. Embedded source-video audio, full GPU/3D rendering and device-specific codec compatibility still need validation.",
+            "H.264/AAC encoder availability and render performance depend on the Android device. Source-video frames and decodable embedded audio are included; device codec compatibility, A/V sync and full GPU/3D rendering still need validation.",
             color = Color(0xFF9AA4B8),
             fontSize = 10.sp
         )
