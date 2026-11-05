@@ -41,13 +41,33 @@ class ProjectStore(context: Context) {
     @Synchronized
     @Throws(IOException::class)
     fun load(projectId: String): EditorProject {
-        val file = projectFile(projectId)
-        if (!file.isFile) throw IOException("Project not found: $projectId")
-        return try {
-            decode(JSONObject(file.readText(Charsets.UTF_8)))
-        } catch (error: Exception) {
-            throw IOException("Project data is invalid: $projectId", error)
+        val target = projectFile(projectId)
+        val backup = File(directory, "$projectId.json.bak")
+        var targetFailure: Exception? = null
+
+        if (target.isFile) {
+            try {
+                return decode(JSONObject(target.readText(Charsets.UTF_8)))
+            } catch (error: Exception) {
+                targetFailure = error
+            }
         }
+
+        if (backup.isFile) {
+            try {
+                val recovered = decode(JSONObject(backup.readText(Charsets.UTF_8)))
+                backup.copyTo(target, overwrite = true)
+                return recovered
+            } catch (backupFailure: Exception) {
+                targetFailure?.addSuppressed(backupFailure)
+                throw IOException("Project and recovery backup are invalid: $projectId", targetFailure ?: backupFailure)
+            }
+        }
+
+        if (targetFailure != null) {
+            throw IOException("Project data is invalid and no recovery backup exists: $projectId", targetFailure)
+        }
+        throw IOException("Project not found: $projectId")
     }
 
     @Synchronized
@@ -69,7 +89,12 @@ class ProjectStore(context: Context) {
     @Synchronized
     fun delete(projectId: String): Boolean {
         val file = projectFile(projectId)
-        return !file.exists() || file.delete()
+        val backup = File(directory, "$projectId.json.bak")
+        val temporary = File(directory, "$projectId.json.tmp")
+        val targetDeleted = !file.exists() || file.delete()
+        val backupDeleted = !backup.exists() || backup.delete()
+        val temporaryDeleted = !temporary.exists() || temporary.delete()
+        return targetDeleted && backupDeleted && temporaryDeleted
     }
 
     private fun projectFile(id: String): File {
