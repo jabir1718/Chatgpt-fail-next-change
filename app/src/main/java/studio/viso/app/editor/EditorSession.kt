@@ -89,7 +89,11 @@ fun EditorProject.duplicateProject(copyName: String = "${name} Copy"): EditorPro
         createdAtEpochMs = now,
         updatedAtEpochMs = now,
         assets = copiedAssets,
-        tracks = copiedTracks
+        tracks = copiedTracks,
+        visualizer = visualizer.copy(
+            backgroundAssetId = visualizer.backgroundAssetId?.let { newAssetIds[it] },
+            foregroundAssetId = visualizer.foregroundAssetId?.let { newAssetIds[it] }
+        )
     )
 }
 
