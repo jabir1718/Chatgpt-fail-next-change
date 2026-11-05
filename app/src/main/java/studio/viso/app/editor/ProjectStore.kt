@@ -184,7 +184,7 @@ class ProjectStore(context: Context) {
                 opacity = transform.optDouble("opacity", 1.0).toFloat()
             ),
             audio = ClipAudioSettings(
-                volume = audio.optDouble("volume", 1.0).toFloat(), muted = audio.optBoolean("muted"),
+                volume = audio.optDouble("volume", 1.0).toFloat().coerceIn(0f, 1f), muted = audio.optBoolean("muted"),
                 pitchSemitones = audio.optDouble("pitchSemitones", 0.0).toFloat(),
                 playbackRate = audio.optDouble("playbackRate", 1.0).toFloat(),
                 fadeInMs = audio.optLong("fadeInMs"), fadeOutMs = audio.optLong("fadeOutMs")
