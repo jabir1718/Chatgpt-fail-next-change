@@ -56,7 +56,7 @@ Last updated: 2026-11-06
 - M4–M8: Not complete. See roadmap.
 
 ## Next engineering priorities
-1. Implement an Android bitmap/canvas visualizer frame renderer using the offline per-frame snapshots and image layers.
+1. Verify the new Android bitmap/canvas visualizer frame renderer in CI; then add image decode caching and frame-stream integration.
 2. Add retry/recovery and verify cancellation cleanup, storage preflight, codec decode/encode and SAF behavior on device.
 3. Implement video frame decoding/compositing and synchronized MP4 export.
 2. Implement streaming MediaExtractor/MediaCodec audio decoding into bounded PCM blocks, including seek/source-in and sample-rate/channel conversion.

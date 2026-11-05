@@ -39,7 +39,8 @@ A polished, original Android creator studio for TikTok, YouTube Shorts, Instagra
 - [x] Spectrum, radial, waveform, rings and particle previews (rings/particles are 2D Canvas).
 - [ ] True 3D/GPU renderer, quality settings and fallback.
 - [x] Offline audio analysis produces per-frame RMS/FFT/waveform/beat snapshots from timeline PCM (Run #157 CI build/tests/artifact verified).
-- [ ] Render offline visualizer snapshots into output frames and synchronize with export.
+- [x] Android Bitmap/Canvas renderer for Spectrum, Radial, Waveform, Rings and Particles with image/video-frame layers and captions (source implemented; CI pending).
+- [ ] Stream rendered frames into an H.264 video encoder and synchronize the audio mix.
 - [ ] Background image/video, multiple independent foreground PNG/video layers and beat response.
 - [ ] Lyrics overlay, masks, blend modes, keyframes, presets and transitions.
 - [x] Deterministic frame composition planning contract (Run #141 CI build/tests/artifact verified).
