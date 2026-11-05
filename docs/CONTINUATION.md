@@ -1,4 +1,4 @@
-# Viso Studio — Continuation Handoff (Read First)
+# Creator Studio — Continuation Handoff (Read First)
 
 If a new chat or context window starts, DO NOT restart, recreate the app, rename the repository, or invent a new roadmap.
 
@@ -23,13 +23,13 @@ Build a serious, original Android creator studio for TikTok, YouTube, Instagram 
 - Device install/physical testing is done by user when the app is ready.
 
 ## Current evidence snapshot
-- Latest verified APK build is Actions run #6:
+- Latest pre-timeline verified APK build is Actions run #13:
   https://github.com/jabir1718/Chatgpt-fail-next-change/actions/runs/42079253528
-- Source SHA built: `0b8831f35fcee2677bd46e3fc64519c29aec7683`
-- Debug APK artifact: `Viso-debug-apk`, 19,381,660 bytes, expires 2026-11-19.
+- Source SHA built: `e139292bcefa85859796427646a3bcf7a8f96705`
+- Debug APK artifact: `Creator-Studio-debug-apk` will be used from the next workflow run; the prior artifact was `Viso-debug-apk`, 19,414,244 bytes, expires 2026-11-19.
 - CI assembleDebug and artifact upload succeeded.
 - Device installation and app launch are NOT yet user-verified.
-- Current source includes Compose shell, video/audio/image pickers, Media3 playback preview and basic live preview volume/pitch/speed controls.
+- Current source includes Compose shell, video/audio/image pickers, Media3 playback preview, basic preview audio controls, versioned project JSON persistence, typed multi-track clip models, track timeline UI, clip select/move/trim/split/delete, undo/redo, and playhead seek controls. Latest integration CI still needs verification.
 - Not complete: real multi-track timeline, persisted projects, DSP effects, FFT/3D visualizer, PNG composition/beat animation, background removal, transcription, voice typing, chroma key, export, direct social API.
 - Do not tell user to install this as the final requested app. It is a foundation build only.
 
