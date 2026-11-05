@@ -36,7 +36,7 @@ jobs:
       - name: Install Android SDK Platform 36
         run: sdkmanager "platforms;android-36"
       - name: Build debug APK
-        run: gradle assembleDebug --stacktrace
+        run: gradle testDebugUnitTest assembleDebug --stacktrace
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
