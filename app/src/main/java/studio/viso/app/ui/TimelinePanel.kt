@@ -243,9 +243,7 @@ fun TimelinePanel(
                 ) { Icon(Icons.Default.ContentCut, null, modifier = Modifier.size(14.dp)); Text("Split", fontSize = 9.sp) }
                 OutlinedButton(
                     onClick = {
-                        val duplicated = TimelineEditor.duplicateClip(project, selected.id)
-                        onProjectChange(duplicated)
-                        onSelectClip(duplicated.tracks.first { row -> row.clips.any { it.id != selected.id && it.timelineStartMs == selected.timelineEndMs && it.mediaId == selected.mediaId } }.clips.first { it.id != selected.id && it.timelineStartMs == selected.timelineEndMs && it.mediaId == selected.mediaId }.id)
+                        onProjectChange(TimelineEditor.duplicateClip(project, selected.id))
                     },
                     modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 3.dp)
                 ) { Icon(Icons.Default.ContentCopy, null, modifier = Modifier.size(14.dp)); Text("Copy", fontSize = 9.sp) }
