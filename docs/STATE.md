@@ -46,7 +46,7 @@ Last updated: 2026-11-06
 - Live visualizer analysis is real-time for active Android playback. The pure Kotlin offline analyzer derives per-frame RMS, FFT bands, waveform and beat pulses from the timeline mix (Run #157). `OfflineVisualizerFrameRenderer` draws Spectrum, Radial, Waveform, Rings and Particles with still/video bitmaps, captions, background and foreground beat scaling (Run #159). The bounded `OfflineH264VideoEncoder` encodes one rendered bitmap at a time; `ImageAssetBitmapLoader` handles still-image downsampling; `VideoAssetFrameDecoder` uses MediaMetadataRetriever for active source-video frames with bounded scaling; `OfflineAudioVideoMuxer` combines H.264/AAC. These are connected end-to-end to the Export Studio MP4 action and CI-verified through Run #173. Hardware codec support, rotation correctness, A/V sync, thermal behavior and performance remain device-unverified. Decodable embedded audio inside source-video clips is mixed by this visualizer export path (Run #173); device A/V sync remains unverified. True 3D/GPU and preview/render parity remain open.
 - Automatic background removal, edge refinement, masks, chroma key, lyrics transcription, language/script conversion, karaoke sync and voice typing are not implemented.
 - Video transitions/effects/filters/reverse/speed ramps/keyframes/motion tracking and full multi-clip rendering are not implemented.
-- Audio M4A and audio-reactive visualizer MP4 pipelines are source-implemented and CI-verified; configurable export presets, retry/recovery, device acceptance and official social integrations remain open.
+- Audio M4A and audio-reactive visualizer MP4 pipelines are source-implemented and CI-verified. Visualizer export aspect/FPS/bitrate selectors are now source-implemented: 9:16, 1:1, 4:5, 16:9; 24/30/60 FPS; 4/8/12/20 Mbps H.264. ProjectStore schema v5 persists bitrate with backward-compatible defaults. Latest UI and pipeline wiring are committed; CI pending. Device acceptance, retry/recovery and official social integrations remain open.
 - Social integrations must use official supported APIs/OAuth or Android share-sheet fallback. Never claim copyright bypass or “zero copyright”.
 - No release build, signed release APK or complete-app claim.
 
@@ -73,3 +73,6 @@ Last updated: 2026-11-06
 - User handles Android device installation/testing.
 - Keep source, CI, APK artifact, device verification and product completion as separate states.
 - Do not claim background work continues after chat ends.
+
+
+Latest source update awaiting CI: Export Studio aspect canvas, frame-rate and H.264 bitrate controls are connected to the offline MP4 encoder; selected bitrate persists in ProjectStore schema v5. Verify Actions and add regression tests before marking verified.
