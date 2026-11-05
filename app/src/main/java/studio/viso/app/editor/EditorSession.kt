@@ -67,3 +67,28 @@ fun EditorProject.updateClipAudio(clipId: String, transform: (ClipAudioSettings)
 
 fun EditorProject.updateProjectName(name: String): EditorProject =
     copy(name = name.trim().ifBlank { "Untitled Project" }, updatedAtEpochMs = System.currentTimeMillis())
+
+fun EditorProject.duplicateProject(copyName: String = "${name} Copy"): EditorProject {
+    val newAssetIds = assets.associate { it.id to UUID.randomUUID().toString() }
+    val copiedAssets = assets.map { asset -> asset.copy(id = newAssetIds.getValue(asset.id)) }
+    val copiedTracks = tracks.map { track ->
+        track.copy(
+            id = UUID.randomUUID().toString(),
+            clips = track.clips.map { clip ->
+                clip.copy(
+                    id = UUID.randomUUID().toString(),
+                    mediaId = newAssetIds.getValue(clip.mediaId)
+                )
+            }
+        )
+    }
+    val now = System.currentTimeMillis()
+    return copy(
+        id = UUID.randomUUID().toString(),
+        name = copyName.trim().ifBlank { "${name} Copy" },
+        createdAtEpochMs = now,
+        updatedAtEpochMs = now,
+        assets = copiedAssets,
+        tracks = copiedTracks
+    )
+}
