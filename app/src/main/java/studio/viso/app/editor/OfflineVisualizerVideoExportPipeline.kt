@@ -47,11 +47,6 @@ class OfflineVisualizerVideoExportPipeline(
             "Video export canvas dimensions must be even and at least 64 pixels"
         }
         require(project.frameRate in 1..60) { "Video export frame rate must be between 1 and 60 FPS" }
-        val sourceVideoClips = project.tracks.flatMap { it.clips }.filter { it.kind == MediaKind.VIDEO }
-        require(sourceVideoClips.isEmpty()) {
-            "This visualizer export stage supports audio + still images/PNG layers; source video clips are not connected yet"
-        }
-
         cacheDirectory.mkdirs()
         val audioClips = project.tracks
             .filter { it.kind == TrackKind.AUDIO || it.kind == TrackKind.VIDEO }
@@ -120,29 +115,46 @@ class OfflineVisualizerVideoExportPipeline(
             ) { progress -> onProgress(0.36f + progress * 0.16f) }
 
             if (shouldCancel()) throw CancellationException("Visualizer export cancelled")
-            ImageAssetBitmapLoader(context).use { loader ->
-                val bitmaps = linkedMapOf<String, Bitmap>()
-                imageAssets.forEachIndexed { index, asset ->
-                    bitmaps[asset.id] = loader.load(asset, project.width, project.height)
-                    onProgress(0.52f + (index + 1f) / imageAssets.size.coerceAtLeast(1) * 0.03f)
-                }
-                val renderer = OfflineVisualizerFrameRenderer()
-                videoEncoder.encode(
-                    width = project.width,
-                    height = project.height,
-                    frameRate = project.frameRate,
-                    totalFrames = frameCount,
-                    outputFile = videoFile,
-                    bitRate = videoBitRate,
-                    recycleFrames = true,
-                    shouldCancel = shouldCancel,
-                    onProgress = { progress -> onProgress(0.55f + progress * 0.34f) },
-                    frameProvider = { frameIndex ->
-                        val visualizerFrame = analysis.frames.getOrNull(frameIndex.toInt())
-                        val framePlan = RenderCompositionPlan.frameAt(project, frameIndex, visualizerFrame)
-                        renderer.render(project, framePlan, bitmaps)
+            ImageAssetBitmapLoader(context).use { imageLoader ->
+                VideoAssetFrameDecoder(context).use { videoLoader ->
+                    val stillBitmaps = linkedMapOf<String, Bitmap>()
+                    imageAssets.forEachIndexed { index, asset ->
+                        stillBitmaps[asset.id] = imageLoader.load(asset, project.width, project.height)
+                        onProgress(0.52f + (index + 1f) / imageAssets.size.coerceAtLeast(1) * 0.03f)
                     }
-                )
+                    val assetsById = project.assets.associateBy { it.id }
+                    val renderer = OfflineVisualizerFrameRenderer()
+                    videoEncoder.encode(
+                        width = project.width,
+                        height = project.height,
+                        frameRate = project.frameRate,
+                        totalFrames = frameCount,
+                        outputFile = videoFile,
+                        bitRate = videoBitRate,
+                        recycleFrames = true,
+                        shouldCancel = shouldCancel,
+                        onProgress = { progress -> onProgress(0.55f + progress * 0.34f) },
+                        frameProvider = { frameIndex ->
+                            if (shouldCancel()) throw CancellationException("Visualizer export cancelled")
+                            val visualizerFrame = analysis.frames.getOrNull(frameIndex.toInt())
+                            val framePlan = RenderCompositionPlan.frameAt(project, frameIndex, visualizerFrame)
+                            val frameBitmaps = LinkedHashMap(stillBitmaps)
+                            val decodedVideoFrames = mutableListOf<Bitmap>()
+                            try {
+                                framePlan.layers.filter { it.role == RenderLayerRole.VIDEO }.forEach { layer ->
+                                    val asset = assetsById[layer.assetId] ?: error("Video asset is missing: ${layer.assetId}")
+                                    val sourceMs = layer.sourcePositionMs ?: 0L
+                                    val bitmap = videoLoader.decode(asset, sourceMs, project.width, project.height)
+                                    decodedVideoFrames += bitmap
+                                    frameBitmaps[layer.clipId ?: layer.assetId] = bitmap
+                                }
+                                renderer.render(project, framePlan, frameBitmaps)
+                            } finally {
+                                decodedVideoFrames.forEach { if (!it.isRecycled) it.recycle() }
+                            }
+                        }
+                    )
+                }
             }
 
             val muxed = muxer.mux(

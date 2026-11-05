@@ -1053,19 +1053,20 @@ private fun ExportPage(
         )
         Button(
             onClick = onExportVideo,
-            enabled = hasVisualizerAudioClips && !hasSourceVideo && !exporting,
+            enabled = hasVisualizerAudioClips && !exporting,
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("EXPORT VISUALIZER VIDEO (.MP4)")
         }
+        if (!hasVisualizerAudioClips) {
+            Text("Add an audio-only timeline clip to drive the offline visualizer export.", color = Color(0xFF9AA4B8), fontSize = 10.sp)
+        }
         if (hasSourceVideo) {
             Text(
-                "This project contains source video clips. Video-frame decoding is not connected yet; remove those clips to export the audio + still-image visualizer stage.",
-                color = Pink,
+                "Source video frames are included in the picture composition. Embedded audio from source videos is not mixed in this export stage; add an audio track for the soundtrack.",
+                color = Color(0xFFFFC36B),
                 fontSize = 10.sp
             )
-        } else if (!hasVisualizerAudioClips) {
-            Text("Add an audio-only timeline clip to drive the offline visualizer export.", color = Color(0xFF9AA4B8), fontSize = 10.sp)
         }
         if (!hasStillImageLayers) {
             Text("No artwork layer selected: the visualizer will render over a black background.", color = Color(0xFF9AA4B8), fontSize = 10.sp)
@@ -1083,7 +1084,7 @@ private fun ExportPage(
             fontSize = 11.sp
         )
         Text(
-            "H.264/AAC encoder availability and render performance depend on the Android device. This stage supports audio + still images/PNG; source video clips, full multi-video compositing and 3D/GPU rendering are not included yet.",
+            "H.264/AAC encoder availability and render performance depend on the Android device. This stage supports audio + still images/PNG + source video frames. Embedded source-video audio, full GPU/3D rendering and device-specific codec compatibility still need validation.",
             color = Color(0xFF9AA4B8),
             fontSize = 10.sp
         )

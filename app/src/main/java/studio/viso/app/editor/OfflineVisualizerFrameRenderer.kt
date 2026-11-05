@@ -13,7 +13,7 @@ import kotlin.math.sin
 
 /**
  * Draws one deterministic offline visualizer composition frame.
- * Video frames and imported image bitmaps are supplied by the caller, keyed by asset ID.
+ * Video frames are keyed by clip ID; still-image bitmaps are keyed by asset ID.
  * The caller owns and must release the returned Bitmap.
  */
 class OfflineVisualizerFrameRenderer {
@@ -46,7 +46,7 @@ class OfflineVisualizerFrameRenderer {
                     }
                 }
                 RenderLayerRole.IMAGE, RenderLayerRole.VIDEO -> {
-                    decodedFrames[layer.assetId]?.let { bitmap ->
+                    decodedFrames[layer.clipId ?: layer.assetId]?.let { bitmap ->
                         drawLayerBitmap(canvas, bitmap, layer.transform, framePlan.width, framePlan.height, 1f)
                     }
                     drawCaptions(canvas, layer.activeCaptions.map { it.text }, framePlan.width, framePlan.height)
