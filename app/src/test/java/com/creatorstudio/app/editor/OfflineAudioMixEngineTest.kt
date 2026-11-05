@@ -74,6 +74,15 @@ class OfflineAudioMixEngineTest {
         assertEquals(0f, block.samples[7_999], 0.0001f)
     }
 
+
+    @Test
+    fun playbackRateAdvancesSourceFasterThanTimeline() {
+        val p = project(clip(durationMs = 1_000L, playbackRate = 2f))
+        val ramp = FloatArray(16_000) { it / 16_000f }
+        val block = OfflineAudioMixEngine(p, mapOf("song" to source(ramp)), 8_000, 1).renderBlock(0L, 4_000)
+        assertTrue(block.samples[2_000] > block.samples[1_000])
+    }
+
     @Test
     fun sumsOverlappingClipsAndLimitsOutputPeak() {
         val first = clip(volume = 1f)
