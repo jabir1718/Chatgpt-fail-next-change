@@ -109,6 +109,7 @@ class ProjectStore(context: Context) {
         put("width", project.width)
         put("height", project.height)
         put("frameRate", project.frameRate)
+        put("videoBitRate", project.videoBitRate)
         put("createdAtEpochMs", project.createdAtEpochMs)
         put("updatedAtEpochMs", project.updatedAtEpochMs)
         put("assets", JSONArray().apply { project.assets.forEach { put(assetJson(it)) } })
@@ -192,7 +193,8 @@ class ProjectStore(context: Context) {
         return EditorProject(
             id = json.getString("id"), name = json.optString("name", "Untitled Project"),
             width = json.optInt("width", 1080), height = json.optInt("height", 1920),
-            frameRate = json.optInt("frameRate", 30),
+            frameRate = json.optInt("frameRate", 30).coerceIn(1, 60),
+            videoBitRate = json.optInt("videoBitRate", 8_000_000).coerceIn(250_000, 80_000_000),
             createdAtEpochMs = json.optLong("createdAtEpochMs", 0L),
             updatedAtEpochMs = json.optLong("updatedAtEpochMs", 0L),
             assets = assets, tracks = tracks,
@@ -251,7 +253,7 @@ class ProjectStore(context: Context) {
     private fun JSONObject.stringOrNull(key: String): String? =
         if (isNull(key) || !has(key)) null else optString(key)
 
-    companion object { const val SCHEMA_VERSION = 4 }
+    companion object { const val SCHEMA_VERSION = 5 }
 }
 
 data class ProjectSummary(val id: String, val name: String, val updatedAtEpochMs: Long)
