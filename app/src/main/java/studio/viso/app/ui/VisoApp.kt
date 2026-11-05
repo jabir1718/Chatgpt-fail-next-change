@@ -1,6 +1,18 @@
 package studio.viso.app.ui
 
 import android.net.Uri
+import android.media.MediaMetadataRetriever
+import android.provider.OpenableColumns
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import studio.viso.app.editor.EditorProject
+import studio.viso.app.editor.MediaKind
+import studio.viso.app.editor.ProjectStore
+import studio.viso.app.editor.TimelineEditor
+import studio.viso.app.editor.createStarterProject
+import studio.viso.app.editor.importAsset
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -59,6 +71,35 @@ fun VisoApp() {
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Studio", "Audio", "Visuals", "Lyrics", "Export")
     val media = remember { mutableStateListOf<StudioMedia>() }
+    var project by remember { mutableStateOf(createStarterProject()) }
+    var selectedClipId by remember { mutableStateOf<String?>(null) }
+    var playheadMs by remember { mutableLongStateOf(0L) }
+    val undoStack = remember { mutableStateListOf<EditorProject>() }
+    val redoStack = remember { mutableStateListOf<EditorProject>() }
+    val scope = rememberCoroutineScope()
+    val projectStore = remember(context) { ProjectStore(context) }
+
+    fun commitProject(next: EditorProject) {
+        if (next == project) return
+        undoStack.add(project)
+        if (undoStack.size > 40) undoStack.removeAt(0)
+        redoStack.clear()
+        project = next
+    }
+
+    fun undoProject() {
+        if (undoStack.isNotEmpty()) {
+            redoStack.add(project)
+            project = undoStack.removeAt(undoStack.lastIndex)
+        }
+    }
+
+    fun redoProject() {
+        if (redoStack.isNotEmpty()) {
+            undoStack.add(project)
+            project = redoStack.removeAt(redoStack.lastIndex)
+        }
+    }
     var selectedIndex by remember { mutableIntStateOf(-1) }
     var volume by remember { mutableFloatStateOf(1f) }
     var pitch by remember { mutableFloatStateOf(1f) }
@@ -67,6 +108,75 @@ fun VisoApp() {
     var status by remember { mutableStateOf("Import video, audio or PNG to begin") }
     val context = LocalContext.current
     val player = remember { ExoPlayer.Builder(context).build() }
+
+    LaunchedEffect(Unit) {
+        val restored = withContext(Dispatchers.IO) {
+            runCatching { projectStore.listProjects().firstOrNull()?.let { projectStore.load(it.id) } }.getOrNull()
+        }
+        if (restored != null) project = restored
+    }
+
+    LaunchedEffect(project) {
+        withContext(Dispatchers.IO) { runCatching { projectStore.save(project) } }
+    }
+
+    LaunchedEffect(isPlaying, selectedClipId) {
+        while (isPlaying) {
+            val clip = project.tracks.asSequence().flatMap { it.clips.asSequence() }.firstOrNull { it.id == selectedClipId }
+            if (clip != null) playheadMs = clip.timelineStartMs + player.currentPosition
+            delay(180)
+        }
+    }
+
+    fun importPickedMedia(uri: Uri, kind: MediaKind) {
+        scope.launch {
+            status = "Reading media information…"
+            val details = withContext(Dispatchers.IO) {
+                val name = runCatching {
+                    context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+                        if (cursor.moveToFirst()) cursor.getString(0) else null
+                    }
+                }.getOrNull() ?: uri.lastPathSegment?.substringAfterLast('/') ?: "Imported media"
+                val mime = context.contentResolver.getType(uri)
+                val duration = if (kind == MediaKind.IMAGE) 5_000L else runCatching {
+                    MediaMetadataRetriever().let { retriever ->
+                        try {
+                            retriever.setDataSource(context, uri)
+                            retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull()
+                        } finally {
+                            retriever.release()
+                        }
+                    }
+                }.getOrNull()
+                Triple(name, mime, duration)
+            }
+            val duration = details.third?.takeIf { it > 0L } ?: if (kind == MediaKind.IMAGE) 5_000L else 10_000L
+            runCatching {
+                context.contentResolver.takePersistableUriPermission(uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            val imported = project.importAsset(uri, details.first, kind, duration, details.second)
+            commitProject(imported.project)
+            val kindLabel = when (kind) { MediaKind.VIDEO -> "VIDEO"; MediaKind.AUDIO -> "AUDIO"; else -> "IMAGE" }
+            val item = StudioMedia(uri, details.first, kindLabel)
+            media.add(item)
+            selectedIndex = media.lastIndex
+            selectedClipId = imported.clipId
+            playheadMs = 0L
+            if (kind != MediaKind.IMAGE) {
+                player.setMediaItem(MediaItem.fromUri(uri))
+                player.prepare()
+                player.volume = volume
+                player.playbackParameters = PlaybackParameters(speed, pitch)
+                isPlaying = false
+            } else {
+                player.pause()
+                isPlaying = false
+            }
+            status = if (details.third == null && kind != MediaKind.IMAGE)
+                "Imported • duration estimate used because source metadata was unavailable"
+            else "Imported into ${kindLabel.lowercase()} timeline"
+        }
+    }
 
     DisposableEffect(player) {
         onDispose { player.release() }
@@ -90,25 +200,13 @@ fun VisoApp() {
     }
 
     val videoPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        uri?.let {
-            runCatching { context.contentResolver.takePersistableUriPermission(it, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION) }
-            val item = StudioMedia(it, it.lastPathSegment?.substringAfterLast('/') ?: "Video clip", "VIDEO")
-            media.add(item); selectMedia(item)
-        }
+        uri?.let { importPickedMedia(it, MediaKind.VIDEO) }
     }
     val audioPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        uri?.let {
-            runCatching { context.contentResolver.takePersistableUriPermission(it, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION) }
-            val item = StudioMedia(it, it.lastPathSegment?.substringAfterLast('/') ?: "Audio track", "AUDIO")
-            media.add(item); selectMedia(item)
-        }
+        uri?.let { importPickedMedia(it, MediaKind.AUDIO) }
     }
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        uri?.let {
-            runCatching { context.contentResolver.takePersistableUriPermission(it, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION) }
-            val item = StudioMedia(it, it.lastPathSegment?.substringAfterLast('/') ?: "Image layer", "IMAGE")
-            media.add(item); selectedIndex = media.lastIndex; status = "Image layer added • background removal engine pending"
-        }
+        uri?.let { importPickedMedia(it, MediaKind.IMAGE) }
     }
 
     Scaffold(
@@ -137,12 +235,25 @@ fun VisoApp() {
                     onAddVideo = { videoPicker.launch(arrayOf("video/*")) },
                     onAddAudio = { audioPicker.launch(arrayOf("audio/*")) },
                     onAddImage = { imagePicker.launch(arrayOf("image/*")) },
-                    onSelect = { selectMedia(it) },
+                    onSelect = { item ->
+                        selectMedia(item)
+                        selectedClipId = project.assets.firstOrNull { it.uri == item.uri.toString() }?.let { asset ->
+                            project.tracks.asSequence().flatMap { it.clips.asSequence() }.firstOrNull { it.mediaId == asset.id }?.id
+                        }
+                    },
                     onDelete = { index ->
-                        if (index == selectedIndex) { player.stop(); isPlaying = false; selectedIndex = -1 }
+                        val removed = media[index]
+                        val asset = project.assets.firstOrNull { it.uri == removed.uri.toString() }
+                        if (asset != null) {
+                            val nextTracks = project.tracks.map { track ->
+                                track.copy(clips = track.clips.filterNot { it.mediaId == asset.id })
+                            }
+                            commitProject(project.copy(assets = project.assets.filterNot { it.id == asset.id }, tracks = nextTracks))
+                        }
+                        if (index == selectedIndex) { player.stop(); isPlaying = false; selectedIndex = -1; selectedClipId = null }
                         media.removeAt(index)
                         if (selectedIndex > index) selectedIndex--
-                        status = "Clip removed"
+                        status = "Media removed from project timeline"
                     },
                     onPlay = {
                         if (selectedIndex >= 0 && media.getOrNull(selectedIndex)?.kind != "IMAGE") {
@@ -159,6 +270,35 @@ fun VisoApp() {
                 3 -> ToolPage("AI Lyrics & Captions", "Transcription integration is not connected yet", listOf("Auto Transcribe", "Language Detection", "Roman Urdu", "Urdu Script", "Roman English", "Word Sync", "Emoji Captions", "Voice Typing"))
                 else -> ToolPage("Export & Share", "Render/export engine is not connected yet", listOf("TikTok 9:16", "YouTube Shorts", "Instagram Reels", "1080p / 4K", "Frame Rate", "Bitrate", "Save to Device", "Share Video"))
             }
+            if (selectedTab == 0) {
+                Spacer(Modifier.height(14.dp))
+                TimelinePanel(
+                    project = project,
+                    selectedClipId = selectedClipId,
+                    playheadMs = playheadMs,
+                    canUndo = undoStack.isNotEmpty(),
+                    canRedo = redoStack.isNotEmpty(),
+                    onSelectClip = { clipId ->
+                        selectedClipId = clipId
+                        val clip = project.tracks.asSequence().flatMap { it.clips.asSequence() }.firstOrNull { it.id == clipId }
+                        val asset = project.assets.firstOrNull { it.id == clip?.mediaId }
+                        val item = media.firstOrNull { it.uri.toString() == asset?.uri }
+                        if (item != null) selectMedia(item)
+                        if (clip != null) {
+                            playheadMs = clip.timelineStartMs
+                            player.seekTo(clip.sourceStartMs)
+                        }
+                    },
+                    onPlayheadChange = { next ->
+                        playheadMs = next
+                        val clip = project.tracks.asSequence().flatMap { it.clips.asSequence() }.firstOrNull { it.id == selectedClipId }
+                        if (clip != null) player.seekTo((clip.sourceStartMs + (next - clip.timelineStartMs).coerceAtLeast(0L)).coerceIn(clip.sourceStartMs, clip.sourceEndMs))
+                    },
+                    onProjectChange = { commitProject(it) },
+                    onUndo = { undoProject() },
+                    onRedo = { redoProject() }
+                )
+            }
             Spacer(Modifier.height(20.dp))
         }
     }
@@ -172,8 +312,8 @@ private fun Header() {
         }
         Spacer(Modifier.width(11.dp))
         Column(Modifier.weight(1f)) {
-            Text("VISO", color = Color.White, fontWeight = FontWeight.Black, fontSize = 21.sp, letterSpacing = 2.sp)
-            Text("CREATOR STUDIO", color = Color(0xFF9AA4B8), fontSize = 9.sp, letterSpacing = 2.sp)
+            Text("CREATOR", color = Color.White, fontWeight = FontWeight.Black, fontSize = 19.sp, letterSpacing = 1.5.sp)
+            Text("STUDIO", color = Color(0xFF9AA4B8), fontSize = 9.sp, letterSpacing = 2.sp)
         }
         Surface(shape = CircleShape, color = Panel) { Text("V1", color = Mint, fontSize = 11.sp, modifier = Modifier.padding(horizontal = 13.dp, vertical = 9.dp)) }
     }
@@ -190,7 +330,7 @@ private fun StudioPage(
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text("My Project", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-            Text("${media.size} imported layer(s) • 9:16 vertical", color = Color(0xFF9AA4B8), fontSize = 11.sp)
+            Text("${media.size} imported assets • 9:16 vertical", color = Color(0xFF9AA4B8), fontSize = 11.sp)
         }
         Text("LOCAL PROJECT", color = Mint, fontSize = 9.sp, fontWeight = FontWeight.Bold)
     }
@@ -209,7 +349,7 @@ private fun StudioPage(
         }
     }
     Spacer(Modifier.height(16.dp))
-    SectionTitle("EDITING TIMELINE", "Select a layer to preview")
+    SectionTitle("MEDIA BIN", "Timeline below")
     if (media.isEmpty()) {
         Surface(color = Panel, shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth()) {
             Text("Your imported video, audio and image layers will appear here.", color = Color(0xFF9AA4B8), fontSize = 12.sp, modifier = Modifier.padding(16.dp))
@@ -234,7 +374,7 @@ private fun StudioPage(
         }
     }
     Spacer(Modifier.height(10.dp))
-    SectionTitle("CLIP AUDIO CONTROLS", "Selected clip")
+    SectionTitle("PREVIEW AUDIO", "Active source")
     ControlSlider("Volume", volume, "0–100%", onVolume)
     ControlSlider("Pitch", pitch, "0.5×–2×", onPitch, 0.5f..2f)
     ControlSlider("Tempo", speed, "0.5×–2×", onSpeed, 0.5f..2f)
