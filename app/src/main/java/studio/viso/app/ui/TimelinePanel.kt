@@ -14,6 +14,10 @@ import androidx.compose.material.icons.filled.Redo
 import androidx.compose.material.icons.filled.Undo
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.LockOpen
+import androidx.compose.material.icons.filled.VolumeOff
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -109,8 +113,17 @@ fun TimelinePanel(
                 }
                 project.tracks.forEach { track ->
                     Row(Modifier.height(48.dp).padding(bottom = 5.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text(track.name.uppercase(), color = Color(0xFFADB8CC), fontSize = 8.sp, fontWeight = FontWeight.Bold,
-                            modifier = Modifier.width(78.dp))
+                        Column(Modifier.width(78.dp), verticalArrangement = Arrangement.Center) {
+                            Text(track.name.uppercase(), color = if (track.locked) Color(0xFFFFC45C) else Color(0xFFADB8CC), fontSize = 8.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                IconButton(onClick = { onProjectChange(TimelineEditor.setTrackLocked(project, track.id, !track.locked)) }, modifier = Modifier.size(20.dp)) {
+                                    Icon(if (track.locked) Icons.Default.Lock else Icons.Default.LockOpen, contentDescription = if (track.locked) "Unlock track" else "Lock track", tint = if (track.locked) Color(0xFFFFC45C) else Color(0xFF8996AC), modifier = Modifier.size(12.dp))
+                                }
+                                IconButton(onClick = { onProjectChange(TimelineEditor.setTrackMuted(project, track.id, !track.muted)) }, modifier = Modifier.size(20.dp)) {
+                                    Icon(if (track.muted) Icons.Default.VolumeOff else Icons.Default.VolumeUp, contentDescription = if (track.muted) "Unmute track" else "Mute track", tint = if (track.muted) Color(0xFFFFC45C) else Color(0xFF8996AC), modifier = Modifier.size(12.dp))
+                                }
+                            }
+                        }
                         Box(Modifier.height(40.dp).width((totalSeconds * pixelsPerSecond).dp)
                             .clip(RoundedCornerShape(8.dp)).background(Color(0xFF1A2536))) {
                             track.clips.forEach { clip ->
@@ -203,6 +216,11 @@ fun TimelinePanel(
                     modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 3.dp),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFFF7790))
                 ) { Icon(Icons.Default.Delete, null, modifier = Modifier.size(14.dp)); Text("Delete", fontSize = 9.sp) }
+                OutlinedButton(
+                    onClick = { onProjectChange(TimelineEditor.rippleDeleteClip(project, selected.id)) },
+                    modifier = Modifier.weight(1.1f), contentPadding = PaddingValues(horizontal = 3.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFFFC45C))
+                ) { Text("Ripple", fontSize = 9.sp) }
             }
             ClipTrimControls(selected, onTrimStart = { start ->
                 onProjectChange(TimelineEditor.trimStart(project, selected.id, start))
