@@ -35,6 +35,7 @@ import com.creatorstudio.app.editor.TimelineEditor
 import com.creatorstudio.app.editor.createStarterProject
 import com.creatorstudio.app.editor.importAsset
 import com.creatorstudio.app.editor.OfflineAudioExportPipeline
+import com.creatorstudio.app.editor.OfflineVisualizerVideoExportPipeline
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -195,6 +196,50 @@ fun CreatorStudioApp() {
             }
         }
     }
+    val visualizerVideoExportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("video/mp4")
+    ) { destinationUri ->
+        if (destinationUri != null && !audioExporting) {
+            val exportProject = project
+            val cancelFlag = AtomicBoolean(false)
+            scope.launch {
+                audioExportCancel = cancelFlag
+                audioExporting = true
+                audioExportProgress = 0f
+                audioExportMessage = "Preparing audio-reactive MP4..."
+                val temporaryOutput = File(context.cacheDir, "creator_visualizer_${UUID.randomUUID()}.mp4")
+                try {
+                    withContext(Dispatchers.IO) {
+                        val result = OfflineVisualizerVideoExportPipeline().export(
+                            context = context,
+                            project = exportProject,
+                            cacheDirectory = File(context.cacheDir, "creator-video-cache"),
+                            outputFile = temporaryOutput,
+                            shouldCancel = { cancelFlag.get() },
+                            onProgress = { value -> audioExportProgress = value }
+                        )
+                        val output = context.contentResolver.openOutputStream(destinationUri, "w")
+                            ?: error("Could not open the selected MP4 save destination")
+                        output.use { stream ->
+                            result.file.inputStream().use { input -> input.copyTo(stream) }
+                        }
+                    }
+                    audioExportMessage = "Visualizer MP4 saved successfully."
+                } catch (error: Exception) {
+                    audioExportMessage = if (error is CancellationException) {
+                        "Export cancelled."
+                    } else {
+                        "Video export failed: ${error.message ?: "Unknown error"}"
+                    }
+                } finally {
+                    temporaryOutput.delete()
+                    audioExportCancel = null
+                    audioExporting = false
+                }
+            }
+        }
+    }
+
     val selectedAudioSessionId = remember(context) {
         runCatching { (context.getSystemService(android.content.Context.AUDIO_SERVICE) as AudioManager).generateAudioSessionId() }.getOrDefault(0)
     }
@@ -642,15 +687,19 @@ fun CreatorStudioApp() {
                     }
                 )
                 3 -> ToolPage("AI Lyrics & Captions", "Transcription integration is not connected yet", listOf("Auto Transcribe", "Language Detection", "Roman Urdu", "Urdu Script", "Roman English", "Word Sync", "Emoji Captions", "Voice Typing"))
-                else -> AudioMixExportPage(
+                else -> ExportPage(
                     project = project,
                     exporting = audioExporting,
                     progress = audioExportProgress,
                     message = audioExportMessage,
-                    onCancel = { audioExportCancel?.set(true); audioExportMessage = "Cancelling audio export..." },
-                    onExport = {
+                    onCancel = { audioExportCancel?.set(true); audioExportMessage = "Cancelling export..." },
+                    onExportAudio = {
                         val safeName = project.name.replace(Regex("[^A-Za-z0-9_-]"), "_").take(48).ifBlank { "CreatorStudio" }
                         audioMixExportLauncher.launch("${safeName}_AudioMix.m4a")
+                    },
+                    onExportVideo = {
+                        val safeName = project.name.replace(Regex("[^A-Za-z0-9_-]"), "_").take(48).ifBlank { "CreatorStudio" }
+                        visualizerVideoExportLauncher.launch("${safeName}_Visualizer.mp4")
                     }
                 )
             }
@@ -942,18 +991,24 @@ private fun SectionTitle(title: String, detail: String) {
 
 
 @Composable
-private fun AudioMixExportPage(
+private fun ExportPage(
     project: EditorProject,
     exporting: Boolean,
     progress: Float,
     message: String,
     onCancel: () -> Unit,
-    onExport: () -> Unit
+    onExportAudio: () -> Unit,
+    onExportVideo: () -> Unit
 ) {
     val hasAudioClips = project.tracks.any { track ->
         (track.kind == com.creatorstudio.app.editor.TrackKind.AUDIO || track.kind == com.creatorstudio.app.editor.TrackKind.VIDEO) &&
-            track.clips.any { it.kind == MediaKind.AUDIO || it.kind == MediaKind.VIDEO }
+            track.clips.any { it.kind == MediaKind.AUDIO }
     }
+    val hasSourceVideo = project.tracks.any { track -> track.clips.any { it.kind == MediaKind.VIDEO } }
+    val hasStillImageLayers = project.visualizer.backgroundAssetId != null ||
+        project.visualizer.foregroundAssetId != null ||
+        project.tracks.any { track -> track.clips.any { it.kind == MediaKind.IMAGE } }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -961,18 +1016,55 @@ private fun AudioMixExportPage(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text("OFFLINE AUDIO MIX", color = Mint, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+        Text("EXPORT STUDIO", color = Mint, fontWeight = FontWeight.Bold, fontSize = 17.sp)
         Text(
-            "Render the timeline's audio tracks into an AAC-LC M4A file. Clip volume, fades, track gain, mute/solo, master EQ, bass boost and compressor are applied.",
+            "Choose an audio mix or a rendered audio-reactive visualizer video.",
             color = Color(0xFFD4D9E5),
             fontSize = 12.sp
         )
+        Text("AUDIO MASTER", color = Violet, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+        Text(
+            "AAC-LC M4A with timeline clip volume/fades, track gain/mute/solo and offline master EQ, bass and compressor.",
+            color = Color(0xFF9AA4B8),
+            fontSize = 11.sp
+        )
         Button(
-            onClick = onExport,
+            onClick = onExportAudio,
             enabled = hasAudioClips && !exporting,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(if (exporting) "EXPORTING AUDIO..." else "EXPORT AUDIO MIX (.M4A)")
+            Text("EXPORT AUDIO MIX (.M4A)")
+        }
+        Divider(color = Color(0xFF30384A))
+        Text("VISUALIZER VIDEO", color = Violet, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+        Text(
+            "${project.width} × ${project.height}  •  ${project.frameRate} FPS  •  H.264 + AAC",
+            color = Color(0xFFD4D9E5),
+            fontSize = 12.sp
+        )
+        Text(
+            "The offline renderer analyzes the timeline audio, animates the selected visualizer, draws still-image/PNG layers and captions, then saves an MP4.",
+            color = Color(0xFF9AA4B8),
+            fontSize = 11.sp
+        )
+        Button(
+            onClick = onExportVideo,
+            enabled = hasAudioClips && !hasSourceVideo && !exporting,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("EXPORT VISUALIZER VIDEO (.MP4)")
+        }
+        if (hasSourceVideo) {
+            Text(
+                "This project contains source video clips. Video-frame decoding is not connected yet; remove those clips to export the audio + still-image visualizer stage.",
+                color = Pink,
+                fontSize = 10.sp
+            )
+        } else if (!hasAudioClips) {
+            Text("Add an audio clip to drive the offline visualizer export.", color = Color(0xFF9AA4B8), fontSize = 10.sp)
+        }
+        if (!hasStillImageLayers) {
+            Text("No artwork layer selected: the visualizer will render over a black background.", color = Color(0xFF9AA4B8), fontSize = 10.sp)
         }
         if (exporting) {
             LinearProgressIndicator(progress = progress.coerceIn(0f, 1f), modifier = Modifier.fillMaxWidth())
@@ -981,9 +1073,13 @@ private fun AudioMixExportPage(
                 OutlinedButton(onClick = onCancel) { Text("CANCEL EXPORT") }
             }
         }
-        Text(message, color = if (message.startsWith("Export failed")) Pink else Color(0xFF9AA4B8), fontSize = 11.sp)
         Text(
-            "This export contains audio only. Video compositing and MP4 video export are still in development.",
+            message,
+            color = if (message.contains("failed", ignoreCase = true)) Pink else Color(0xFF9AA4B8),
+            fontSize = 11.sp
+        )
+        Text(
+            "H.264/AAC encoder availability and render performance depend on the Android device. This stage supports audio + still images/PNG; source video clips, full multi-video compositing and 3D/GPU rendering are not included yet.",
             color = Color(0xFF9AA4B8),
             fontSize = 10.sp
         )

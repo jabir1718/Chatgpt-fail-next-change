@@ -58,6 +58,7 @@ class OfflineVisualizerVideoExportPipeline(
             .flatMap { it.clips }
             .filter { it.kind == MediaKind.AUDIO }
         val audioAssetIds = audioClips.map { it.mediaId }.distinct()
+        require(audioAssetIds.isNotEmpty()) { "Add at least one audio clip to drive the visualizer export" }
         val imageAssetIds = buildList {
             project.visualizer.backgroundAssetId?.let(::add)
             project.visualizer.foregroundAssetId?.let(::add)
