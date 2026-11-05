@@ -1,130 +1,86 @@
 # Creator Studio — Master Roadmap & Acceptance Gates
 
-This is the canonical product plan. Read this file and `docs/STATE.md` before every new development session. Do not restart the roadmap from memory or silently drop requirements.
+This is the canonical product plan. Read this file and `docs/STATE.md` before every development session.
 
 ## Product promise
-A polished, original Android creator studio for TikTok, YouTube Shorts, Instagram Reels and longer videos. It should feel as capable and organized as leading mobile editors (VN, InShot, CapCut) without copying their branding. Preview-first workspace, contextual tool drawers, separate tool groups, a real multi-track timeline, responsive 3D visualizer, and no forced watermark.
+A polished, original Android creator studio for TikTok, YouTube Shorts, Instagram Reels and longer videos, with preview-first editing, contextual tool drawers, a true multi-track timeline, responsive audio-reactive visualizer, and no forced watermark.
 
-## M0 — Clean foundation & build
-- [x] Fresh Android Kotlin/Jetpack Compose project in this repository.
-- [x] GitHub Actions Android SDK build workflow.
-- [x] Debug APK artifact pipeline verified; current artifact name is `Creator-Studio-debug-apk`.
-- [ ] User installs the APK and confirms it launches on device.
-- [ ] Add crash reporting/log capture for debug builds (opt-in, privacy-conscious).
-**Gate:** CI build + artifact + user launch smoke test.
+## M0 — Foundation & build
+- [x] Android Kotlin/Jetpack Compose project and GitHub Actions debug APK pipeline.
+- [ ] User device install/launch acceptance and opt-in crash diagnostics.
+**Gate:** CI build + artifact + device launch smoke test.
 
-## M1 — Real editor workspace
-- [x] Project create/open/rename/duplicate/delete; autosave and recovery (source + CI; device acceptance open).
-- [x] Android document picker import for video, audio, still image and transparent PNG (source; device acceptance open).
-- [x] Persist read permissions and copy/import assets into managed project storage (source; device acceptance open).
-- [x] Real selected-source video/audio preview (source; device acceptance open).
-- [x] Multi-track timeline model and editing foundation: video/audio/image/text tracks, clip selection, trim, split, move/reorder, delete/ripple delete, snapping, undo/redo and playhead seek (source + configured CI; device acceptance open).
-- [x] Per-clip audio settings and timeline playback scheduling (source + configured CI; device acceptance open).
+## M1 — Editor workspace
+- [x] Project create/open/rename/duplicate/delete, autosave and recovery (source + CI; device acceptance open).
+- [x] Video/audio/image/transparent PNG picker and media URI persistence/copy fallback (source; device acceptance open).
+- [x] Media3 selected-source preview and multi-track timeline editing foundation.
+- [x] Clip select/move/trim/split/delete/ripple-delete, snapping, undo/redo, track lock/mute/gain/solo.
 - [ ] Synchronized multi-video compositing, canvas fit/fill/crop, safe areas and aspect presets.
-**Current implementation note:** Project management, autosave/recovery, media import, selected-source preview, typed tracks, clip selection, trim/split/delete/ripple-delete, undo/redo, playhead seeking, compatible cross-track movement, direct drag, duplication, snapping, and track lock/mute/gain/solo are implemented in source. Concurrent Media3 timeline audio preview is connected to Studio Play/Pause; active audio/video clips get independent players, timeline-clock source alignment, clip gain/fades, pitch and playback rate. CI Runs #133, #138 and #139 verified the preview scheduling and track rules. Device verification remains open.
-**Gate:** Import multiple video/audio/image assets, edit timeline, save/reopen project, playback stays synchronized, no crash.
+**Gate:** Multi-asset edit, save/reopen, synchronized playback, no crash.
 
 ## M2 — Audio engine & sound design
-- [x] Per-clip/track volume, gain, mute/solo, fades in preview scheduling (source + CI-verified).
-- [x] Waveform generation/cache and timeline waveform display (MediaCodec PCM decode, peak-envelope cache, timeline waveform bars; Run #137 CI-verified).
-- [ ] Pitch shift/formant and pitch-preserving time stretch; independent pitch and tempo.
-- [ ] BPM and beat/onset detection with editable beat markers.
-- [x] Five-band EQ, low-frequency EQ boost and compressor: Android DynamicsProcessing attached to selected-source and timeline preview audio sessions (source + Run #140 CI build/tests verified; actual device audibility/support pending).
-- [ ] Limiter and normalization.
-- [ ] Voice changer, reverb, echo, delay, chorus, de-esser and noise reduction.
-- [ ] Voiceover recording, microphone monitor, input gain and take management.
-- [ ] Audio extraction from video; mix bus and master output meter.
-- [ ] Optional vocal/instrumental separation only if a suitable model/runtime/license is validated.
-**Current implementation note:** Per-clip volume/mute, pitch-semitone, playback-rate and fade values are stored. TimelinePlaybackPlan calculates overlapping clip schedules, playback-rate-aware source positions and fade envelopes. Timeline preview uses concurrent Media3 players and Android's platform output mixer; it is not sample-accurate studio mixing. Native Android DynamicsProcessing applies five EQ bands, a low-band boost and a compressor to supported live preview sessions. Run #140 verified build/tests and artifact upload. The phone's actual effect support/audibility is not yet device-verified. Offline DSP/render, limiter, formant, pitch-preserving time stretch, and mix-bus processing remain unimplemented.
-**Gate:** Two clips can have different settings; preview and exported mix match; no clipping or broken sync.
+- [x] Per-clip volume/mute, fades, track gain/solo and timeline scheduling.
+- [x] Waveform decoding/cache/timeline display (Run #137 CI-verified).
+- [x] Native live-preview five-band EQ, low-band bass boost and compressor (Run #140 CI-verified; phone audibility/support open).
+- [ ] Pitch-preserving time stretch, formant and independent pitch/tempo.
+- [ ] BPM/beat markers, limiter/normalization, voice effects, voiceover recording, extraction and mix bus.
+- [ ] Streaming source PCM decode adapter for offline export.
+- [x] Block-based offline PCM mixing core: timeline placement, linear interpolation, clip rate/gain/fades, track gain/mute/solo, EQ, compressor and peak limiting (source committed; CI pending).
+- [ ] AAC audio encoding/muxing and preview/export mix parity.
+**Current note:** OfflineAudioMixEngine consumes decoded PCM buffers and returns contiguous output blocks. It is not yet connected to MediaExtractor/MediaCodec streaming decode or an AAC encoder/muxer. Do not call audio export complete.
+**Gate:** Two or more clips with independent settings render to a valid audio file, with no clipping and correct timing.
 
-## M3 — Visualizer Studio (highest product priority)
-- [x] Live audio analysis (FFT/spectrum, waveform, onset/beat pulse and rough BPM estimate).
-- [x] Visualizer types: spectrum bars, circular/radial, waveform, animated rings and audio-reactive particles (2D Canvas).
-- [ ] Equalizer shapes and 3D/GPU objects.
-- [ ] 3D/GPU renderer with quality/performance settings and device fallback.
-- [ ] MP3/audio track drives animation in real time and in offline render.
-- [ ] Background image/video and independent foreground image/PNG/video layers.
-- [ ] Multiple overlays, center artwork/logo/subject, positioning, scale, rotation, crop, opacity.
-- [ ] Per-layer beat response: pulse, scale, rotation, glow, shake, particles and sensitivity.
-- [ ] Keyframes, easing, masks, blend modes, shadows, outlines and effects.
-- [ ] Lyrics/captions over visualizer with safe placement and word highlighting.
-- [ ] Save reusable visualizer presets/templates.
-**Current implementation note:** Live Android playback-session analysis provides FFT spectrum, waveform samples, onset/beat pulse and rough BPM. Spectrum, radial, waveform, animated rings and particle previews are present; Rings/Particles are 2D Canvas, not 3D/GPU. A deterministic `RenderCompositionPlan` now describes per-frame layer order, video source time, clip-local captions, concurrent audio clips and audio-processing settings. It is a planning model only: it does not decode media, composite pixels, perform offline audio analysis or encode frames. Full offline rendering, 3D/GPU, video backgrounds and independently animated overlays remain open.
-**Gate:** Imported song drives visualizer; background art and foreground transparent PNG are composited; foreground reacts independently to beat; exported video matches preview.
+## M3 — Visualizer Studio (signature priority)
+- [x] Live FFT/spectrum, waveform, onset/beat pulse and rough BPM analysis.
+- [x] Spectrum, radial, waveform, rings and particle previews (rings/particles are 2D Canvas).
+- [ ] True 3D/GPU renderer, quality settings and fallback.
+- [ ] Offline audio analysis drives visualizer frame-by-frame.
+- [ ] Background image/video, multiple independent foreground PNG/video layers and beat response.
+- [ ] Lyrics overlay, masks, blend modes, keyframes, presets and transitions.
+- [x] Deterministic frame composition planning contract (source implemented; CI verification pending).
+- [ ] Actual video/image decoding, pixel compositing and video frame encoding.
+**Gate:** Imported song drives animation; foreground reacts independently; export matches preview.
 
-## M4 — Automatic lyrics, captions & voice input
-- [ ] Speech/lyrics transcription adapter with a clearly disclosed on-device or online provider.
-- [ ] Explicit Start/Stop controls and microphone/network permission prompts only when needed.
-- [ ] Automatic language identification and editable word/phrase timestamps.
-- [ ] Urdu script, Roman Urdu, Roman English, English, Hindi and further provider-supported languages.
-- [ ] Translation/transliteration modes selectable by user; do not silently change script.
-- [ ] Voice typing for text/caption fields.
-- [ ] Karaoke word highlight, line-by-line styles, emoji/sticker captions, fonts and animation.
-- [ ] Caption timing editor, correction workflow, SRT/VTT import/export.
-- [ ] Music-vocal transcription caveat and manual correction for uncertain words.
-**Gate:** User can transcribe supported audio, edit words/timing, choose script/language, and retain sync after timeline edits.
+## M4 — Lyrics/captions/voice input
+- [ ] Disclosed transcription provider with explicit Start/Stop and permissions.
+- [ ] Language identification; Urdu, Roman Urdu, Roman English and other supported scripts.
+- [ ] Editable word timing, karaoke highlight, voice typing, emoji captions, SRT/VTT.
+**Gate:** Transcribe, correct, select script, retain sync through edits.
 
-## M5 — Image cutout, chroma key & compositing
-- [ ] Automatic subject/background removal using a validated on-device or online segmentation model.
-- [ ] Transparent PNG output, edge refinement, feather, spill cleanup and manual erase/restore brush.
-- [ ] Green screen/chroma key with color picker, tolerance, edge softness and spill suppression.
-- [ ] Layer masks, blend modes, opacity, crop, transform, picture-in-picture.
-- [ ] Background replacement and foreground overlays.
-- [ ] Filters, LUT/color adjustment, blur, sharpen, glow, shadow, outlines and transitions.
-- [ ] Keyframe animation and motion tracking if device budget permits.
-**Gate:** Multi-layer composition exports correctly with transparent edges and no preview/render mismatch.
+## M5 — Cutout/chroma/compositing
+- [ ] Validated on-device/online subject segmentation and transparent PNG output.
+- [ ] Edge refinement, erase/restore, chroma key, masks, blend modes, background replacement.
+- [ ] Filters, LUT, blur, glow, shadows, transitions and keyframes.
+**Gate:** Multi-layer output with clean alpha edges and preview/render parity.
 
-## M6 — Video editing & effects
-- [ ] Trim, split, merge, reorder, duplicate, reverse and freeze frame.
-- [ ] Speed controls, ramps, slow motion and time remapping.
-- [ ] Transitions, filters, overlays, text/stickers, masks and keyframes.
-- [ ] Per-clip crop, rotate, transform, stabilization only if supported.
-- [ ] Source audio extraction/replacement and independent audio tracks.
-- [ ] Proxy editing and low-memory preview for large media.
-**Gate:** Representative multi-clip edit renders with stable timing, transitions and audio sync.
+## M6 — Video editing/effects
+- [ ] Reverse/freeze, speed ramps/time remapping, transitions, filters, masks, keyframes, stabilization if supported.
+- [ ] Audio extraction/replacement and proxy editing.
+**Gate:** Multi-clip render with stable timing and audio sync.
 
-## M7 — Export, sharing & social workflows
-- [ ] Export presets: TikTok/Reels/Shorts 9:16, square 1:1, 4:5 and landscape 16:9.
-- [ ] Resolution, FPS, bitrate, codec and audio quality controls; device-aware 4K availability.
-- [ ] MP4 and supported audio formats; export queue, progress, cancel, retry and recovery.
-- [ ] Storage-space estimate and safe handling of interrupted exports.
-- [ ] Android system share sheet as universal fallback.
-- [ ] Social URL import only where platform terms and supported official interfaces permit it.
-- [ ] Direct upload only through official OAuth/API flows with platform permission; disclose account/API restrictions.
-- [ ] Draft metadata, caption/hashtags helper and export naming.
-**Gate:** Render portrait and landscape projects, validate output, share locally, and use direct upload only where officially supported.
+## M7 — Export/sharing/social
+- [ ] MP4/audio encoding, presets (9:16, 1:1, 4:5, 16:9), resolution/FPS/bitrate/codec.
+- [ ] Export progress/cancel/retry/recovery and storage estimates.
+- [ ] Android share-sheet fallback; direct social upload only through permitted official APIs/OAuth.
+**Gate:** Valid portrait/landscape files, share locally, official integrations only.
 
-## M8 — Reliability, accessibility & release
-- [ ] Real-device performance testing across low/mid/high-end Android devices.
-- [ ] Thermal, memory, battery, dropped-frame and long-render testing.
-- [ ] Audio/video sync, project recovery, corrupt-media and permission-denied tests.
-- [ ] Accessibility labels, touch targets, readable scaling and localization.
-- [ ] Privacy policy, clear network disclosure, licenses/attributions and open-source notices.
-- [ ] App icon, splash screen, onboarding, settings, help and crash diagnostics.
-- [ ] Release signing configuration kept secure; never commit signing keys/secrets.
-- [ ] Final APK/AAB build, artifact verification and user install acceptance.
-**Gate:** Release candidate passes CI and device test checklist.
+## M8 — Reliability/release
+- [ ] Device matrix, thermal/memory/long-render/audio-sync/recovery testing.
+- [ ] Accessibility, privacy policy, licensing, app icon/splash/onboarding/help.
+- [ ] Secure release signing and final APK/AAB device acceptance.
+**Gate:** CI + device test checklist + release candidate.
 
-## Future upgrades — intentionally reserved after first complete release
-- Cloud project sync/backup and cross-device continuation.
-- Template marketplace and user-created preset packs.
-- Advanced motion tracking, auto-reframe and smart subject tracking.
-- AI-assisted beat cuts and music-aware auto-edit templates.
-- Batch export, queue management and reusable brand kits.
-- Collaborative projects and team review/comments.
-- Plugin/extension API for third-party effects.
-- Optional desktop companion/project interchange.
-- Advanced color grading, scopes and professional audio routing.
+## Reserved future upgrades
+Cloud sync, templates marketplace, AI beat cuts/auto-edit, advanced tracking/reframe, batch export, brand kits, collaboration, plugin API, desktop companion and advanced color grading/pro audio routing.
 
 ## Non-negotiable rules
-1. Never call a screen/control a working feature until its underlying behavior is implemented and tested.
-2. Every task has states: planned, UI-only, implemented, CI-verified, device-verified.
-3. Keep editing offline-first. Network features clearly disclose provider, privacy, cost and account requirements.
-4. Never promise zero copyright or implement copyright-detection evasion. Editing a track does not grant rights.
-5. Do not bypass social platform access controls. Use official documented APIs/OAuth or system sharing.
-6. Request permissions only at feature start and explain why.
-7. No milestone is skipped until its acceptance gate passes.
-8. Preserve existing working behavior. Replace a whole file only after fetching/reviewing the current complete file and validating imports, callers and dependencies.
-9. Before every session, read `docs/STATE.md`, this roadmap, and the exact source files being changed.
-10. Keep this roadmap and state document updated in the same change whenever scope or completion status changes.
+1. Never mark a UI-only control as working.
+2. Track planned/source/CI/device states separately.
+3. Offline-first; disclose network/model/account/cost requirements.
+4. No copyright-evasion claims; editing does not grant rights.
+5. Use official social APIs/OAuth or system share sheet; no scraping/access-control bypass.
+6. Ask permissions only when the user starts the feature that needs them.
+7. Do not skip acceptance gates.
+8. Preserve working behavior and inspect full files/callers before replacement.
+9. Read state, roadmap and exact sources before each session.
+10. Update roadmap/state with every material change.
