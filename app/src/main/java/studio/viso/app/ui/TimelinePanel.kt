@@ -47,6 +47,7 @@ fun TimelinePanel(
     onSelectClip: (String) -> Unit,
     onPlayheadChange: (Long) -> Unit,
     onProjectChange: (EditorProject) -> Unit,
+    onAddTrack: (String, TrackKind) -> Unit,
     onUndo: () -> Unit,
     onRedo: () -> Unit
 ) {
@@ -74,6 +75,26 @@ fun TimelinePanel(
             IconButton(onClick = { pixelsPerSecond = (pixelsPerSecond - 4f).coerceAtLeast(12f) }) { Text("−", color = Color.White) }
             Text("${pixelsPerSecond.toInt()} px/s", color = Color(0xFF9AA4B8), fontSize = 8.sp)
             IconButton(onClick = { pixelsPerSecond = (pixelsPerSecond + 4f).coerceAtMost(48f) }) { Text("+", color = Color.White) }
+        }
+        Spacer(Modifier.height(4.dp))
+        Text("ADD TRACK", color = Color(0xFF9AA4B8), fontSize = 8.sp, fontWeight = FontWeight.Bold)
+        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            listOf(
+                "VIDEO" to TrackKind.VIDEO,
+                "AUDIO" to TrackKind.AUDIO,
+                "OVERLAY" to TrackKind.OVERLAY,
+                "CAPTION" to TrackKind.CAPTION,
+                "EFFECT" to TrackKind.EFFECT
+            ).forEach { (label, kind) ->
+                TextButton(
+                    onClick = { onAddTrack(label.replaceFirstChar { it.uppercase() }, kind) },
+                    contentPadding = PaddingValues(horizontal = 7.dp, vertical = 2.dp)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(13.dp))
+                    Text(label, fontSize = 8.sp)
+                }
+            }
         }
         Spacer(Modifier.height(8.dp))
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
