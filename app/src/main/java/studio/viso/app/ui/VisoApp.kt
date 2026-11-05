@@ -422,6 +422,8 @@ fun CreatorStudioApp() {
             when (selectedTab) {
                 0 -> StudioPage(
                     media = media, selectedIndex = selectedIndex, player = player,
+                    canvasWidth = project.width, canvasHeight = project.height,
+                    onCanvasChange = { width, height -> commitProject(project.copy(width = width, height = height, updatedAtEpochMs = System.currentTimeMillis())) },
                     isPlaying = isPlaying, status = status,
                     onAddVideo = { videoPicker.launch(arrayOf("video/*")) },
                     onAddAudio = { audioPicker.launch(arrayOf("audio/*")) },
@@ -555,6 +557,7 @@ private fun Header() {
 @Composable
 private fun StudioPage(
     media: List<StudioMedia>, selectedIndex: Int, player: ExoPlayer, isPlaying: Boolean, status: String,
+    canvasWidth: Int, canvasHeight: Int, onCanvasChange: (Int, Int) -> Unit,
     onAddVideo: () -> Unit, onAddAudio: () -> Unit, onAddImage: () -> Unit,
     onSelect: (StudioMedia) -> Unit, onDelete: (Int) -> Unit, onPlay: () -> Unit,
     volume: Float, onVolume: (Float) -> Unit, pitch: Float, onPitch: (Float) -> Unit,
@@ -567,8 +570,20 @@ private fun StudioPage(
         }
         Text("LOCAL PROJECT", color = Mint, fontSize = 9.sp, fontWeight = FontWeight.Bold)
     }
+    Spacer(Modifier.height(10.dp))
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        listOf(Triple("9:16", 1080, 1920), Triple("1:1", 1080, 1080), Triple("4:5", 1080, 1350), Triple("16:9", 1920, 1080)).forEach { preset ->
+            val selected = canvasWidth == preset.second && canvasHeight == preset.third
+            OutlinedButton(
+                onClick = { onCanvasChange(preset.second, preset.third) },
+                modifier = Modifier.weight(1f),
+                contentPadding = PaddingValues(horizontal = 2.dp, vertical = 5.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = if (selected) Mint else Color.White)
+            ) { Text(preset.first, fontSize = 9.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal) }
+        }
+    }
     Spacer(Modifier.height(12.dp))
-    PreviewStage(player, media.getOrNull(selectedIndex), isPlaying, onPlay)
+    PreviewStage(player, media.getOrNull(selectedIndex), isPlaying, onPlay, canvasWidth.toFloat() / canvasHeight.toFloat())
     Text(status, color = Mint, fontSize = 10.sp, modifier = Modifier.padding(vertical = 7.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(7.dp), modifier = Modifier.fillMaxWidth()) {
         Button(onClick = onAddVideo, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Violet), contentPadding = PaddingValues(horizontal = 8.dp, vertical = 11.dp)) {
@@ -615,7 +630,7 @@ private fun StudioPage(
 }
 
 @Composable
-private fun PreviewStage(player: ExoPlayer, item: StudioMedia?, isPlaying: Boolean, onPlay: () -> Unit) {
+private fun PreviewStage(player: ExoPlayer, item: StudioMedia?, isPlaying: Boolean, onPlay: () -> Unit, aspectRatio: Float) {
     val context = LocalContext.current
     val selectedImageUri = item?.takeIf { it.kind == "IMAGE" }?.uri
     val imageBitmap by produceState<ImageBitmap?>(initialValue = null, key1 = selectedImageUri) {
@@ -631,7 +646,9 @@ private fun PreviewStage(player: ExoPlayer, item: StudioMedia?, isPlaying: Boole
             }.getOrNull()
         } else null
     }
-    Box(Modifier.fillMaxWidth().aspectRatio(0.88f).clip(RoundedCornerShape(22.dp)).background(Color(0xFF111827)).border(1.dp, Color(0xFF51447B), RoundedCornerShape(22.dp))) {
+    Box(Modifier.fillMaxWidth().widthIn(max = 300.dp).aspectRatio(aspectRatio).align(Alignment.CenterHorizontally)
+        .clip(RoundedCornerShape(22.dp)).background(Color(0xFF111827))
+        .border(1.dp, Color(0xFF51447B), RoundedCornerShape(22.dp))) {
         when (item?.kind) {
             "VIDEO" -> AndroidView(factory = { ctx -> PlayerView(ctx).apply { this.player = player; useController = true } },
                 update = { it.player = player }, modifier = Modifier.fillMaxSize())
