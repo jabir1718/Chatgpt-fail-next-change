@@ -12,5 +12,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "VisoStudio"
+rootProject.name = "CreatorStudio"
 include(":app")
