@@ -224,10 +224,10 @@ private fun StudioPage(
         Text("Selected: Audio 01", color = Mint, fontSize = 10.sp)
     }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        PropertyChip("Volume", "100%")
-        PropertyChip("Pitch", "+0")
-        PropertyChip("Tempo", "1.0×")
-        PropertyChip("BPM", "Auto")
+        PropertyChip("Volume", "100%", Modifier.weight(1f))
+        PropertyChip("Pitch", "+0", Modifier.weight(1f))
+        PropertyChip("Tempo", "1.0×", Modifier.weight(1f))
+        PropertyChip("BPM", "Auto", Modifier.weight(1f))
     }
 }
 
@@ -301,9 +301,9 @@ private fun TimelineTrack(label: String, colors: List<Color>) {
 }
 
 @Composable
-private fun PropertyChip(label: String, value: String) {
+private fun PropertyChip(label: String, value: String, modifier: Modifier = Modifier) {
     Column(
-        Modifier.weight(1f).clip(RoundedCornerShape(10.dp)).background(Panel).padding(9.dp)
+        modifier.clip(RoundedCornerShape(10.dp)).background(Panel).padding(9.dp)
     ) {
         Text(label, color = Color(0xFF9AA4B8), fontSize = 9.sp)
         Text(value, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
