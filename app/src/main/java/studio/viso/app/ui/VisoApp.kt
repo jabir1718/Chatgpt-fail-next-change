@@ -18,6 +18,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import com.creatorstudio.app.editor.EditorProject
 import com.creatorstudio.app.editor.MediaKind
+import com.creatorstudio.app.editor.VisualizerSettings
 import com.creatorstudio.app.editor.ProjectStore
 import com.creatorstudio.app.editor.ProjectSummary
 import com.creatorstudio.app.editor.duplicateProject
@@ -95,7 +96,6 @@ fun CreatorStudioApp() {
     var projectLoaded by remember { mutableStateOf(false) }
     var spectrumLevels by remember { mutableStateOf(List(32) { 0f }) }
     var waveformSamples by remember { mutableStateOf(emptyList<Float>()) }
-    var visualizerMode by remember { mutableStateOf("Spectrum") }
     var visualizerRunning by remember { mutableStateOf(false) }
     var detectedBpm by remember { mutableStateOf<Int?>(null) }
     var beatPulseCount by remember { mutableIntStateOf(0) }
@@ -477,12 +477,15 @@ fun CreatorStudioApp() {
                 2 -> VisualizerPage(
                     spectrum = spectrumLevels,
                     waveform = waveformSamples,
-                    mode = visualizerMode,
                     running = visualizerRunning,
                     bpm = detectedBpm,
                     beatPulse = beatPulseCount,
                     message = visualizerMessage,
-                    onModeChange = { visualizerMode = it },
+                    images = project.assets.filter { it.kind == MediaKind.IMAGE },
+                    settings = project.visualizer,
+                    onSettingsChange = { settings ->
+                        commitProject(project.copy(visualizer = settings, updatedAtEpochMs = System.currentTimeMillis()))
+                    },
                     onStart = {
                         val active = media.getOrNull(selectedIndex)
                         if (active == null || active.kind == "IMAGE") {
