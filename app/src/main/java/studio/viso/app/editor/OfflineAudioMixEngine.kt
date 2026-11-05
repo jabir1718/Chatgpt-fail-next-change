@@ -32,7 +32,7 @@ data class MixedPcmBlock(
 class OfflineAudioMixEngine(
     private val project: EditorProject,
     private val sources: Map<String, PcmAudioSource>,
-    private val val outputSampleRate: Int = 48_000,
+    val outputSampleRate: Int = 48_000,
     val outputChannels: Int = 2
 ) {
     private val soloTrackIds = project.tracks

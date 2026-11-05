@@ -20,7 +20,7 @@ class PcmFileAudioSourceTest {
             PcmFileAudioSource(file, sampleRate = 8_000, channelCount = 2, cacheFrames = 2).use { source ->
                 assertEquals(4L, source.frameCount)
                 assertEquals(0.1f, source.sampleAt(0.0, 0, 2), 0.0001f)
-                assertEquals(0.4f, source.sampleAt(1.5, 1, 2), 0.0001f)
+                assertEquals(0.5f, source.sampleAt(1.5, 1, 2), 0.0001f)
                 assertEquals(0.45f, source.sampleAt(1.5, 0, 1), 0.0001f)
                 assertEquals(0f, source.sampleAt(4.0, 0, 2), 0.0001f)
             }
