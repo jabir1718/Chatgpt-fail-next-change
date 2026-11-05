@@ -84,7 +84,8 @@ class OfflineVisualizerFrameRenderer {
         transform: Transform,
         width: Int,
         height: Int,
-        extraScale: Float
+        extraScale: Float,
+        contentMode: CanvasContentMode = CanvasContentMode.FIT
     ) {
         val save = canvas.save()
         canvas.translate(width * 0.5f + transform.x, height * 0.5f + transform.y)
@@ -93,9 +94,15 @@ class OfflineVisualizerFrameRenderer {
         val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG).apply {
             alpha = (transform.opacity.coerceIn(0f, 1f) * 255f).toInt()
         }
-        val fitScale = min(width.toFloat() / bitmap.width, height.toFloat() / bitmap.height)
-        val drawWidth = bitmap.width * fitScale
-        val drawHeight = bitmap.height * fitScale
+        val scaleX = width.toFloat() / bitmap.width
+        val scaleY = height.toFloat() / bitmap.height
+        val fitScale = when (contentMode) {
+            CanvasContentMode.FIT -> min(scaleX, scaleY)
+            CanvasContentMode.CROP -> maxOf(scaleX, scaleY)
+            CanvasContentMode.FILL -> 1f
+        }
+        val drawWidth = if (contentMode == CanvasContentMode.FILL) width.toFloat() else bitmap.width * fitScale
+        val drawHeight = if (contentMode == CanvasContentMode.FILL) height.toFloat() else bitmap.height * fitScale
         canvas.drawBitmap(
             bitmap,
             null,
