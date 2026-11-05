@@ -1,7 +1,6 @@
 package com.creatorstudio.app.editor
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -100,10 +99,10 @@ class TimelineEditorTest {
         val copiedImage = copy.assets.first { it.kind == MediaKind.IMAGE }
         val copiedAudio = copy.assets.first { it.kind == MediaKind.AUDIO }
 
-        assertNotEquals(project.id, copy.id)
-        assertNotEquals(image.id, copiedImage.id)
-        assertNotEquals(project.tracks.single().id, copy.tracks.single().id)
-        assertNotEquals(clip.id, copiedClip.id)
+        assertTrue(project.id != copy.id)
+        assertTrue(image.id != copiedImage.id)
+        assertTrue(project.tracks.single().id != copy.tracks.single().id)
+        assertTrue(clip.id != copiedClip.id)
         assertEquals(copiedAudio.id, copiedClip.mediaId)
         assertEquals(copiedImage.id, copy.visualizer.backgroundAssetId)
         assertEquals(copiedImage.id, copy.visualizer.foregroundAssetId)
