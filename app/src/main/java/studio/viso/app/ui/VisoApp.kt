@@ -145,6 +145,25 @@ fun CreatorStudioApp() {
         )
     }
 
+    LaunchedEffect(selectedClipId, project.id) {
+        val clip = project.tracks.asSequence()
+            .flatMap { it.clips.asSequence() }
+            .firstOrNull { it.id == selectedClipId }
+        val asset = clip?.let { selected -> project.assets.firstOrNull { it.id == selected.mediaId } }
+        isPlaying = false
+        player.pause()
+        if (clip == null || asset == null || asset.kind == MediaKind.IMAGE) {
+            player.stop()
+        } else {
+            player.setMediaItem(mediaItemFor(Uri.parse(asset.uri), asset.mimeType))
+            player.prepare()
+            player.seekTo(clip.sourceStartMs)
+            val owningTrack = project.tracks.firstOrNull { track -> track.clips.any { it.id == clip.id } }
+            player.volume = if (clip.audio.muted || owningTrack?.muted == true) 0f else clip.audio.volume.coerceIn(0f, 1f)
+            player.playbackParameters = PlaybackParameters(clip.audio.playbackRate, clip.audio.pitchRatio())
+        }
+    }
+
     fun activateProject(loaded: EditorProject) {
         project = loaded
         media.clear()
