@@ -70,10 +70,12 @@ private data class StudioMedia(val uri: Uri, val name: String, val kind: String)
 fun VisoApp() {
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Studio", "Audio", "Visuals", "Lyrics", "Export")
+    val context = LocalContext.current
     val media = remember { mutableStateListOf<StudioMedia>() }
     var project by remember { mutableStateOf(createStarterProject()) }
     var selectedClipId by remember { mutableStateOf<String?>(null) }
     var playheadMs by remember { mutableLongStateOf(0L) }
+    var projectLoaded by remember { mutableStateOf(false) }
     val undoStack = remember { mutableStateListOf<EditorProject>() }
     val redoStack = remember { mutableStateListOf<EditorProject>() }
     val scope = rememberCoroutineScope()
@@ -106,18 +108,26 @@ fun VisoApp() {
     var speed by remember { mutableFloatStateOf(1f) }
     var isPlaying by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf("Import video, audio or PNG to begin") }
-    val context = LocalContext.current
     val player = remember { ExoPlayer.Builder(context).build() }
 
     LaunchedEffect(Unit) {
         val restored = withContext(Dispatchers.IO) {
             runCatching { projectStore.listProjects().firstOrNull()?.let { projectStore.load(it.id) } }.getOrNull()
         }
-        if (restored != null) project = restored
+        if (restored != null) {
+            project = restored
+            media.clear()
+            restored.assets.forEach { asset ->
+                media.add(StudioMedia(Uri.parse(asset.uri), asset.displayName, asset.kind.name))
+            }
+            selectedClipId = restored.tracks.asSequence().flatMap { it.clips.asSequence() }.firstOrNull()?.id
+            selectedIndex = media.indexOfFirst { item -> item.uri.toString() == restored.assets.firstOrNull { it.id == restored.tracks.asSequence().flatMap { row -> row.clips.asSequence() }.firstOrNull()?.mediaId }?.uri }
+        }
+        projectLoaded = true
     }
 
-    LaunchedEffect(project) {
-        withContext(Dispatchers.IO) { runCatching { projectStore.save(project) } }
+    LaunchedEffect(project, projectLoaded) {
+        if (projectLoaded) withContext(Dispatchers.IO) { runCatching { projectStore.save(project) } }
     }
 
     LaunchedEffect(isPlaying, selectedClipId) {
