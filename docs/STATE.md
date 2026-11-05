@@ -34,7 +34,7 @@ Last updated: 2026-11-06
 - Master audio processing settings (five EQ bands, low-frequency EQ boost and compressor) persist in ProjectStore schema v4; Android DynamicsProcessing is attached to selected-source and timeline Media3 sessions on supported API 28+ devices. Run #140 CI-verified; device audibility remains unverified.
 - `RenderCompositionPlan` describes deterministic frame timestamps, visual z-order, video source positions, active captions, audio schedules and master settings. Run #141 verification pending; this is a planning model, not a media renderer.
 - `OfflineAudioMixEngine` provides deterministic block-based PCM mixing from decoded in-memory PCM buffers: timeline placement, linear source interpolation, clip playback rate, volume, fade-in/out, track gain, track mute, audio-capable solo rules, five-band peaking EQ, low-band bass boost, compressor and output peak limiting. Run #145 verified the offline mixer and regression tests after correcting the final-sample fade-out tolerance. `PcmAudioSource` now supports both in-memory and disk-backed float PCM; a disk-backed cache implementation and MediaCodec decoder adapter are source-implemented. Run #147 CI-verified their compilation and the configured tests; physical-device decoding and end-to-end export remain unverified.
-- The mixer can consume in-memory PCM or the new disk-backed `PcmFileAudioSource`. `MediaCodecPcmDecoder` decodes a URI into a Float32 PCM file and returns a cache-backed source; this adapter is source-implemented but CI/device verification is pending. The AAC-LC encoder and end-to-end audio-only export pipeline are source-implemented and CI-verified in Run #148. The Export tab has an Android SAF destination flow for audio-only M4A output; the UI integration also passed CI in Run #150. Actual Android codec playback/decode and a user-saved M4A have not yet been device-verified. Video decoding/compositing and video MP4 rendering remain unimplemented.
+- The mixer can consume in-memory PCM or the new disk-backed `PcmFileAudioSource`. `MediaCodecPcmDecoder` decodes a URI into a Float32 PCM file and returns a cache-backed source; this adapter is source-implemented but CI/device verification is pending. The AAC-LC encoder and end-to-end audio-only export pipeline are source-implemented and CI-verified in Run #148. The Export tab has an Android SAF destination flow for audio-only M4A output, with progress and cancel control; UI and cancellation integration passed CI in Run #152. Actual Android codec decode/encode and a user-saved M4A have not yet been device-verified. Video decoding/compositing and video MP4 rendering remain unimplemented.
 
 ## Important limitations — do not misrepresent
 - All timeline/project/media features need real-device acceptance tests including app restart and permission recovery.
@@ -56,7 +56,7 @@ Last updated: 2026-11-06
 - M4–M8: Not complete. See roadmap.
 
 ## Next engineering priorities
-1. Add export cancellation, retry/recovery and storage-space checks to the audio-mix workflow.
+1. Add retry/recovery and storage-space checks to the audio-mix workflow; verify cancellation cleanup and SAF destination behavior on device.
 2. Test actual source decoding and saved M4A output on Android hardware.
 3. Implement video frame decoding/compositing and synchronize audio timestamps to rendered video frames.
 2. Implement streaming MediaExtractor/MediaCodec audio decoding into bounded PCM blocks, including seek/source-in and sample-rate/channel conversion.
