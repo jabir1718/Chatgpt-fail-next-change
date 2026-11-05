@@ -23,12 +23,14 @@ Build a serious, original Android creator studio for TikTok, YouTube, Instagram 
 - Device install/physical testing is done by user when the app is ready.
 
 ## Current evidence snapshot
-- Latest completed successful build is Actions run #173, ID `42128206048`, source SHA `3b91c6cc7ddd229b286f66a8d36fe6d8ffcf275d`.
-- Artifact: `Creator-Studio-debug-apk`, 19,737,358 bytes, SHA-256 `008058bcf48bdbbcfa0f6a0a9bdc0a9ecb1139095b85534d0a95108f9625b9b0`.
+- Latest completed successful build is Actions run #185, ID `42130806602`, source SHA `703e1b8ecec6207b201feada96d878a224955831`.
+- Artifact: `Creator-Studio-debug-apk`, 19,745,871 bytes, SHA-256 `28d400a976f9480e71f8a378dcfb68fae6818127035eacb62abde6f622523a3e`.
+- Run #185 passed configured regression tests, Android debug APK build and artifact upload. Tests cover export defaults, supported/invalid FPS and bitrate values, and project-copy preservation.
+- Run #184 verified export retry UI/source compiles. Retry restarts from the beginning and asks for a new save location; it is not partial-export resume.
 - CI unit tests, debug APK build and artifact upload succeeded.
 - Device installation, launch, real media decode/encode and exported-file playback are NOT yet user-verified.
 - Current source includes Compose editor shell, media pickers, Media3 preview, project persistence, multi-track editing, live visualizer, offline PCM/AAC audio export, offline audio-reactive still-image/source-video visualizer MP4 pipeline, source frame decoding, Canvas compositing, H.264 encoding, AAC/H.264 muxing and decodable embedded source-video audio mixing. Latest integration is CI-verified in Run #173; physical-device acceptance remains open.
-- Not complete: device acceptance, full synchronized preview compositing, 3D/GPU visualizer, background removal, transcription, voice typing, chroma key, advanced video effects, export presets/recovery and official social integrations.
+- Not complete: device acceptance, full synchronized preview compositing, 3D/GPU visualizer, background removal, transcription, voice typing, chroma key, advanced video effects, export retry (restart-only; resumable recovery remains open) and official social integrations.
 - Do not tell user to install this as the final requested app. It is a foundation build only.
 
 ## Next task sequence
@@ -42,8 +44,9 @@ Build a serious, original Android creator studio for TikTok, YouTube, Instagram 
 8. Implement visualizer as the product's signature: audio FFT/RMS/onset pipeline, waveform/spectrum/radial/particles, GPU/3D renderer, background artwork, multiple foreground PNG layers, independent beat response and synced lyric overlay. Test preview/render parity.
 9. Implement lyrics/captions: speech/lyrics provider adapter, Start/Stop permissions, language detection, editable word timing, Urdu/Roman Urdu/Roman English, voice typing, karaoke and emoji.
 10. Test source-video embedded-audio A/V sync on Android hardware; the source integration is already CI-verified in Run #173.
-11. Verify the newly committed export canvas/FPS/bitrate controls in CI, then implement export retry/recovery.
-12. Implement image segmentation/cutout, transparent PNG refinement, chroma key, compositing, transitions and effects.
+11. Export canvas/FPS/bitrate controls and retry action are source + CI verified (Runs #183–#185); implement resumable partial-export recovery separately.
+12. Implement synchronized multi-video preview/compositing, deterministic overlap ordering and source-time alignment, then canvas fit/fill/crop and safe areas.
+13. Implement image segmentation/cutout, transparent PNG refinement, chroma key, compositing, transitions and effects.
 12. Add official supported social import/upload only where platform terms and API/OAuth permit; system share-sheet fallback.
 13. Run CI and inspect APK artifact; complete automated tests and static analysis. Keep release status honest.
 14. Update `docs/STATE.md` and `docs/ROADMAP.md` with every material change and exact commit/run/artifact evidence.
