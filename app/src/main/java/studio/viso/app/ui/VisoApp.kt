@@ -751,6 +751,8 @@ fun CreatorStudioApp() {
                     onSelectClip = { clipId ->
                         if (timelineMixing) {
                             timelineAudioPreview.pause()
+                            timelineVideoPreview.pause()
+                            timelineVideoLayers = timelineVideoPreview.snapshot().layers
                             timelineMixing = false
                             isPlaying = false
                             player.volume = volume
