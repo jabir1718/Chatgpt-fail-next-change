@@ -635,7 +635,7 @@ private fun PreviewStage(player: ExoPlayer, item: StudioMedia?, isPlaying: Boole
                 update = { it.player = player }, modifier = Modifier.fillMaxSize())
             "IMAGE" -> {
                 if (imageBitmap != null) {
-                    Image(bitmap = imageBitmap!!, contentDescription = item.name, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
+                    Image(bitmap = imageBitmap!!, contentDescription = item?.name ?: "Image", contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
                 } else {
                     Text("Loading image preview…", color = Color(0xFFB9C2D5), modifier = Modifier.align(Alignment.Center))
                 }
@@ -643,7 +643,7 @@ private fun PreviewStage(player: ExoPlayer, item: StudioMedia?, isPlaying: Boole
             "AUDIO" -> Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
                 Icon(Icons.Default.GraphicEq, null, tint = Mint, modifier = Modifier.size(56.dp))
                 Spacer(Modifier.height(14.dp))
-                Text(item.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 1)
+                Text(item?.name ?: "Audio", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 1)
                 Text("Audio source ready • open Visualizer Studio for live FFT", color = Color(0xFFB9C2D5), fontSize = 10.sp)
             }
             else -> Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
