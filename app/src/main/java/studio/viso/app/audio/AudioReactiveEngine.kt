@@ -22,10 +22,14 @@ class AudioReactiveEngine(
             onError("Audio session is not ready. Start playback and try again.")
             return false
         }
+        var candidate: Visualizer? = null
         try {
             val effect = Visualizer(audioSessionId)
+            candidate = effect
             val range = Visualizer.getCaptureSizeRange()
-            effect.captureSize = range[1]
+            if (effect.setCaptureSize(range[1]) != Visualizer.SUCCESS) {
+                throw IllegalStateException("Audio analyser capture size is unavailable.")
+            }
             effect.setDataCaptureListener(
                 object : Visualizer.OnDataCaptureListener {
                     override fun onWaveFormDataCapture(
@@ -51,10 +55,13 @@ class AudioReactiveEngine(
                 true,
                 true
             )
-            effect.enabled = true
+            if (effect.setEnabled(true) != Visualizer.SUCCESS) {
+                throw IllegalStateException("Android audio analyser could not be enabled.")
+            }
             visualizer = effect
             return true
         } catch (error: Exception) {
+            runCatching { candidate?.release() }
             onError(error.message ?: "Live audio analysis could not start.")
             return false
         }
