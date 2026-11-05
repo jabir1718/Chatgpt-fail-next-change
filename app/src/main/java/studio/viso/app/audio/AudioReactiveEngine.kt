@@ -1,6 +1,7 @@
 package com.creatorstudio.app.audio
 
 import android.media.audiofx.Visualizer
+import android.os.SystemClock
 import kotlin.math.ln
 import kotlin.math.sqrt
 
@@ -11,9 +12,15 @@ import kotlin.math.sqrt
 class AudioReactiveEngine(
     private val onSpectrum: (List<Float>) -> Unit,
     private val onWaveform: (List<Float>) -> Unit,
+    private val onBeat: () -> Unit,
+    private val onBpm: (Int?) -> Unit,
     private val onError: (String) -> Unit
 ) {
     private var visualizer: Visualizer? = null
+    private val previousBands = FloatArray(32)
+    private val fluxHistory = ArrayDeque<Float>()
+    private val beatIntervals = ArrayDeque<Long>()
+    private var lastBeatAtMs = 0L
 
     @Synchronized
     fun start(audioSessionId: Int): Boolean {
@@ -48,7 +55,9 @@ class AudioReactiveEngine(
                         samplingRate: Int
                     ) {
                         if (fft == null || fft.size < 4) return
-                        onSpectrum(toBands(fft, 32))
+                        val bands = toBands(fft, 32)
+                        onSpectrum(bands)
+                        detectBeat(bands)
                     }
                 },
                 (Visualizer.getMaxCaptureRate() / 2).coerceAtLeast(1),
@@ -76,6 +85,36 @@ class AudioReactiveEngine(
         visualizer = null
         onSpectrum(List(32) { 0f })
         onWaveform(emptyList())
+        previousBands.fill(0f)
+        fluxHistory.clear()
+        beatIntervals.clear()
+        lastBeatAtMs = 0L
+        onBpm(null)
+    }
+
+    private fun detectBeat(bands: List<Float>) {
+        var flux = 0f
+        bands.forEachIndexed { index, value ->
+            flux += (value - previousBands[index]).coerceAtLeast(0f)
+            previousBands[index] = value
+        }
+        fluxHistory.addLast(flux)
+        if (fluxHistory.size > 40) fluxHistory.removeFirst()
+        val average = if (fluxHistory.isEmpty()) 0f else fluxHistory.average().toFloat()
+        val now = SystemClock.elapsedRealtime()
+        if (flux > maxOf(average * 1.45f, 0.055f) && now - lastBeatAtMs > 280L) {
+            if (lastBeatAtMs > 0L) {
+                val interval = now - lastBeatAtMs
+                if (interval in 300L..1_500L) {
+                    beatIntervals.addLast(interval)
+                    if (beatIntervals.size > 6) beatIntervals.removeFirst()
+                    val bpm = (60_000.0 / beatIntervals.average()).toInt()
+                    onBpm(bpm.takeIf { it in 40..200 })
+                }
+            }
+            lastBeatAtMs = now
+            onBeat()
+        }
     }
 
     private fun toBands(fft: ByteArray, count: Int): List<Float> {
