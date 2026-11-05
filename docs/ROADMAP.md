@@ -40,7 +40,8 @@ A polished, original Android creator studio for TikTok, YouTube Shorts, Instagra
 - [ ] True 3D/GPU renderer, quality settings and fallback.
 - [x] Offline audio analysis produces per-frame RMS/FFT/waveform/beat snapshots from timeline PCM (Run #157 CI build/tests/artifact verified).
 - [x] Android Bitmap/Canvas renderer for Spectrum, Radial, Waveform, Rings and Particles with supplied image/video-frame layers and captions (Run #159 CI build/artifact verified).
-- [ ] Decode image/video sources into bounded frame streams and feed the H.264 encoder; mux AAC with synchronized timestamps.
+- [x] Bounded H.264 video-only encoder using flexible YUV input and deterministic frame timestamps (Run #161 CI build/tests/artifact verified).
+- [ ] Decode image/video assets into frames, connect visualizer renderer, then mux AAC/H.264 with synchronized timestamps.
 - [ ] Background image/video, multiple independent foreground PNG/video layers and beat response.
 - [ ] Lyrics overlay, masks, blend modes, keyframes, presets and transitions.
 - [x] Deterministic frame composition planning contract (Run #141 CI build/tests/artifact verified).

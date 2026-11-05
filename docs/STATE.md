@@ -41,7 +41,7 @@ Last updated: 2026-11-06
 - Native DynamicsProcessing is live preview only on supported Android versions/devices. Offline mixer DSP is a separate pure Kotlin implementation and has not yet been CI-verified.
 - Offline mixer currently consumes PCM buffers supplied by a decoder; it is not yet connected to MediaExtractor/MediaCodec streaming decode or AAC encoding/muxing.
 - Concurrent preview is not sample-accurate DSP/offline mix; multiple timeline video clips are not composited in synchronized playback.
-- Live visualizer analysis is real-time for active Android playback. A pure Kotlin offline audio analyzer derives per-frame RMS, FFT bands, waveform and beat pulses from the same timeline mix; Run #157 verified build/tests. `OfflineVisualizerFrameRenderer` now draws Spectrum, Radial, Waveform, Rings and Particles with supplied video/image bitmaps, captions, background and foreground beat scaling; Run #159 verified compilation. Frame decoding and H.264 encoding are still not connected. Rendering these data into output frames, full compositing and true 3D/GPU remain open.
+- Live visualizer analysis is real-time for active Android playback. A pure Kotlin offline audio analyzer derives per-frame RMS, FFT bands, waveform and beat pulses from the same timeline mix; Run #157 verified build/tests. `OfflineVisualizerFrameRenderer` now draws Spectrum, Radial, Waveform, Rings and Particles with supplied video/image bitmaps, captions, background and foreground beat scaling; Run #159 verified compilation. The bounded `OfflineH264VideoEncoder` now accepts one rendered bitmap at a time and encodes an H.264 video-only MP4 using flexible YUV input; Run #161 verified compilation/tests. It is not yet connected to the frame renderer or AAC muxer, and hardware encoder support remains device-unverified. Rendering these data into output frames, full compositing and true 3D/GPU remain open.
 - Automatic background removal, edge refinement, masks, chroma key, lyrics transcription, language/script conversion, karaoke sync and voice typing are not implemented.
 - Video transitions/effects/filters/reverse/speed ramps/keyframes/motion tracking and full multi-clip rendering are not implemented.
 - Export pipeline, MP4/audio encoding, presets, progress/cancel/retry/recovery and social upload are not implemented.
@@ -56,9 +56,9 @@ Last updated: 2026-11-06
 - M4–M8: Not complete. See roadmap.
 
 ## Next engineering priorities
-1. Implement/verify the H.264 encoder's flexible-YUV input path and image-to-frame feed.
-2. Add compressed audio/video muxing with exact presentation timestamps and cancellation/recovery.
-3. Add source video frame decoding, then verify complete export on Android hardware.
+1. Add image URI decoding/cache and connect RenderCompositionPlan + OfflineVisualizerFrameRenderer to the H.264 encoder.
+2. Mux AAC and H.264 tracks into one MP4 with exact timestamps and cancellation/recovery.
+3. Add source video frame decoding and verify complete export on Android hardware.
 2. Implement streaming MediaExtractor/MediaCodec audio decoding into bounded PCM blocks, including seek/source-in and sample-rate/channel conversion.
 3. Add AAC encoder/muxer output and align encoded audio timestamps to video frame timestamps.
 4. Implement Android video/image frame decoding and GPU/Canvas composition in z-order from RenderCompositionPlan.
