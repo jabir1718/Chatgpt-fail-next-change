@@ -53,6 +53,7 @@ fun TimelinePanel(
 ) {
     val duration = project.durationMs.coerceAtLeast(1_000L)
     var pixelsPerSecond by remember(project.id) { mutableFloatStateOf(24f) }
+    var showMoveMenu by remember(selectedClipId) { mutableStateOf(false) }
     val totalSeconds = (duration / 1_000L).toInt().coerceAtLeast(1)
     val tickStep = when {
         totalSeconds > 1_800 -> 60
@@ -150,6 +151,32 @@ fun TimelinePanel(
         if (selected != null) {
             Text("SELECTED CLIP  •  ${project.assets.firstOrNull { it.id == selected.mediaId }?.displayName ?: selected.id}",
                 color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+            val sourceTrackId = project.tracks.firstOrNull { row -> row.clips.any { it.id == selected.id } }?.id
+            val destinationKind = when (selected.kind) {
+                com.creatorstudio.app.editor.MediaKind.VIDEO -> TrackKind.VIDEO
+                com.creatorstudio.app.editor.MediaKind.AUDIO -> TrackKind.AUDIO
+                com.creatorstudio.app.editor.MediaKind.IMAGE -> TrackKind.OVERLAY
+                com.creatorstudio.app.editor.MediaKind.TEXT -> TrackKind.CAPTION
+            }
+            val compatibleTracks = project.tracks.filter { it.id != sourceTrackId && it.kind == destinationKind && !it.locked }
+            Box {
+                TextButton(
+                    onClick = { showMoveMenu = true },
+                    enabled = compatibleTracks.isNotEmpty(),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                ) { Text("MOVE TO TRACK", fontSize = 8.sp) }
+                DropdownMenu(expanded = showMoveMenu, onDismissRequest = { showMoveMenu = false }) {
+                    compatibleTracks.forEach { destination ->
+                        DropdownMenuItem(
+                            text = { Text(destination.name) },
+                            onClick = {
+                                onProjectChange(TimelineEditor.moveClipToTrack(project, selected.id, destination.id))
+                                showMoveMenu = false
+                            }
+                        )
+                    }
+                }
+            }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 OutlinedButton(
                     onClick = {
