@@ -32,6 +32,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.ui.platform.LocalDensity
+import kotlin.math.roundToLong
 import com.creatorstudio.app.editor.EditorProject
 import com.creatorstudio.app.editor.TimelineClip
 import com.creatorstudio.app.editor.TimelineEditor
@@ -57,6 +61,7 @@ fun TimelinePanel(
     onRedo: () -> Unit
 ) {
     val duration = project.durationMs.coerceAtLeast(1_000L)
+    val density = LocalDensity.current
     var pixelsPerSecond by remember(project.id) { mutableFloatStateOf(24f) }
     var showMoveMenu by remember(selectedClipId) { mutableStateOf(false) }
     val totalSeconds = (duration / 1_000L).toInt().coerceAtLeast(1)
@@ -127,7 +132,9 @@ fun TimelinePanel(
                         Box(Modifier.height(40.dp).width((totalSeconds * pixelsPerSecond).dp)
                             .clip(RoundedCornerShape(8.dp)).background(Color(0xFF1A2536))) {
                             track.clips.forEach { clip ->
+                                var dragOffsetPx by remember(clip.id) { mutableFloatStateOf(0f) }
                                 val left = (clip.timelineStartMs / 1000f * pixelsPerSecond).dp
+                                val dragOffsetDp = with(density) { dragOffsetPx.toDp() }
                                 val width = (clip.durationMs / 1000f * pixelsPerSecond).coerceAtLeast(8f).dp
                                 val tint = when (track.kind) {
                                     TrackKind.VIDEO -> Color(0xFF9278FF)
@@ -137,9 +144,31 @@ fun TimelinePanel(
                                     TrackKind.EFFECT -> Color(0xFF54B7FF)
                                 }
                                 Box(
-                                    Modifier.offset(x = left).width(width).fillMaxHeight().padding(horizontal = 1.dp, vertical = 2.dp)
+                                    Modifier.offset(x = left + dragOffsetDp).width(width).fillMaxHeight().padding(horizontal = 1.dp, vertical = 2.dp)
                                         .clip(RoundedCornerShape(5.dp))
                                         .background(if (clip.id == selectedClipId) tint else tint.copy(alpha = 0.58f))
+                                        .pointerInput(clip.id, pixelsPerSecond, track.locked) {
+                                            if (!track.locked) {
+                                                detectDragGestures(
+                                                    onDragStart = { onSelectClip(clip.id) },
+                                                    onDrag = { change, dragAmount ->
+                                                        change.consume()
+                                                        dragOffsetPx += dragAmount.x
+                                                    },
+                                                    onDragEnd = {
+                                                        val deltaMs = (dragOffsetPx / density.density / pixelsPerSecond * 1_000f).roundToLong()
+                                                        dragOffsetPx = 0f
+                                                        if (deltaMs != 0L) {
+                                                            onProjectChange(TimelineEditor.moveClip(
+                                                                project, clip.id,
+                                                                (clip.timelineStartMs + deltaMs).coerceAtLeast(0L)
+                                                            ))
+                                                        }
+                                                    },
+                                                    onDragCancel = { dragOffsetPx = 0f }
+                                                )
+                                            }
+                                        }
                                         .clickable { onSelectClip(clip.id) }.padding(horizontal = 4.dp),
                                     contentAlignment = Alignment.CenterStart
                                 ) {
