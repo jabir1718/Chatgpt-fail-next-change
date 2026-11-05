@@ -100,6 +100,20 @@ data class VisualizerSettings(
     }
 }
 
+/** Master audio processing controls applied to live preview audio sessions. */
+data class AudioProcessingSettings(
+    val eqGainsDb: List<Float> = List(5) { 0f },
+    val bassBoostDb: Float = 0f,
+    val compressorAmount: Float = 0f
+) {
+    init {
+        require(eqGainsDb.size == 5) { "Five EQ bands are required" }
+        require(eqGainsDb.all { it in -12f..12f }) { "EQ gain must be between -12 and +12 dB" }
+        require(bassBoostDb in 0f..12f) { "Bass boost must be between 0 and 12 dB" }
+        require(compressorAmount in 0f..1f) { "Compressor amount must be between 0 and 1" }
+    }
+}
+
 data class EditorProject(
     val id: String = UUID.randomUUID().toString(),
     val name: String = "Untitled Project",
@@ -110,7 +124,8 @@ data class EditorProject(
     val updatedAtEpochMs: Long = System.currentTimeMillis(),
     val assets: List<MediaAsset> = emptyList(),
     val tracks: List<TimelineTrack> = emptyList(),
-    val visualizer: VisualizerSettings = VisualizerSettings()
+    val visualizer: VisualizerSettings = VisualizerSettings(),
+    val audioProcessing: AudioProcessingSettings = AudioProcessingSettings()
 ) {
     init {
         require(width > 0 && height > 0) { "Canvas dimensions must be positive" }

@@ -4,12 +4,14 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.media.MediaMetadataRetriever
+import android.media.AudioManager
 import android.graphics.BitmapFactory
 import android.provider.OpenableColumns
 import java.io.File
 import java.util.UUID
 import androidx.core.content.ContextCompat
 import com.creatorstudio.app.audio.AudioReactiveEngine
+import com.creatorstudio.app.audio.AndroidAudioProcessor
 import com.creatorstudio.app.audio.TimelineAudioPreviewController
 import com.creatorstudio.app.audio.WaveformRepository
 import kotlinx.coroutines.Dispatchers
@@ -18,6 +20,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import com.creatorstudio.app.editor.AudioProcessingSettings
 import com.creatorstudio.app.editor.EditorProject
 import com.creatorstudio.app.editor.MediaKind
 import com.creatorstudio.app.editor.VisualizerSettings
@@ -74,6 +77,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.DisposableEffect
@@ -86,6 +90,7 @@ private val Pink = Color(0xFFFF6FAE)
 
 private data class StudioMedia(val uri: Uri, val name: String, val kind: String)
 
+@OptIn(UnstableApi::class)
 @Composable
 fun CreatorStudioApp() {
     var selectedTab by remember { mutableIntStateOf(0) }
@@ -139,7 +144,15 @@ fun CreatorStudioApp() {
     var isPlaying by remember { mutableStateOf(false) }
     var timelineMixing by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf("Import video, audio or PNG to begin") }
-    val player = remember { ExoPlayer.Builder(context).build() }
+    val selectedAudioSessionId = remember(context) {
+        runCatching { (context.getSystemService(android.content.Context.AUDIO_SERVICE) as AudioManager).generateAudioSessionId() }.getOrDefault(0)
+    }
+    val player = remember(context, selectedAudioSessionId) {
+        ExoPlayer.Builder(context).build().apply {
+            if (selectedAudioSessionId > 0) setAudioSessionId(selectedAudioSessionId)
+        }
+    }
+    val selectedAudioProcessor = remember { AndroidAudioProcessor() }
     val timelineAudioPreview = remember(context) { TimelineAudioPreviewController(context) }
     val audioReactiveEngine = remember {
         AudioReactiveEngine(
@@ -149,6 +162,10 @@ fun CreatorStudioApp() {
             onBpm = { detectedBpm = it },
             onError = { visualizerMessage = it; visualizerRunning = false }
         )
+    }
+
+    LaunchedEffect(project.audioProcessing, selectedAudioSessionId) {
+        if (selectedAudioSessionId > 0) selectedAudioProcessor.apply(selectedAudioSessionId, project.audioProcessing)
     }
 
     LaunchedEffect(selectedClipId, project.id) {
@@ -324,10 +341,11 @@ fun CreatorStudioApp() {
         }
     }
 
-    DisposableEffect(player, timelineAudioPreview) {
+    DisposableEffect(player, timelineAudioPreview, selectedAudioProcessor) {
         onDispose {
             audioReactiveEngine.stop()
             timelineAudioPreview.release()
+            if (selectedAudioSessionId > 0) selectedAudioProcessor.release(selectedAudioSessionId)
             player.release()
         }
     }
@@ -535,7 +553,13 @@ fun CreatorStudioApp() {
                     pitch = pitch, onPitch = { pitch = it; player.playbackParameters = PlaybackParameters(speed, it) },
                     speed = speed, onSpeed = { speed = it; player.playbackParameters = PlaybackParameters(it, pitch) }
                 )
-                1 -> AudioPage(volume, { volume = it; player.volume = it }, pitch, { pitch = it; player.playbackParameters = PlaybackParameters(speed, it) }, speed, { speed = it; player.playbackParameters = PlaybackParameters(it, pitch) })
+                1 -> AudioPage(
+                    volume, { volume = it; player.volume = it },
+                    pitch, { pitch = it; player.playbackParameters = PlaybackParameters(speed, it) },
+                    speed, { speed = it; player.playbackParameters = PlaybackParameters(it, pitch) },
+                    settings = project.audioProcessing,
+                    onSettingsChange = { next -> commitProject(project.copy(audioProcessing = next, updatedAtEpochMs = System.currentTimeMillis())) }
+                )
                 2 -> VisualizerPage(
                     spectrum = spectrumLevels,
                     waveform = waveformSamples,
@@ -774,15 +798,63 @@ private fun PreviewStage(player: ExoPlayer, item: StudioMedia?, isPlaying: Boole
 }
 
 @Composable
-private fun AudioPage(volume: Float, onVolume: (Float) -> Unit, pitch: Float, onPitch: (Float) -> Unit, speed: Float, onSpeed: (Float) -> Unit) {
+private fun AudioPage(
+    volume: Float, onVolume: (Float) -> Unit,
+    pitch: Float, onPitch: (Float) -> Unit,
+    speed: Float, onSpeed: (Float) -> Unit,
+    settings: AudioProcessingSettings,
+    onSettingsChange: (AudioProcessingSettings) -> Unit
+) {
     Text("Audio Lab", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 24.sp)
     Text("Live preview controls for the selected audio/video source", color = Color(0xFF9AA4B8), fontSize = 12.sp)
     Spacer(Modifier.height(18.dp))
     ControlSlider("Volume / Gain", volume, "0–100%", onVolume)
     ControlSlider("Pitch", pitch, "0.5×–2×", onPitch, 0.5f..2f)
     ControlSlider("Tempo", speed, "0.5×–2×", onSpeed, 0.5f..2f)
-    Text("Live beat/BPM estimate is available in Visualizer Studio. Per-clip volume, mute, pitch and tempo are saved in the timeline; these are currently preview settings.", color = Color(0xFF9AA4B8), fontSize = 10.sp)
-    ToolPage("Additional audio processors (planned)", "These processors need a dedicated DSP and offline export path", listOf("Parametric EQ", "Bass & EQ", "Voice Changer", "Noise Reduction", "Reverb & Echo", "Compressor", "Vocal Isolation", "Audio Recording"))
+    AudioProcessingPanel(settings, onSettingsChange)
+    Text("EQ, bass and compression use Android's per-audio-session DynamicsProcessing effect in live preview where supported. Settings are saved with the project; offline export processing is not connected yet.", color = Color(0xFF9AA4B8), fontSize = 10.sp)
+}
+
+@Composable
+private fun AudioProcessingPanel(settings: AudioProcessingSettings, onChange: (AudioProcessingSettings) -> Unit) {
+    var draft by remember(settings) { mutableStateOf(settings) }
+    LaunchedEffect(settings) { draft = settings }
+    val labels = listOf("80 Hz", "250 Hz", "1 kHz", "4 kHz", "12 kHz")
+    Card(Modifier.fillMaxWidth().padding(top = 14.dp, bottom = 12.dp),
+        colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(18.dp)) {
+        Column(Modifier.fillMaxWidth().padding(15.dp)) {
+            Text("LIVE AUDIO PROCESSING", color = Mint, fontWeight = FontWeight.Bold, fontSize = 11.sp, letterSpacing = 1.sp)
+            Text("Five-band EQ • bass boost • dynamics", color = Color(0xFF9AA4B8), fontSize = 10.sp, modifier = Modifier.padding(top = 3.dp, bottom = 12.dp))
+            labels.forEachIndexed { index, label ->
+                val gain = draft.eqGainsDb[index]
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(label, color = Color.White, fontSize = 11.sp, modifier = Modifier.weight(1f))
+                    Text("%+.1f dB".format(gain), color = Mint, fontSize = 10.sp)
+                }
+                Slider(value = gain,
+                    onValueChange = { next -> draft = draft.copy(eqGainsDb = draft.eqGainsDb.toMutableList().also { it[index] = next }) },
+                    onValueChangeFinished = { onChange(draft) }, valueRange = -12f..12f,
+                    colors = SliderDefaults.colors(thumbColor = Mint, activeTrackColor = Mint))
+            }
+            Divider(color = Color(0xFF30384A))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Bass boost", color = Color.White, fontSize = 11.sp, modifier = Modifier.weight(1f))
+                Text("+%.1f dB".format(draft.bassBoostDb), color = Mint, fontSize = 10.sp)
+            }
+            Slider(value = draft.bassBoostDb, onValueChange = { draft = draft.copy(bassBoostDb = it) },
+                onValueChangeFinished = { onChange(draft) }, valueRange = 0f..12f,
+                colors = SliderDefaults.colors(thumbColor = Mint, activeTrackColor = Mint))
+            Divider(color = Color(0xFF30384A))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Compressor", color = Color.White, fontSize = 11.sp, modifier = Modifier.weight(1f))
+                Text("${(draft.compressorAmount * 100).toInt()}%", color = Mint, fontSize = 10.sp)
+            }
+            Slider(value = draft.compressorAmount, onValueChange = { draft = draft.copy(compressorAmount = it) },
+                onValueChangeFinished = { onChange(draft) }, valueRange = 0f..1f,
+                colors = SliderDefaults.colors(thumbColor = Mint, activeTrackColor = Mint))
+            Text("Changes are saved when you release a slider.", color = Color(0xFF7F8BA2), fontSize = 9.sp)
+        }
+    }
 }
 
 @Composable

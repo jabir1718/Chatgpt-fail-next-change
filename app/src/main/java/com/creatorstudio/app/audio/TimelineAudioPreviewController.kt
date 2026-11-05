@@ -1,11 +1,16 @@
 package com.creatorstudio.app.audio
 
 import android.content.Context
+import android.media.AudioManager
+import android.media.audiofx.DynamicsProcessing
+import android.os.Build
 import android.net.Uri
 import android.os.SystemClock
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.common.util.UnstableApi
+import com.creatorstudio.app.editor.AudioProcessingSettings
 import com.creatorstudio.app.editor.EditorProject
 import com.creatorstudio.app.editor.MediaKind
 import com.creatorstudio.app.editor.TimelinePlaybackPlan
@@ -18,14 +23,18 @@ import com.creatorstudio.app.editor.pitchRatio
  * combine concurrent sources while this controller keeps their source positions
  * aligned to one monotonic timeline clock.
  */
+@OptIn(UnstableApi::class)
 class TimelineAudioPreviewController(context: Context) {
     private data class ActiveSource(
         val player: ExoPlayer,
-        val uri: String
+        val uri: String,
+        val audioSessionId: Int,
+        var appliedProcessing: AudioProcessingSettings
     )
 
     private val appContext = context.applicationContext
     private val activePlayers = linkedMapOf<String, ActiveSource>()
+    private val audioProcessor = AndroidAudioProcessor()
     private var anchorTimelineMs = 0L
     private var anchorRealtimeMs = 0L
     var isPlaying: Boolean = false
@@ -69,6 +78,7 @@ class TimelineAudioPreviewController(context: Context) {
         isPlaying = false
         activePlayers.values.forEach { source ->
             source.player.playWhenReady = false
+            audioProcessor.release(source.audioSessionId)
             source.player.release()
         }
         activePlayers.clear()
@@ -88,7 +98,10 @@ class TimelineAudioPreviewController(context: Context) {
 
         val removedIds = activePlayers.keys.filterNot { it in desired }
         removedIds.forEach { id ->
-            activePlayers.remove(id)?.player?.release()
+            activePlayers.remove(id)?.let { source ->
+                audioProcessor.release(source.audioSessionId)
+                source.player.release()
+            }
         }
 
         desired.values.forEach { scheduled ->
@@ -99,12 +112,19 @@ class TimelineAudioPreviewController(context: Context) {
             val existing = activePlayers[clip.id]
             val isNew = existing == null || existing.uri != asset.uri
             val activeSource = if (isNew) {
-                existing?.player?.release()
+                existing?.let { old ->
+                    audioProcessor.release(old.audioSessionId)
+                    old.player.release()
+                }
                 val player = ExoPlayer.Builder(appContext).build()
-                val created = ActiveSource(player, asset.uri)
+                val audioManager = appContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+                val sessionId = runCatching { audioManager.generateAudioSessionId() }.getOrDefault(0)
+                if (sessionId > 0) player.setAudioSessionId(sessionId)
+                val created = ActiveSource(player, asset.uri, sessionId, project.audioProcessing)
                 activePlayers[clip.id] = created
                 player.setMediaItem(MediaItemFactory.create(Uri.parse(asset.uri), asset.mimeType))
                 player.prepare()
+                if (sessionId > 0) audioProcessor.apply(sessionId, project.audioProcessing)
                 player.seekTo(scheduled.sourcePositionMs)
                 created
             } else {
@@ -116,6 +136,10 @@ class TimelineAudioPreviewController(context: Context) {
                 current
             }
 
+            if (activeSource.appliedProcessing != project.audioProcessing) {
+                if (activeSource.audioSessionId > 0) audioProcessor.apply(activeSource.audioSessionId, project.audioProcessing)
+                activeSource.appliedProcessing = project.audioProcessing
+            }
             val player = activeSource.player
             player.volume = scheduled.effectiveVolume.coerceIn(0f, 1f)
             player.playbackParameters = PlaybackParameters(

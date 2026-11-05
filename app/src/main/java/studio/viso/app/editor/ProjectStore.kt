@@ -120,6 +120,11 @@ class ProjectStore(context: Context) {
             put("foregroundScale", project.visualizer.foregroundScale)
             put("beatSensitivity", project.visualizer.beatSensitivity)
         })
+        put("audioProcessing", JSONObject().apply {
+            put("eqGainsDb", JSONArray().apply { project.audioProcessing.eqGainsDb.forEach { put(it) } })
+            put("bassBoostDb", project.audioProcessing.bassBoostDb)
+            put("compressorAmount", project.audioProcessing.compressorAmount)
+        })
     }
 
     private fun assetJson(asset: MediaAsset) = JSONObject().apply {
@@ -179,6 +184,11 @@ class ProjectStore(context: Context) {
             )
         }
         val visualizerJson = json.optJSONObject("visualizer") ?: JSONObject()
+        val audioProcessingJson = json.optJSONObject("audioProcessing") ?: JSONObject()
+        val storedEq = audioProcessingJson.optJSONArray("eqGainsDb")
+        val eqGains = if (storedEq != null && storedEq.length() == 5) {
+            (0 until 5).map { storedEq.optDouble(it, 0.0).toFloat().coerceIn(-12f, 12f) }
+        } else AudioProcessingSettings().eqGainsDb
         return EditorProject(
             id = json.getString("id"), name = json.optString("name", "Untitled Project"),
             width = json.optInt("width", 1080), height = json.optInt("height", 1920),
@@ -192,6 +202,11 @@ class ProjectStore(context: Context) {
                 mode = visualizerJson.optString("mode", "Spectrum"),
                 foregroundScale = visualizerJson.optDouble("foregroundScale", 1.0).toFloat(),
                 beatSensitivity = visualizerJson.optDouble("beatSensitivity", 1.08).toFloat()
+            ),
+            audioProcessing = AudioProcessingSettings(
+                eqGainsDb = eqGains,
+                bassBoostDb = audioProcessingJson.optDouble("bassBoostDb", 0.0).toFloat().coerceIn(0f, 12f),
+                compressorAmount = audioProcessingJson.optDouble("compressorAmount", 0.0).toFloat().coerceIn(0f, 1f)
             )
         )
     }
@@ -236,7 +251,7 @@ class ProjectStore(context: Context) {
     private fun JSONObject.stringOrNull(key: String): String? =
         if (isNull(key) || !has(key)) null else optString(key)
 
-    companion object { const val SCHEMA_VERSION = 3 }
+    companion object { const val SCHEMA_VERSION = 4 }
 }
 
 data class ProjectSummary(val id: String, val name: String, val updatedAtEpochMs: Long)
