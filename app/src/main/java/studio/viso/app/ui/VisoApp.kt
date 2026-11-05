@@ -346,6 +346,8 @@ fun CreatorStudioApp() {
                         }
                         val selectedClip = project.tracks.asSequence().flatMap { it.clips.asSequence() }.firstOrNull { it.id == selectedClipId }
                         if (selectedClip != null) {
+                            player.seekTo(selectedClip.sourceStartMs)
+                            playheadMs = selectedClip.timelineStartMs
                             player.volume = if (selectedClip.audio.muted) 0f else selectedClip.audio.volume.coerceIn(0f, 1f)
                             player.playbackParameters = PlaybackParameters(selectedClip.audio.playbackRate, 1f)
                         }
@@ -405,7 +407,14 @@ fun CreatorStudioApp() {
                         val clip = project.tracks.asSequence().flatMap { it.clips.asSequence() }.firstOrNull { it.id == selectedClipId }
                         if (clip != null) player.seekTo((clip.sourceStartMs + (next - clip.timelineStartMs).coerceAtLeast(0L)).coerceIn(clip.sourceStartMs, clip.sourceEndMs))
                     },
-                    onProjectChange = { commitProject(it) },
+                    onProjectChange = { next ->
+                        val activeClip = next.tracks.asSequence().flatMap { it.clips.asSequence() }.firstOrNull { it.id == selectedClipId }
+                        if (activeClip != null) {
+                            player.volume = if (activeClip.audio.muted) 0f else activeClip.audio.volume.coerceIn(0f, 1f)
+                            player.playbackParameters = PlaybackParameters(activeClip.audio.playbackRate, 1f)
+                        }
+                        commitProject(next)
+                    },
                     onUndo = { undoProject() },
                     onRedo = { redoProject() }
                 )
