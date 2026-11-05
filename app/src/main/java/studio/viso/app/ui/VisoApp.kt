@@ -6,6 +6,7 @@ import android.net.Uri
 import android.media.MediaMetadataRetriever
 import android.media.AudioManager
 import android.graphics.BitmapFactory
+import android.view.TextureView
 import android.provider.OpenableColumns
 import java.io.File
 import java.util.UUID
@@ -15,6 +16,8 @@ import androidx.core.content.ContextCompat
 import com.creatorstudio.app.audio.AudioReactiveEngine
 import com.creatorstudio.app.audio.AndroidAudioProcessor
 import com.creatorstudio.app.audio.TimelineAudioPreviewController
+import com.creatorstudio.app.audio.TimelineVideoPreviewController
+import com.creatorstudio.app.audio.TimelineVideoPreviewLayer
 import com.creatorstudio.app.audio.WaveformRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -68,6 +71,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -258,6 +262,8 @@ fun CreatorStudioApp() {
     }
     val selectedAudioProcessor = remember { AndroidAudioProcessor() }
     val timelineAudioPreview = remember(context) { TimelineAudioPreviewController(context) }
+    val timelineVideoPreview = remember(context) { TimelineVideoPreviewController(context) }
+    var timelineVideoLayers by remember { mutableStateOf(emptyList<TimelineVideoPreviewLayer>()) }
     val audioReactiveEngine = remember {
         AudioReactiveEngine(
             onSpectrum = { spectrumLevels = it },
@@ -434,21 +440,26 @@ fun CreatorStudioApp() {
     LaunchedEffect(timelineMixing, project) {
         while (timelineMixing) {
             val nextPosition = timelineAudioPreview.update(project)
+            val videoSnapshot = timelineVideoPreview.update(project)
+            timelineVideoLayers = videoSnapshot.layers
             playheadMs = nextPosition
             if (!timelineAudioPreview.isPlaying) {
+                timelineVideoPreview.stop()
+                timelineVideoLayers = emptyList()
                 timelineMixing = false
                 isPlaying = false
                 player.volume = volume
-                status = "Timeline audio preview finished"
+                status = "Timeline playback finished"
             }
             delay(60)
         }
     }
 
-    DisposableEffect(player, timelineAudioPreview, selectedAudioProcessor) {
+    DisposableEffect(player, timelineAudioPreview, timelineVideoPreview, selectedAudioProcessor) {
         onDispose {
             audioReactiveEngine.stop()
             timelineAudioPreview.release()
+            timelineVideoPreview.release()
             if (selectedAudioSessionId > 0) selectedAudioProcessor.release(selectedAudioSessionId)
             player.release()
         }
@@ -595,6 +606,7 @@ fun CreatorStudioApp() {
             when (selectedTab) {
                 0 -> StudioPage(
                     media = media, selectedIndex = selectedIndex, player = player,
+                    timelineVideoLayers = timelineVideoLayers, timelineMixing = timelineMixing,
                     projectName = project.name,
                     canvasWidth = project.width, canvasHeight = project.height,
                     onCanvasChange = { width, height -> commitProject(project.copy(width = width, height = height, updatedAtEpochMs = System.currentTimeMillis())) },
@@ -640,6 +652,8 @@ fun CreatorStudioApp() {
                     onPlay = {
                         if (timelineMixing) {
                             playheadMs = timelineAudioPreview.pause()
+                            timelineVideoPreview.pause()
+                            timelineVideoLayers = timelineVideoPreview.snapshot().layers
                             timelineMixing = false
                             isPlaying = false
                             player.volume = volume
@@ -648,9 +662,10 @@ fun CreatorStudioApp() {
                             player.pause()
                             player.volume = 0f
                             timelineAudioPreview.play(project, playheadMs)
+                            timelineVideoLayers = timelineVideoPreview.play(project, playheadMs).layers
                             timelineMixing = timelineAudioPreview.isPlaying
                             isPlaying = timelineMixing
-                            status = if (timelineMixing) "Playing all active timeline audio clips" else "No audible clips at this playhead"
+                            status = if (timelineMixing) "Playing synchronized timeline video and audio clips" else "No audible clips at this playhead"
                         } else status = "Add an audio or video clip to the timeline first"
                     },
                     volume = volume, onVolume = { volume = it; player.volume = it },
@@ -757,6 +772,7 @@ fun CreatorStudioApp() {
                         playheadMs = next
                         if (timelineMixing) {
                             timelineAudioPreview.seek(project, next)
+                            timelineVideoLayers = timelineVideoPreview.seek(project, next).layers
                         } else {
                             val clip = project.tracks.asSequence().flatMap { it.clips.asSequence() }.firstOrNull { it.id == selectedClipId }
                             if (clip != null) player.seekTo((clip.sourceStartMs + (next - clip.timelineStartMs).coerceAtLeast(0L)).coerceIn(clip.sourceStartMs, clip.sourceEndMs))
@@ -802,6 +818,7 @@ private fun Header() {
 @Composable
 private fun StudioPage(
     media: List<StudioMedia>, selectedIndex: Int, player: ExoPlayer, isPlaying: Boolean, status: String,
+    timelineVideoLayers: List<TimelineVideoPreviewLayer>, timelineMixing: Boolean,
     projectName: String, canvasWidth: Int, canvasHeight: Int, onCanvasChange: (Int, Int) -> Unit,
     onAddVideo: () -> Unit, onAddAudio: () -> Unit, onAddImage: () -> Unit,
     onSelect: (StudioMedia) -> Unit, onDelete: (Int) -> Unit, onPlay: () -> Unit,
@@ -828,7 +845,7 @@ private fun StudioPage(
         }
     }
     Spacer(Modifier.height(12.dp))
-    PreviewStage(player, media.getOrNull(selectedIndex), isPlaying, onPlay, canvasWidth.toFloat() / canvasHeight.toFloat())
+    PreviewStage(player, media.getOrNull(selectedIndex), isPlaying, onPlay, canvasWidth.toFloat() / canvasHeight.toFloat(), timelineVideoLayers, timelineMixing)
     Text(status, color = Mint, fontSize = 10.sp, modifier = Modifier.padding(vertical = 7.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(7.dp), modifier = Modifier.fillMaxWidth()) {
         Button(onClick = onAddVideo, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Violet), contentPadding = PaddingValues(horizontal = 8.dp, vertical = 11.dp)) {
@@ -875,7 +892,10 @@ private fun StudioPage(
 }
 
 @Composable
-private fun PreviewStage(player: ExoPlayer, item: StudioMedia?, isPlaying: Boolean, onPlay: () -> Unit, aspectRatio: Float) {
+private fun PreviewStage(
+    player: ExoPlayer, item: StudioMedia?, isPlaying: Boolean, onPlay: () -> Unit, aspectRatio: Float,
+    timelineVideoLayers: List<TimelineVideoPreviewLayer>, timelineMixing: Boolean
+) {
     val context = LocalContext.current
     val selectedImageUri = item?.takeIf { it.kind == "IMAGE" }?.uri
     val imageBitmap by produceState<ImageBitmap?>(initialValue = null, key1 = selectedImageUri) {
@@ -894,7 +914,29 @@ private fun PreviewStage(player: ExoPlayer, item: StudioMedia?, isPlaying: Boole
     Box(Modifier.fillMaxWidth().wrapContentWidth(Alignment.CenterHorizontally).widthIn(max = 300.dp).aspectRatio(aspectRatio)
         .clip(RoundedCornerShape(22.dp)).background(Color(0xFF111827))
         .border(1.dp, Color(0xFF51447B), RoundedCornerShape(22.dp))) {
-        when (item?.kind) {
+        if (timelineMixing) {
+            if (timelineVideoLayers.isNotEmpty()) {
+                timelineVideoLayers.forEach { layer ->
+                    androidx.compose.runtime.key(layer.clipId) {
+                        AndroidView(
+                            factory = { ctx -> TextureView(ctx).also { layer.player.setVideoTextureView(it) } },
+                            update = { layer.player.setVideoTextureView(it) },
+                            modifier = Modifier.fillMaxSize().graphicsLayer {
+                                scaleX = layer.transform.scaleX
+                                scaleY = layer.transform.scaleY
+                                rotationZ = layer.transform.rotationDegrees
+                                alpha = layer.transform.opacity.coerceIn(0f, 1f)
+                                translationX = layer.transform.x
+                                translationY = layer.transform.y
+                            }
+                        )
+                    }
+                }
+            } else {
+                Text("TIMELINE PLAYBACK • NO VIDEO AT THIS POSITION", color = Color(0xFFB9C2D5), fontSize = 9.sp,
+                    modifier = Modifier.align(Alignment.Center))
+            }
+        } else when (item?.kind) {
             "VIDEO" -> AndroidView(factory = { ctx -> PlayerView(ctx).apply { this.player = player; useController = true } },
                 update = { it.player = player }, modifier = Modifier.fillMaxSize())
             "IMAGE" -> {
