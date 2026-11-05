@@ -69,8 +69,12 @@ data class TimelineTrack(
     val kind: TrackKind,
     val muted: Boolean = false,
     val locked: Boolean = false,
-    val clips: List<TimelineClip> = emptyList()
-)
+    val clips: List<TimelineClip> = emptyList(),
+    val gain: Float = 1f,
+    val solo: Boolean = false
+) {
+    init { require(gain in 0f..1f) { "Track gain must be between 0 and 1" } }
+}
 
 data class MediaAsset(
     val id: String = UUID.randomUUID().toString(),
@@ -331,6 +335,19 @@ object TimelineEditor {
         val track = project.tracks.firstOrNull { it.id == trackId } ?: error("Track not found")
         return project.copy(updatedAtEpochMs = System.currentTimeMillis(),
             tracks = project.tracks.map { if (it.id == trackId) track.copy(muted = muted) else it })
+    }
+
+    fun setTrackGain(project: EditorProject, trackId: String, gain: Float): EditorProject {
+        require(gain in 0f..1f) { "Track gain must be between 0 and 1" }
+        val track = project.tracks.firstOrNull { it.id == trackId } ?: error("Track not found")
+        return project.copy(updatedAtEpochMs = System.currentTimeMillis(),
+            tracks = project.tracks.map { if (it.id == trackId) track.copy(gain = gain) else it })
+    }
+
+    fun setTrackSolo(project: EditorProject, trackId: String, solo: Boolean): EditorProject {
+        val track = project.tracks.firstOrNull { it.id == trackId } ?: error("Track not found")
+        return project.copy(updatedAtEpochMs = System.currentTimeMillis(),
+            tracks = project.tracks.map { if (it.id == trackId) track.copy(solo = solo) else it })
     }
 
     fun deleteClip(project: EditorProject, clipId: String): EditorProject {

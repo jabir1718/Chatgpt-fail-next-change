@@ -131,6 +131,7 @@ class ProjectStore(context: Context) {
     private fun trackJson(track: TimelineTrack) = JSONObject().apply {
         put("id", track.id); put("name", track.name); put("kind", track.kind.name)
         put("muted", track.muted); put("locked", track.locked)
+        put("gain", track.gain); put("solo", track.solo)
         put("clips", JSONArray().apply { track.clips.forEach { put(clipJson(it)) } })
     }
 
@@ -172,7 +173,9 @@ class ProjectStore(context: Context) {
                 id = item.getString("id"), name = item.getString("name"),
                 kind = TrackKind.valueOf(item.getString("kind")), muted = item.optBoolean("muted"),
                 locked = item.optBoolean("locked"),
-                clips = item.getJSONArray("clips").mapObjects { clip -> decodeClip(clip) }
+                clips = item.getJSONArray("clips").mapObjects { clip -> decodeClip(clip) },
+                gain = item.optDouble("gain", 1.0).toFloat().coerceIn(0f, 1f),
+                solo = item.optBoolean("solo", false)
             )
         }
         val visualizerJson = json.optJSONObject("visualizer") ?: JSONObject()
@@ -233,7 +236,7 @@ class ProjectStore(context: Context) {
     private fun JSONObject.stringOrNull(key: String): String? =
         if (isNull(key) || !has(key)) null else optString(key)
 
-    companion object { const val SCHEMA_VERSION = 2 }
+    companion object { const val SCHEMA_VERSION = 3 }
 }
 
 data class ProjectSummary(val id: String, val name: String, val updatedAtEpochMs: Long)

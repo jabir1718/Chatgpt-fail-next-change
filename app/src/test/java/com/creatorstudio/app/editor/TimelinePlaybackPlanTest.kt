@@ -58,6 +58,44 @@ class TimelinePlaybackPlanTest {
     }
 
     @Test
+    fun trackGainScalesClipVolumeAndMuteAndSoloRulesAreApplied() {
+        val asset = MediaAsset(uri = "content://audio/gain", displayName = "music.mp3", kind = MediaKind.AUDIO)
+        val clipA = TimelineClip(mediaId = asset.id, kind = MediaKind.AUDIO, timelineStartMs = 0L, durationMs = 5_000L,
+            audio = ClipAudioSettings(volume = 0.8f))
+        val clipB = clipA.copy(id = "clip-b")
+        val trackA = TimelineTrack(id = "a", name = "Music", kind = TrackKind.AUDIO, gain = 0.5f, clips = listOf(clipA))
+        val trackB = TimelineTrack(id = "b", name = "Voice", kind = TrackKind.AUDIO, clips = listOf(clipB))
+        val project = EditorProject(assets = listOf(asset), tracks = listOf(trackA, trackB))
+
+        val mixed = TimelinePlaybackPlan.at(project, 1_000L)
+        assertEquals(0.4f, mixed.audioClips.first { it.trackId == "a" }.effectiveVolume, 0.0001f)
+        assertEquals(0.8f, mixed.audioClips.first { it.trackId == "b" }.effectiveVolume, 0.0001f)
+
+        val soloProject = project.copy(tracks = listOf(trackA.copy(solo = true), trackB))
+        val soloPlan = TimelinePlaybackPlan.at(soloProject, 1_000L)
+        assertEquals(1, soloPlan.audioClips.size)
+        assertEquals("a", soloPlan.audioClips.single().trackId)
+
+        val mutedSolo = soloProject.copy(tracks = listOf(trackA.copy(muted = true, solo = true), trackB))
+        assertTrue(TimelinePlaybackPlan.at(mutedSolo, 1_000L).audioClips.isEmpty())
+    }
+
+    @Test
+    fun trackGainAndSoloEditsReturnUpdatedTrackWithoutChangingClipSettings() {
+        val asset = MediaAsset(uri = "content://audio/edit", displayName = "edit.mp3", kind = MediaKind.AUDIO)
+        val clip = TimelineClip(mediaId = asset.id, kind = MediaKind.AUDIO, timelineStartMs = 0L, durationMs = 2_000L)
+        val track = TimelineTrack(id = "mix", name = "Mix", kind = TrackKind.AUDIO, clips = listOf(clip))
+        val project = EditorProject(assets = listOf(asset), tracks = listOf(track))
+
+        val gained = TimelineEditor.setTrackGain(project, "mix", 0.35f)
+        val soloed = TimelineEditor.setTrackSolo(gained, "mix", true)
+
+        assertEquals(0.35f, soloed.tracks.single().gain, 0.0001f)
+        assertTrue(soloed.tracks.single().solo)
+        assertEquals(1f, soloed.tracks.single().clips.single().audio.volume)
+    }
+
+    @Test
     fun imageAndTextClipsNeverEnterAudioMix() {
         val image = MediaAsset(uri = "content://image/1", displayName = "cover.png", kind = MediaKind.IMAGE)
         val text = MediaAsset(uri = "content://text/1", displayName = "caption", kind = MediaKind.TEXT)

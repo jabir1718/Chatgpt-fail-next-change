@@ -118,15 +118,15 @@ fun TimelinePanel(
         Spacer(Modifier.height(8.dp))
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
             Column {
-                Row(Modifier.padding(start = 82.dp, bottom = 5.dp)) {
+                Row(Modifier.padding(start = 86.dp, bottom = 5.dp)) {
                     (0..totalSeconds step tickStep).forEach { second ->
                         Text("${second}s", color = Color(0xFF8996AC), fontSize = 8.sp,
                             modifier = Modifier.width((tickStep * pixelsPerSecond).dp))
                     }
                 }
                 project.tracks.forEach { track ->
-                    Row(Modifier.height(48.dp).padding(bottom = 5.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.width(78.dp), verticalArrangement = Arrangement.Center) {
+                    Row(Modifier.height(62.dp).padding(bottom = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.width(82.dp), verticalArrangement = Arrangement.Center) {
                             Text(track.name.uppercase(), color = if (track.locked) Color(0xFFFFC45C) else Color(0xFFADB8CC), fontSize = 8.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 IconButton(onClick = { onProjectChange(TimelineEditor.setTrackLocked(project, track.id, !track.locked)) }, modifier = Modifier.size(20.dp)) {
@@ -135,6 +135,19 @@ fun TimelinePanel(
                                 IconButton(onClick = { onProjectChange(TimelineEditor.setTrackMuted(project, track.id, !track.muted)) }, modifier = Modifier.size(20.dp)) {
                                     Icon(if (track.muted) Icons.Default.VolumeOff else Icons.Default.VolumeUp, contentDescription = if (track.muted) "Unmute track" else "Mute track", tint = if (track.muted) Color(0xFFFFC45C) else Color(0xFF8996AC), modifier = Modifier.size(12.dp))
                                 }
+                                TextButton(onClick = { onProjectChange(TimelineEditor.setTrackSolo(project, track.id, !track.solo)) }, contentPadding = PaddingValues(0.dp), modifier = Modifier.height(20.dp)) {
+                                    Text(if (track.solo) "S" else "s", color = if (track.solo) Color(0xFFFFC45C) else Color(0xFF8996AC), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                            if (track.kind == TrackKind.AUDIO || track.kind == TrackKind.VIDEO) {
+                                Text("${(track.gain * 100).toInt()}%", color = TimelineAccent, fontSize = 7.sp)
+                                Slider(
+                                    value = track.gain,
+                                    onValueChange = { gain -> onProjectChange(TimelineEditor.setTrackGain(project, track.id, gain)) },
+                                    valueRange = 0f..1f,
+                                    modifier = Modifier.width(78.dp).height(18.dp),
+                                    colors = SliderDefaults.colors(thumbColor = TimelineAccent, activeTrackColor = TimelineAccent)
+                                )
                             }
                         }
                         Box(Modifier.height(40.dp).width((totalSeconds * pixelsPerSecond).dp)

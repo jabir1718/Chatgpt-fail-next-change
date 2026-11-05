@@ -9,6 +9,8 @@ data class ScheduledClip(
     val trackId: String,
     val trackKind: TrackKind,
     val trackMuted: Boolean,
+    val trackGain: Float,
+    val trackSolo: Boolean,
     val sourcePositionMs: Long,
     val effectiveVolume: Float,
     val audible: Boolean
@@ -23,6 +25,8 @@ data class TimelinePlaybackPlan(
     companion object {
         fun at(project: EditorProject, playheadMs: Long): TimelinePlaybackPlan {
             require(playheadMs >= 0L) { "Playhead cannot be negative" }
+            val soloTrackIds = project.tracks.filter { it.solo }.mapTo(hashSetOf()) { it.id }
+            val hasSolo = soloTrackIds.isNotEmpty()
             val active = project.tracks.flatMap { track ->
                 track.clips.asSequence()
                     .filter { playheadMs >= it.timelineStartMs && playheadMs < it.timelineEndMs }
@@ -33,7 +37,7 @@ data class TimelinePlaybackPlan(
                         val sourcePosition = (clip.sourceStartMs + sourceElapsed)
                             .coerceIn(clip.sourceStartMs, clip.sourceEndMs)
                         val hasAudio = clip.kind == MediaKind.AUDIO || clip.kind == MediaKind.VIDEO
-                        val muted = clip.audio.muted || track.muted
+                        val muted = clip.audio.muted || track.muted || (hasSolo && track.id !in soloTrackIds)
                         val fadeGain = fadeEnvelope(
                             elapsedMs = elapsed,
                             durationMs = clip.durationMs,
@@ -45,9 +49,11 @@ data class TimelinePlaybackPlan(
                             trackId = track.id,
                             trackKind = track.kind,
                             trackMuted = track.muted,
+                            trackGain = track.gain,
+                            trackSolo = track.solo,
                             sourcePositionMs = sourcePosition,
-                            effectiveVolume = if (hasAudio && !muted) clip.audio.volume * fadeGain else 0f,
-                            audible = hasAudio && !muted && clip.audio.volume > 0f
+                            effectiveVolume = if (hasAudio && !muted) clip.audio.volume * track.gain * fadeGain else 0f,
+                            audible = hasAudio && !muted && clip.audio.volume > 0f && track.gain > 0f
                         )
                     }
             }.sortedWith(compareBy<ScheduledClip> { it.trackKind.ordinal }.thenBy { it.clip.timelineStartMs })
