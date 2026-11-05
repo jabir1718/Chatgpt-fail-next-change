@@ -28,7 +28,7 @@ class AudioReactiveEngine(
             effect.captureSize = range[1]
             effect.setDataCaptureListener(
                 object : Visualizer.OnDataCaptureListener {
-                    override fun onWaveFormCapture(
+                    override fun onWaveFormDataCapture(
                         visualizer: Visualizer?,
                         waveform: ByteArray?,
                         samplingRate: Int
@@ -38,7 +38,7 @@ class AudioReactiveEngine(
                         onWaveform(samples)
                     }
 
-                    override fun onFftCapture(
+                    override fun onFftDataCapture(
                         visualizer: Visualizer?,
                         fft: ByteArray?,
                         samplingRate: Int
