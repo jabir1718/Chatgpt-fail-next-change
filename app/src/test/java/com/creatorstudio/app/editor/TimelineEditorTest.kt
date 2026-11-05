@@ -137,6 +137,21 @@ class TimelineEditorTest {
     }
 
     @Test
+    fun movingClipOnLockedTrackIsRejected() {
+        val (project, clip) = fixture()
+        val locked = project.copy(tracks = project.tracks.map { it.copy(locked = true) })
+        val error = runCatching { TimelineEditor.moveClip(locked, clip.id, 2_000L) }.exceptionOrNull()
+        assertTrue(error is IllegalArgumentException)
+    }
+
+    @Test
+    fun movingClipBeforeTimelineZeroIsRejected() {
+        val (project, clip) = fixture()
+        val error = runCatching { TimelineEditor.moveClip(project, clip.id, -1L) }.exceptionOrNull()
+        assertTrue(error is IllegalArgumentException)
+    }
+
+    @Test
     fun deleteClipRemovesOnlyTheTimelineClip() {
         val (project, clip, asset) = fixture()
         val result = TimelineEditor.deleteClip(project, clip.id)
