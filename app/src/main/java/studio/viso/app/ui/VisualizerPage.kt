@@ -11,6 +11,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -55,8 +56,10 @@ fun VisualizerPage(
     val foregroundAsset = images.firstOrNull { it.id == settings.foregroundAssetId }
     val backgroundBitmap = rememberProjectBitmap(backgroundAsset?.uri)
     val foregroundBitmap = rememberProjectBitmap(foregroundAsset?.uri)
+    var foregroundScale by remember(settings.foregroundAssetId, settings.foregroundScale) { mutableFloatStateOf(settings.foregroundScale) }
+    var beatSensitivity by remember(settings.foregroundAssetId, settings.beatSensitivity) { mutableFloatStateOf(settings.beatSensitivity) }
     val pulseScale by animateFloatAsState(
-        if (beatPulse % 2 == 0) 1f else settings.beatSensitivity,
+        if (beatPulse % 2 == 0) 1f else beatSensitivity,
         label = "foreground-beat-pulse"
     )
 
@@ -131,17 +134,19 @@ fun VisualizerPage(
             )
         }
         if (foregroundAsset != null) {
-            Text("FOREGROUND SCALE  ${"%.2f".format(settings.foregroundScale)}×", color = Color(0xFFB7C4D8), fontSize = 9.sp)
+            Text("FOREGROUND SCALE  ${"%.2f".format(foregroundScale)}×", color = Color(0xFFB7C4D8), fontSize = 9.sp)
             Slider(
-                value = settings.foregroundScale,
-                onValueChange = { onSettingsChange(settings.copy(foregroundScale = it)) },
+                value = foregroundScale,
+                onValueChange = { foregroundScale = it },
+                onValueChangeFinished = { onSettingsChange(settings.copy(foregroundScale = foregroundScale)) },
                 valueRange = 0.5f..2f,
                 colors = SliderDefaults.colors(thumbColor = VisualViolet, activeTrackColor = VisualViolet)
             )
-            Text("BEAT RESPONSE  ${"%.2f".format(settings.beatSensitivity)}×", color = Color(0xFFB7C4D8), fontSize = 9.sp)
+            Text("BEAT RESPONSE  ${"%.2f".format(beatSensitivity)}×", color = Color(0xFFB7C4D8), fontSize = 9.sp)
             Slider(
-                value = settings.beatSensitivity,
-                onValueChange = { onSettingsChange(settings.copy(beatSensitivity = it)) },
+                value = beatSensitivity,
+                onValueChange = { beatSensitivity = it },
+                onValueChangeFinished = { onSettingsChange(settings.copy(beatSensitivity = beatSensitivity)) },
                 valueRange = 1f..1.5f,
                 colors = SliderDefaults.colors(thumbColor = VisualViolet, activeTrackColor = VisualViolet)
             )
