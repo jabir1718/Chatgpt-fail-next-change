@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ContentCut
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Redo
 import androidx.compose.material.icons.filled.Undo
@@ -240,6 +241,14 @@ fun TimelinePanel(
                     }, enabled = playheadMs > selected.timelineStartMs && playheadMs < selected.timelineEndMs,
                     modifier = Modifier.weight(1.2f), contentPadding = PaddingValues(horizontal = 3.dp)
                 ) { Icon(Icons.Default.ContentCut, null, modifier = Modifier.size(14.dp)); Text("Split", fontSize = 9.sp) }
+                OutlinedButton(
+                    onClick = {
+                        val duplicated = TimelineEditor.duplicateClip(project, selected.id)
+                        onProjectChange(duplicated)
+                        onSelectClip(duplicated.tracks.first { row -> row.clips.any { it.id != selected.id && it.timelineStartMs == selected.timelineEndMs && it.mediaId == selected.mediaId } }.clips.first { it.id != selected.id && it.timelineStartMs == selected.timelineEndMs && it.mediaId == selected.mediaId }.id)
+                    },
+                    modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 3.dp)
+                ) { Icon(Icons.Default.ContentCopy, null, modifier = Modifier.size(14.dp)); Text("Copy", fontSize = 9.sp) }
                 OutlinedButton(
                     onClick = { onProjectChange(TimelineEditor.deleteClip(project, selected.id)) },
                     modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 3.dp),
