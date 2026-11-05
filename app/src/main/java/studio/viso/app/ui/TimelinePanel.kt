@@ -16,6 +16,10 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -156,18 +160,22 @@ fun TimelinePanel(
 
 @Composable
 private fun ClipTrimControls(clip: TimelineClip, onTrimStart: (Long) -> Unit, onTrimEnd: (Long) -> Unit) {
+    var startValue by remember(clip.id, clip.timelineStartMs) { mutableFloatStateOf(clip.timelineStartMs.toFloat()) }
+    var endValue by remember(clip.id, clip.timelineEndMs) { mutableFloatStateOf(clip.timelineEndMs.toFloat()) }
     Column(Modifier.fillMaxWidth().padding(top = 6.dp)) {
-        Text("TRIM START  •  ${formatTimelineTime(clip.timelineStartMs)}", color = Color(0xFFB7C4D8), fontSize = 9.sp)
+        Text("TRIM START  •  ${formatTimelineTime(startValue.toLong())}", color = Color(0xFFB7C4D8), fontSize = 9.sp)
         Slider(
-            value = clip.timelineStartMs.toFloat(),
-            onValueChange = { onTrimStart(it.toLong()) },
+            value = startValue,
+            onValueChange = { startValue = it },
+            onValueChangeFinished = { onTrimStart(startValue.toLong()) },
             valueRange = clip.timelineStartMs.toFloat()..(clip.timelineEndMs - 250L).coerceAtLeast(clip.timelineStartMs).toFloat(),
             colors = SliderDefaults.colors(thumbColor = Color(0xFFFFC45C), activeTrackColor = Color(0xFFFFC45C))
         )
-        Text("TRIM END  •  ${formatTimelineTime(clip.timelineEndMs)}", color = Color(0xFFB7C4D8), fontSize = 9.sp)
+        Text("TRIM END  •  ${formatTimelineTime(endValue.toLong())}", color = Color(0xFFB7C4D8), fontSize = 9.sp)
         Slider(
-            value = clip.timelineEndMs.toFloat(),
-            onValueChange = { onTrimEnd(it.toLong()) },
+            value = endValue,
+            onValueChange = { endValue = it },
+            onValueChangeFinished = { onTrimEnd(endValue.toLong()) },
             valueRange = (clip.timelineStartMs + 250L).toFloat()..clip.timelineEndMs.toFloat(),
             colors = SliderDefaults.colors(thumbColor = Color(0xFFFFC45C), activeTrackColor = Color(0xFFFFC45C))
         )
@@ -184,18 +192,20 @@ private fun ClipAudioControls(
     clip: TimelineClip,
     onSettingsChange: (studio.viso.app.editor.ClipAudioSettings) -> Unit
 ) {
+    var volumeValue by remember(clip.id, clip.audio.volume) { mutableFloatStateOf(clip.audio.volume) }
     Column(Modifier.fillMaxWidth().padding(top = 8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("CLIP VOLUME", color = Color(0xFFB7C4D8), fontSize = 9.sp, modifier = Modifier.weight(1f))
-            Text("${(clip.audio.volume * 100).toInt()}%", color = TimelineAccent, fontSize = 9.sp)
+            Text("${(volumeValue * 100).toInt()}%", color = TimelineAccent, fontSize = 9.sp)
             OutlinedButton(
                 onClick = { onSettingsChange(clip.audio.copy(muted = !clip.audio.muted)) },
                 contentPadding = PaddingValues(horizontal = 9.dp, vertical = 2.dp)
             ) { Text(if (clip.audio.muted) "UNMUTE" else "MUTE", fontSize = 8.sp) }
         }
         Slider(
-            value = clip.audio.volume.coerceIn(0f, 2f),
-            onValueChange = { onSettingsChange(clip.audio.copy(volume = it)) },
+            value = volumeValue.coerceIn(0f, 2f),
+            onValueChange = { volumeValue = it },
+            onValueChangeFinished = { onSettingsChange(clip.audio.copy(volume = volumeValue)) },
             valueRange = 0f..2f,
             colors = SliderDefaults.colors(thumbColor = TimelineAccent, activeTrackColor = TimelineAccent)
         )
