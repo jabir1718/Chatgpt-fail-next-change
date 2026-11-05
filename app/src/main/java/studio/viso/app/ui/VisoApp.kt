@@ -152,6 +152,7 @@ fun CreatorStudioApp() {
     var audioExportCancel by remember { mutableStateOf<AtomicBoolean?>(null) }
     var audioExportProgress by remember { mutableFloatStateOf(0f) }
     var audioExportMessage by remember { mutableStateOf("Choose a destination to export the timeline audio mix.") }
+    var exportRetryKind by remember { mutableStateOf<String?>(null) }
 
     val audioMixExportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("audio/mp4")
@@ -181,12 +182,15 @@ fun CreatorStudioApp() {
                             result.file.inputStream().use { input -> input.copyTo(stream) }
                         }
                     }
+                    exportRetryKind = null
                     audioExportMessage = "Audio mix saved successfully."
                 } catch (error: Exception) {
-                    audioExportMessage = if (error is CancellationException) {
-                        "Export cancelled."
+                    if (error is CancellationException) {
+                        exportRetryKind = null
+                        audioExportMessage = "Export cancelled."
                     } else {
-                        "Export failed: ${error.message ?: "Unknown error"}"
+                        exportRetryKind = "audio"
+                        audioExportMessage = "Export failed: ${error.message ?: "Unknown error"}"
                     }
                 } finally {
                     temporaryOutput.delete()
@@ -225,12 +229,15 @@ fun CreatorStudioApp() {
                             result.file.inputStream().use { input -> input.copyTo(stream) }
                         }
                     }
+                    exportRetryKind = null
                     audioExportMessage = "Visualizer MP4 saved successfully."
                 } catch (error: Exception) {
-                    audioExportMessage = if (error is CancellationException) {
-                        "Export cancelled."
+                    if (error is CancellationException) {
+                        exportRetryKind = null
+                        audioExportMessage = "Export cancelled."
                     } else {
-                        "Video export failed: ${error.message ?: "Unknown error"}"
+                        exportRetryKind = "video"
+                        audioExportMessage = "Video export failed: ${error.message ?: "Unknown error"}"
                     }
                 } finally {
                     temporaryOutput.delete()
@@ -695,6 +702,18 @@ fun CreatorStudioApp() {
                     progress = audioExportProgress,
                     message = audioExportMessage,
                     onCancel = { audioExportCancel?.set(true); audioExportMessage = "Cancelling export..." },
+                    onRetry = {
+                        when (exportRetryKind) {
+                            "audio" -> {
+                                val safeName = project.name.replace(Regex("[^A-Za-z0-9_-]"), "_").take(48).ifBlank { "CreatorStudio" }
+                                audioMixExportLauncher.launch("${safeName}_AudioMix.m4a")
+                            }
+                            "video" -> {
+                                val safeName = project.name.replace(Regex("[^A-Za-z0-9_-]"), "_").take(48).ifBlank { "CreatorStudio" }
+                                visualizerVideoExportLauncher.launch("${safeName}_Visualizer.mp4")
+                            }
+                        }
+                    },
                     onExportAudio = {
                         val safeName = project.name.replace(Regex("[^A-Za-z0-9_-]"), "_").take(48).ifBlank { "CreatorStudio" }
                         audioMixExportLauncher.launch("${safeName}_AudioMix.m4a")
@@ -1000,6 +1019,7 @@ private fun ExportPage(
     progress: Float,
     message: String,
     onCancel: () -> Unit,
+    onRetry: () -> Unit,
     onExportAudio: () -> Unit,
     onExportVideo: () -> Unit
 ) {
@@ -1109,6 +1129,11 @@ private fun ExportPage(
             color = if (message.contains("failed", ignoreCase = true)) Pink else Color(0xFF9AA4B8),
             fontSize = 11.sp
         )
+        if (!exporting && message.contains("failed", ignoreCase = true)) {
+            OutlinedButton(onClick = onRetry, modifier = Modifier.fillMaxWidth()) {
+                Text("RETRY EXPORT — CHOOSE SAVE LOCATION")
+            }
+        }
         Text(
             "H.264/AAC encoder availability and render performance depend on the Android device. Source-video frames and decodable embedded audio are included; device codec compatibility, A/V sync and full GPU/3D rendering still need validation.",
             color = Color(0xFF9AA4B8),
