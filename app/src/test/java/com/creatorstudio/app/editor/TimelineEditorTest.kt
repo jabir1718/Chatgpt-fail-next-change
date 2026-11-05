@@ -55,6 +55,27 @@ class TimelineEditorTest {
     }
 
     @Test
+    fun moveClipToCompatibleTrackPreservesClipIdentityAndSourceRange() {
+        val (project, clip) = fixture()
+        val destination = TimelineTrack(name = "Music 2", kind = TrackKind.AUDIO)
+        val withDestination = project.copy(tracks = project.tracks + destination)
+
+        val moved = TimelineEditor.moveClipToTrack(
+            withDestination,
+            clip.id,
+            destination.id,
+            newStartMs = 2_500L
+        )
+
+        assertTrue(moved.tracks.first { it.id == project.tracks.single().id }.clips.isEmpty())
+        val relocated = moved.tracks.first { it.id == destination.id }.clips.single()
+        assertEquals(clip.id, relocated.id)
+        assertEquals(2_500L, relocated.timelineStartMs)
+        assertEquals(clip.sourceStartMs, relocated.sourceStartMs)
+        assertEquals(clip.sourceEndMs, relocated.sourceEndMs)
+    }
+
+    @Test
     fun trimStartAdvancesSourceInPointAndShortensClip() {
         val (project, clip) = fixture()
         val result = TimelineEditor.trimStart(project, clip.id, 1_500L)
