@@ -6,6 +6,7 @@ import android.os.SystemClock
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import com.creatorstudio.app.editor.EditorProject
 import com.creatorstudio.app.editor.MediaKind
@@ -30,6 +31,7 @@ data class TimelineVideoPreviewSnapshot(
     val layers: List<TimelineVideoPreviewLayer>
 )
 
+@OptIn(UnstableApi::class)
 class TimelineVideoPreviewController(context: Context) {
     private data class ActiveVideo(
         val player: ExoPlayer,
