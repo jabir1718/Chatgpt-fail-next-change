@@ -12,13 +12,12 @@ Last updated: 2026-11-05
 
 ## Verified CI evidence
 - Workflow: `.github/workflows/android.yml`
-- Latest fully verified successful run: Run #102, ID `42090082564`, commit `d2c16ebfe42c86c335880ced8711d8e61a3c1a1d`.
-- Run #102 completed successfully: Android SDK setup, `assembleDebug`, and APK artifact upload all succeeded.
-- Verified commit: `cb375e0ea3ab30e5566d8dbfb01b1407af2815a1`.
-- Assemble debug APK job, build step, and artifact upload all succeeded.
-- Artifact: `Creator-Studio-debug-apk`, 19,559,960 bytes; SHA-256 `6a58221b1e0b9d487155f709696ed07d8284a608cb752251ba415c41bfe9128d`.
-- Run #102 includes typed-track creation, compatible cross-track movement, and their safety tests. Subsequent source commits add ripple delete and track mute/lock; these newer commits require their own CI run.
-- Latest source change at this update: `7b8f2b53c3f72c2c46ff662fbc4c437f40b0146c`; its Actions run #98 was pending. Latest source must pass CI before its APK is considered build-verified.
+- Latest fully verified successful run: Run #111, ID `42091206185`, commit `57e63152feea183577b0d12924936d0f92742f3b`.
+- Run #111 completed successfully: Android SDK setup, `assembleDebug`, and APK artifact upload all succeeded.
+- Verified job: `Assemble debug APK`, job ID `127469476929`, conclusion `success`.
+- Artifact: `Creator-Studio-debug-apk`, 19,578,113 bytes, created 2026-11-05 19:11 UTC; artifact is not expired.
+- Run #111 includes the interrupted-save recovery implementation and the preceding timeline operations. CI success verifies compilation/tests configured in the workflow and artifact upload, not device behavior or product completion.
+- Earlier Run #102 (ID `42090082564`) also passed for typed-track creation, compatible cross-track movement, and their safety tests.
 - User has not confirmed device installation, launch, or real-device editing/export.
 
 ## Implemented in source (not all device-verified)
@@ -34,8 +33,8 @@ Last updated: 2026-11-05
 - Visualizer UI has Spectrum, Radial, and Waveform presentations; project-linked image background/foreground references; foreground beat pulse/scale controls.
 
 ## Important limitations — do not misrepresent
-- Ripple-delete, track mute/lock, and interrupted-save backup recovery changes were committed after Run #102 and are awaiting their own CI verification. Track mute currently affects the active selected-clip preview only; it does not yet mix multiple tracks.
-- Timeline still lacks direct drag-and-drop clip movement, true trim handles, ripple editing, snapping/markers, track reorder/lock UI, and full synchronized multi-clip playback.
+- Ripple-delete, track mute/lock, and interrupted-save backup recovery changes are included in Run #111 and CI-verified. Track mute currently affects the active selected-clip preview only; it does not yet mix multiple tracks.
+- Timeline still lacks direct drag-and-drop clip movement, true trim handles, snapping/markers, track reorder UI, and full synchronized multi-clip playback. Ripple delete and track lock/mute controls are implemented and CI-verified.
 - Project save/reopen and media URI recovery are implemented in source but still need device acceptance testing, including revoked permissions and app restart.
 - Per-clip audio settings are saved, but advanced DSP is not implemented: no independent EQ, bass, compressor, limiter, formant, pitch-preserving time stretch, fades automation, or final mix rendering.
 - Visualizer is real-time audio-reactive for the active Android playback session only. Offline render synchronization, video background compositing, multiple independently animated overlays, particles/rings/3D GPU renderer, and export are not implemented.
@@ -55,8 +54,7 @@ Last updated: 2026-11-05
 - No release tag; app is not complete.
 
 ## Next engineering priorities
-1. Verify CI for the new ripple-delete and track mute/lock controls; fix any compile/test failure.
-2. Expand timeline editing: direct clip repositioning, insert behavior, multi-clip transport sync, and project recovery tests.
+1. Expand timeline editing: direct clip repositioning, insert behavior, multi-clip transport sync, and project recovery tests.
 3. Implement a real render pipeline and establish a reusable composition graph before adding export UI.
 4. Build per-clip audio processing and offline audio mix.
 5. Extend visualizer from live session analysis to offline audio analysis and frame rendering; add actual layer compositing.
