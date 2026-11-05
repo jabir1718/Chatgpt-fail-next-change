@@ -90,7 +90,7 @@ data class VisualizerSettings(
     val beatSensitivity: Float = 1.08f
 ) {
     init {
-        require(mode in setOf("Spectrum", "Radial", "Waveform")) { "Unsupported visualizer mode" }
+        require(mode in setOf("Spectrum", "Radial", "Waveform", "Rings", "Particles")) { "Unsupported visualizer mode" }
         require(foregroundScale in 0.5f..2f) { "Foreground scale must be between 0.5 and 2" }
         require(beatSensitivity in 1f..1.5f) { "Beat sensitivity must be between 1 and 1.5" }
     }

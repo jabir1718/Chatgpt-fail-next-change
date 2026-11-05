@@ -23,7 +23,7 @@ A polished, original Android creator studio for TikTok, YouTube Shorts, Instagra
 - [ ] Undo/redo history, autosave, project serialization/versioning.
 - [ ] Per-clip properties and independent source-audio controls.
 - [ ] Portrait/landscape canvas, fit/fill/crop, safe areas and aspect presets.
-**Current implementation note:** Project management, autosave/recovery, media import, selected-source preview, typed tracks, clip selection, trim/split/delete/ripple-delete, ±1 second repositioning, undo/redo, playhead seeking, compatible cross-track movement, direct drag, duplication, snapping, and track lock/mute controls are implemented in source. A concurrent Media3 timeline audio preview is now connected to Studio Play/Pause: active audio/video clips get independent players, timeline-clock source alignment, clip gain/fades, pitch and playback rate. Run #131 verified the preceding playback-rate source mapping and APK artifact; the new concurrent preview integration is awaiting its own CI verification. Moving multi-clip video composition and device verification remain open.
+**Current implementation note:** Project management, autosave/recovery, media import, selected-source preview, typed tracks, clip selection, trim/split/delete/ripple-delete, ±1 second repositioning, undo/redo, playhead seeking, compatible cross-track movement, direct drag, duplication, snapping, and track lock/mute controls are implemented in source. A concurrent Media3 timeline audio preview is now connected to Studio Play/Pause: active audio/video clips get independent players, timeline-clock source alignment, clip gain/fades, pitch and playback rate. Run #133 verified the concurrent preview integration and APK artifact. Moving multi-clip video composition and device verification remain open.
 **Gate:** Import multiple video/audio/image assets, edit timeline, save/reopen project, playback stays synchronized, no crash.
 
 ## M2 — Audio engine & sound design
@@ -41,7 +41,8 @@ A polished, original Android creator studio for TikTok, YouTube Shorts, Instagra
 
 ## M3 — Visualizer Studio (highest product priority)
 - [ ] Real audio analysis (FFT/spectrum, RMS, transient/onset and beat tracking).
-- [ ] Visualizer types: spectrum bars, circular/radial, waveform, rings, particles, equalizer shapes, 3D objects.
+- [x] Visualizer types: spectrum bars, circular/radial, waveform, animated rings and audio-reactive particles (2D Canvas).
+- [ ] Equalizer shapes and 3D/GPU objects.
 - [ ] 3D/GPU renderer with quality/performance settings and device fallback.
 - [ ] MP3/audio track drives animation in real time and in offline render.
 - [ ] Background image/video and independent foreground image/PNG/video layers.
@@ -50,7 +51,7 @@ A polished, original Android creator studio for TikTok, YouTube Shorts, Instagra
 - [ ] Keyframes, easing, masks, blend modes, shadows, outlines and effects.
 - [ ] Lyrics/captions over visualizer with safe placement and word highlighting.
 - [ ] Save reusable visualizer presets/templates.
-**Current implementation note:** A live Android playback-session analyser produces FFT spectrum bands, waveform samples, beat pulses and a rough BPM estimate. Spectrum, radial and waveform preview modes plus image layer references and foreground beat pulse controls are present. This is not offline analysis/rendering; full compositing, multiple independent layers, particle/ring/3D GPU modes and export remain open.
+**Current implementation note:** A live Android playback-session analyser produces FFT spectrum bands, waveform samples, beat pulses and a rough BPM estimate. Spectrum, radial, waveform, animated rings and audio-reactive particle preview modes plus image layer references and foreground beat pulse controls are present. Rings/particles are 2D Canvas effects, not 3D/GPU. This is not offline analysis/rendering; full compositing, multiple independent layers, 3D GPU modes and export remain open.
 **Gate:** Imported song drives visualizer; background art and foreground transparent PNG are composited; foreground reacts independently to beat; exported video matches preview.
 
 ## M4 — Automatic lyrics, captions & voice input

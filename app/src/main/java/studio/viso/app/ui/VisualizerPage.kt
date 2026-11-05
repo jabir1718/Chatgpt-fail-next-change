@@ -1,7 +1,13 @@
 package com.creatorstudio.app.ui
 
 import android.graphics.BitmapFactory
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -68,7 +74,7 @@ fun VisualizerPage(
         Text("Live FFT, waveform and beat response from the selected audio output", color = Color(0xFF9AA4B8), fontSize = 11.sp)
         Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            listOf("Spectrum", "Radial", "Waveform").forEach { item ->
+            listOf("Spectrum", "Radial", "Waveform", "Rings", "Particles").forEach { item ->
                 FilterChip(
                     selected = settings.mode == item,
                     onClick = { onSettingsChange(settings.copy(mode = item)) },
@@ -111,6 +117,8 @@ fun VisualizerPage(
             when (settings.mode) {
                 "Radial" -> RadialSpectrum(spectrum)
                 "Waveform" -> WaveformDisplay(waveform)
+                "Rings" -> RingsVisualizer(spectrum, beatPulse)
+                "Particles" -> ParticleVisualizer(spectrum, beatPulse)
                 else -> SpectrumDisplay(spectrum)
             }
             if (foregroundBitmap != null) {
@@ -254,6 +262,84 @@ private fun RadialSpectrum(values: List<Float>) {
             drawLine(if (index % 3 == 0) VisualViolet else VisualMint, start, end, strokeWidth = 3.dp.toPx(), cap = StrokeCap.Round)
         }
         drawCircle(VisualMint.copy(alpha = 0.8f), radius = 4.dp.toPx(), center = center)
+    }
+}
+
+
+@Composable
+private fun RingsVisualizer(values: List<Float>, beatPulse: Int) {
+    val motion = rememberInfiniteTransition(label = "rings-motion")
+    val phase by motion.animateFloat(
+        initialValue = 0f,
+        targetValue = (Math.PI * 2.0).toFloat(),
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 7_000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "rings-phase"
+    )
+    val beatExpansion by animateFloatAsState(
+        targetValue = if (beatPulse % 2 == 0) 0f else 0.16f,
+        label = "rings-beat-expansion"
+    )
+    Canvas(Modifier.fillMaxWidth().height(220.dp)) {
+        val center = Offset(size.width / 2f, size.height / 2f)
+        val base = min(size.width, size.height) * 0.13f
+        val average = if (values.isEmpty()) 0f else values.average().toFloat().coerceIn(0f, 1f)
+        val energy = average * 0.55f + beatExpansion
+        repeat(6) { index ->
+            val band = values.getOrNull((index * 5).coerceAtMost(values.lastIndex)) ?: average
+            val wobble = sin(phase + index * 0.72f).toFloat() * 0.035f
+            val radius = base * (1.25f + index * 0.52f + band.coerceIn(0f, 1f) * 0.65f + energy + wobble)
+            val alpha = (0.72f - index * 0.085f).coerceIn(0.12f, 0.72f)
+            val tint = if (index % 2 == 0) VisualMint else VisualViolet
+            drawCircle(
+                color = tint.copy(alpha = alpha),
+                radius = radius,
+                center = center,
+                style = Stroke(width = (2.5f - index * 0.22f).dp.toPx())
+            )
+        }
+        drawCircle(VisualMint.copy(alpha = 0.9f), radius = (5f + energy * 10f).dp.toPx(), center = center)
+    }
+}
+
+@Composable
+private fun ParticleVisualizer(values: List<Float>, beatPulse: Int) {
+    val motion = rememberInfiniteTransition(label = "particle-motion")
+    val phase by motion.animateFloat(
+        initialValue = 0f,
+        targetValue = (Math.PI * 2.0).toFloat(),
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 11_000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "particle-phase"
+    )
+    val beatBoost by animateFloatAsState(
+        targetValue = if (beatPulse % 2 == 0) 1f else 1.28f,
+        label = "particle-beat-boost"
+    )
+    Canvas(Modifier.fillMaxWidth().height(220.dp)) {
+        val center = Offset(size.width / 2f, size.height / 2f)
+        val maxRadius = min(size.width, size.height) * 0.43f
+        val count = 72
+        repeat(count) { index ->
+            val band = values.getOrNull(index % values.size.coerceAtLeast(1)) ?: 0f
+            val normalized = band.coerceIn(0f, 1f)
+            val angle = phase + index.toFloat() / count * (Math.PI * 2.0).toFloat()
+            val orbit = maxRadius * (0.38f + normalized * 0.58f) * beatBoost
+            val drift = sin(phase * 1.7f + index * 0.91f).toFloat() * 5.dp.toPx()
+            val point = Offset(
+                center.x + cos(angle).toFloat() * (orbit + drift),
+                center.y + sin(angle).toFloat() * (orbit + drift)
+            )
+            val radius = (1.4f + normalized * 3.5f) * beatBoost
+            val color = if (index % 4 == 0) VisualViolet else VisualMint
+            drawCircle(color.copy(alpha = 0.35f + normalized * 0.65f), radius.dp.toPx(), point)
+        }
+        drawCircle(VisualViolet.copy(alpha = 0.18f), maxRadius * 0.28f, center)
+        drawCircle(VisualMint.copy(alpha = 0.75f), 3.dp.toPx(), center)
     }
 }
 
