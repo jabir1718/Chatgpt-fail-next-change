@@ -37,6 +37,8 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Subtitles
 import androidx.compose.material.icons.filled.Tune
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -156,6 +158,10 @@ private fun StudioPage(
     intensity: Float,
     onIntensity: (Float) -> Unit
 ) {
+    var selectedMedia by remember { mutableStateOf("No media imported yet") }
+    val videoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri -> selectedMedia = uri?.lastPathSegment ?: selectedMedia }
+    val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri -> selectedMedia = uri?.lastPathSegment ?: selectedMedia }
+    val audioPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri -> selectedMedia = uri?.lastPathSegment ?: selectedMedia }
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.weight(1f)) {
             Text("My Project", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
@@ -164,16 +170,18 @@ private fun StudioPage(
         Text("AUTO-SAVED", color = Mint, fontSize = 9.sp, fontWeight = FontWeight.Bold)
     }
     Spacer(Modifier.height(14.dp))
-    PreviewStage(isPlaying)
+    PreviewStage(isPlaying, onPlay)
     Spacer(Modifier.height(12.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-        Button(onClick = {}, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Violet)) {
+        Button(onClick = { videoPicker.launch("video/*") }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Violet)) {
             Icon(Icons.Default.Add, null, modifier = Modifier.size(17.dp)); Spacer(Modifier.width(5.dp)); Text("Add Media")
         }
-        OutlinedButton(onClick = {}, modifier = Modifier.weight(1f)) {
+        OutlinedButton(onClick = { imagePicker.launch("image/*") }, modifier = Modifier.weight(1f)) {
             Icon(Icons.Default.Image, null, modifier = Modifier.size(17.dp)); Spacer(Modifier.width(5.dp)); Text("Add PNG")
         }
     }
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) { OutlinedButton(onClick = { audioPicker.launch("audio/*") }) { Icon(Icons.Default.GraphicEq, null, modifier = Modifier.size(16.dp)); Spacer(Modifier.width(5.dp)); Text("Import Audio") } }
+    Text(selectedMedia, color = Mint, fontSize = 10.sp, modifier = Modifier.padding(top = 4.dp))
     Spacer(Modifier.height(18.dp))
     SectionTitle("QUICK TOOLBOX", "All tools grouped by task")
     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -232,7 +240,7 @@ private fun StudioPage(
 }
 
 @Composable
-private fun PreviewStage(isPlaying: Boolean) {
+private fun PreviewStage(isPlaying: Boolean, onPlay: () -> Unit) {
     Box(
         modifier = Modifier.fillMaxWidth().aspectRatio(0.88f)
             .clip(RoundedCornerShape(24.dp))
@@ -273,7 +281,7 @@ private fun PreviewStage(isPlaying: Boolean) {
             color = Color.Black.copy(alpha = 0.35f), shape = RoundedCornerShape(8.dp)
         ) { Text("LIVE PREVIEW", color = Mint, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp)) }
         Surface(
-            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 14.dp).clickable { },
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 14.dp).clickable { onPlay() },
             color = Color.Black.copy(alpha = 0.48f), shape = CircleShape
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 17.dp, vertical = 9.dp)) {
@@ -327,7 +335,7 @@ private fun ToolPage(title: String, subtitle: String, tools: List<String>) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             row.forEach { item ->
                 Card(
-                    modifier = Modifier.weight(1f).padding(bottom = 10.dp).clickable { },
+                    modifier = Modifier.weight(1f).padding(bottom = 10.dp),
                     colors = CardDefaults.cardColors(containerColor = Panel),
                     shape = RoundedCornerShape(17.dp)
                 ) {
@@ -335,7 +343,7 @@ private fun ToolPage(title: String, subtitle: String, tools: List<String>) {
                         Icon(Icons.Default.Tune, null, tint = Violet, modifier = Modifier.size(22.dp))
                         Spacer(Modifier.height(12.dp))
                         Text(item, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-                        Text("Tool panel", color = Color(0xFF9AA4B8), fontSize = 10.sp, modifier = Modifier.padding(top = 4.dp))
+                        Text("Panel preview • engine pending", color = Color(0xFF9AA4B8), fontSize = 10.sp, modifier = Modifier.padding(top = 4.dp))
                     }
                 }
             }
