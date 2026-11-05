@@ -32,6 +32,7 @@ import com.creatorstudio.app.editor.pitchRatio
 import com.creatorstudio.app.editor.TimelineEditor
 import com.creatorstudio.app.editor.createStarterProject
 import com.creatorstudio.app.editor.importAsset
+import com.creatorstudio.app.editor.OfflineAudioExportPipeline
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -116,6 +117,43 @@ fun CreatorStudioApp() {
     var cachedWaveforms by remember { mutableStateOf<Map<String, List<Float>>>(emptyMap()) }
     val persistenceMutex = remember { Mutex() }
 
+    val audioMixExportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("audio/mp4")
+    ) { destinationUri ->
+        if (destinationUri != null && !audioExporting) {
+            val exportProject = project
+            scope.launch {
+                audioExporting = true
+                audioExportProgress = 0f
+                audioExportMessage = "Preparing offline audio mix..."
+                val temporaryOutput = File(context.cacheDir, "creator_audio_mix_${UUID.randomUUID()}.m4a")
+                try {
+                    withContext(Dispatchers.IO) {
+                        val result = OfflineAudioExportPipeline().exportAudioMix(
+                            context = context,
+                            project = exportProject,
+                            cacheDirectory = File(context.cacheDir, "creator-pcm-cache"),
+                            outputFile = temporaryOutput,
+                            onProgress = { value -> audioExportProgress = value }
+                        )
+                        val output = context.contentResolver.openOutputStream(destinationUri, "w")
+                            ?: error("Could not open the selected save destination")
+                        output.use { stream ->
+                            result.file.inputStream().use { input -> input.copyTo(stream) }
+                        }
+                    }
+                    audioExportMessage = "Audio mix saved successfully."
+                } catch (error: Exception) {
+                    audioExportMessage = "Export failed: ${error.message ?: "Unknown error"}"
+                } finally {
+                    temporaryOutput.delete()
+                    audioExporting = false
+                }
+            }
+        }
+    }
+
+
     fun commitProject(next: EditorProject) {
         if (next == project) return
         undoStack.add(project)
@@ -144,6 +182,9 @@ fun CreatorStudioApp() {
     var isPlaying by remember { mutableStateOf(false) }
     var timelineMixing by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf("Import video, audio or PNG to begin") }
+    var audioExporting by remember { mutableStateOf(false) }
+    var audioExportProgress by remember { mutableFloatStateOf(0f) }
+    var audioExportMessage by remember { mutableStateOf("Choose a destination to export the timeline audio mix.") }
     val selectedAudioSessionId = remember(context) {
         runCatching { (context.getSystemService(android.content.Context.AUDIO_SERVICE) as AudioManager).generateAudioSessionId() }.getOrDefault(0)
     }
@@ -591,7 +632,16 @@ fun CreatorStudioApp() {
                     }
                 )
                 3 -> ToolPage("AI Lyrics & Captions", "Transcription integration is not connected yet", listOf("Auto Transcribe", "Language Detection", "Roman Urdu", "Urdu Script", "Roman English", "Word Sync", "Emoji Captions", "Voice Typing"))
-                else -> ToolPage("Export & Share", "Render/export engine is not connected yet", listOf("TikTok 9:16", "YouTube Shorts", "Instagram Reels", "1080p / 4K", "Frame Rate", "Bitrate", "Save to Device", "Share Video"))
+                else -> AudioMixExportPage(
+                    project = project,
+                    exporting = audioExporting,
+                    progress = audioExportProgress,
+                    message = audioExportMessage,
+                    onExport = {
+                        val safeName = project.name.replace(Regex("[^A-Za-z0-9_-]"), "_").take(48).ifBlank { "CreatorStudio" }
+                        audioMixExportLauncher.launch("${safeName}_AudioMix.m4a")
+                    }
+                )
             }
             if (selectedTab == 0) {
                 Spacer(Modifier.height(14.dp))
@@ -877,6 +927,52 @@ private fun SectionTitle(title: String, detail: String) {
         Text(detail, color = Color(0xFF8E99AE), fontSize = 9.sp)
     }
     Spacer(Modifier.height(9.dp))
+}
+
+
+@Composable
+private fun AudioMixExportPage(
+    project: EditorProject,
+    exporting: Boolean,
+    progress: Float,
+    message: String,
+    onExport: () -> Unit
+) {
+    val hasAudioClips = project.tracks.any { track ->
+        (track.kind == com.creatorstudio.app.editor.TrackKind.AUDIO || track.kind == com.creatorstudio.app.editor.TrackKind.VIDEO) &&
+            track.clips.any { it.kind == MediaKind.AUDIO || it.kind == MediaKind.VIDEO }
+    }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Panel, RoundedCornerShape(18.dp))
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text("OFFLINE AUDIO MIX", color = Mint, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+        Text(
+            "Render the timeline's audio tracks into an AAC-LC M4A file. Clip volume, fades, track gain, mute/solo, master EQ, bass boost and compressor are applied.",
+            color = Color(0xFFD4D9E5),
+            fontSize = 12.sp
+        )
+        Button(
+            onClick = onExport,
+            enabled = hasAudioClips && !exporting,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(if (exporting) "EXPORTING AUDIO..." else "EXPORT AUDIO MIX (.M4A)")
+        }
+        if (exporting) {
+            LinearProgressIndicator(progress = progress.coerceIn(0f, 1f), modifier = Modifier.fillMaxWidth())
+            Text("${(progress * 100).toInt()}%", color = Mint, fontSize = 12.sp)
+        }
+        Text(message, color = if (message.startsWith("Export failed")) Pink else Color(0xFF9AA4B8), fontSize = 11.sp)
+        Text(
+            "This export contains audio only. Video compositing and MP4 video export are still in development.",
+            color = Color(0xFF9AA4B8),
+            fontSize = 10.sp
+        )
+    }
 }
 
 @Composable

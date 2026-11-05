@@ -11,12 +11,13 @@ Last updated: 2026-11-06
 - Handoff instructions: `docs/CONTINUATION.md`
 
 ## Verified CI evidence
-- Latest completed successful run: Run #147, ID `42113804542`, commit `d49d9057a1e4190f681a32f99c363b59e52afb97`.
+- Latest completed successful run: Run #148, ID `42114352566`, commit `4689dce8e23380719fed9c41b15d2ed7cd3598d0`.
 - Run #140 completed successfully: Android SDK setup, `assembleDebug`, configured tests, and APK artifact upload all succeeded.
 - Run #140 artifact: `Creator-Studio-debug-apk`, 19,643,832 bytes, SHA-256 `77f565128599e024f7d6c1e94d06d82021da940351ec7f6e54c0244848569d1a`.
 - Run #141 completed successfully: frame composition planning source, tests, debug APK build and artifact upload passed. Artifact size 19,648,872 bytes, SHA-256 `999f0c80914b62b32b246e53cc933c0a3fca6e2cc3838e6a84694454b9593390`.
 - Run #145 completed successfully after the offline mixer fade-boundary test correction: all configured unit tests, debug APK build and artifact upload passed. Artifact size 19,656,590 bytes, SHA-256 `71df30519b5fa1cbd55bd61e4a52eed3ad4c1417c4cc3ad98536d98296b92d13`.
-- Run #147 completed successfully: disk-backed PCM source, MediaCodec decoder adapter, mixer refactor and regression tests compiled; debug APK build and artifact upload passed. Artifact `Creator-Studio-debug-apk`, 19,666,555 bytes, SHA-256 `59502cb0571261c7c70db5b35e7364c0d42d367103df3f91a50d7a2a11726639`.
+- Run #147 completed successfully: disk-backed PCM source, MediaCodec decoder adapter, mixer refactor and regression tests compiled; debug APK build and artifact upload passed. Artifact size 19,666,555 bytes, SHA-256 `59502cb0571261c7c70db5b35e7364c0d42d367103df3f91a50d7a2a11726639`.
+- Run #148 completed successfully: AAC-LC encoder, project audio-mix export pipeline, decoder cleanup and PCM16 conversion tests compiled; debug APK build and artifact upload passed. Artifact `Creator-Studio-debug-apk`, 19,677,482 bytes, SHA-256 `62c3e9270a2db25aca1837ba98f0e83983e67e800bdad5231eee6b59df405427`.
 - Run #140 verifies native DynamicsProcessing source integration compiles and configured tests pass; it does not prove effect audibility/device support.
 - CI success verifies configured tests and artifact upload, not device behavior or product completion.
 - User has not confirmed device installation, launch, real-time DSP audibility, editing/export on device.
@@ -33,7 +34,7 @@ Last updated: 2026-11-06
 - Master audio processing settings (five EQ bands, low-frequency EQ boost and compressor) persist in ProjectStore schema v4; Android DynamicsProcessing is attached to selected-source and timeline Media3 sessions on supported API 28+ devices. Run #140 CI-verified; device audibility remains unverified.
 - `RenderCompositionPlan` describes deterministic frame timestamps, visual z-order, video source positions, active captions, audio schedules and master settings. Run #141 verification pending; this is a planning model, not a media renderer.
 - `OfflineAudioMixEngine` provides deterministic block-based PCM mixing from decoded in-memory PCM buffers: timeline placement, linear source interpolation, clip playback rate, volume, fade-in/out, track gain, track mute, audio-capable solo rules, five-band peaking EQ, low-band bass boost, compressor and output peak limiting. Run #145 verified the offline mixer and regression tests after correcting the final-sample fade-out tolerance. `PcmAudioSource` now supports both in-memory and disk-backed float PCM; a disk-backed cache implementation and MediaCodec decoder adapter are source-implemented. Run #147 CI-verified their compilation and the configured tests; physical-device decoding and end-to-end export remain unverified.
-- The mixer can consume in-memory PCM or the new disk-backed `PcmFileAudioSource`. `MediaCodecPcmDecoder` decodes a URI into a Float32 PCM file and returns a cache-backed source; this adapter is source-implemented but CI/device verification is pending. The AAC-LC encoder and end-to-end audio-only export pipeline are now source-implemented, with CI verification pending. Video decoding/compositing and video MP4 rendering remain unimplemented.
+- The mixer can consume in-memory PCM or the new disk-backed `PcmFileAudioSource`. `MediaCodecPcmDecoder` decodes a URI into a Float32 PCM file and returns a cache-backed source; this adapter is source-implemented but CI/device verification is pending. The AAC-LC encoder and end-to-end audio-only export pipeline are source-implemented and CI-verified in Run #148. The Export tab now has an SAF destination flow for audio-only M4A output; that UI integration is source-committed but awaiting CI verification. Video decoding/compositing and video MP4 rendering remain unimplemented.
 
 ## Important limitations — do not misrepresent
 - All timeline/project/media features need real-device acceptance tests including app restart and permission recovery.
@@ -55,8 +56,8 @@ Last updated: 2026-11-06
 - M4–M8: Not complete. See roadmap.
 
 ## Next engineering priorities
-1. Verify the AAC encoder and audio-only export pipeline in CI; fix exact failures.
-2. Integrate an audio-mix export action with the Export UI and SAF destination picker.
+1. Verify the Export UI/SAF integration in CI and improve cancellation/progress/recovery behavior.
+2. Test actual source decoding and M4A output on Android hardware.
 3. Implement video decoding/compositing and synchronize audio timestamps to rendered video frames.
 2. Implement streaming MediaExtractor/MediaCodec audio decoding into bounded PCM blocks, including seek/source-in and sample-rate/channel conversion.
 3. Add AAC encoder/muxer output and align encoded audio timestamps to video frame timestamps.
