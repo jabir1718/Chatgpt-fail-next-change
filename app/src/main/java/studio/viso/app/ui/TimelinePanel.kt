@@ -51,6 +51,15 @@ fun TimelinePanel(
     onRedo: () -> Unit
 ) {
     val duration = project.durationMs.coerceAtLeast(1_000L)
+    var pixelsPerSecond by remember(project.id) { mutableFloatStateOf(24f) }
+    val totalSeconds = (duration / 1_000L).toInt().coerceAtLeast(1)
+    val tickStep = when {
+        totalSeconds > 1_800 -> 60
+        totalSeconds > 600 -> 30
+        totalSeconds > 180 -> 10
+        totalSeconds > 60 -> 5
+        else -> 1
+    }
     Column(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp))
             .background(TimelinePanelBg).padding(12.dp)
@@ -62,26 +71,28 @@ fun TimelinePanel(
             }
             IconButton(onClick = onUndo, enabled = canUndo) { Icon(Icons.Default.Undo, "Undo", tint = if (canUndo) TimelineAccent else Color.Gray) }
             IconButton(onClick = onRedo, enabled = canRedo) { Icon(Icons.Default.Redo, "Redo", tint = if (canRedo) TimelineAccent else Color.Gray) }
+            IconButton(onClick = { pixelsPerSecond = (pixelsPerSecond - 4f).coerceAtLeast(12f) }) { Text("−", color = Color.White) }
+            Text("${pixelsPerSecond.toInt()} px/s", color = Color(0xFF9AA4B8), fontSize = 8.sp)
+            IconButton(onClick = { pixelsPerSecond = (pixelsPerSecond + 4f).coerceAtMost(48f) }) { Text("+", color = Color.White) }
         }
         Spacer(Modifier.height(8.dp))
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
             Column {
                 Row(Modifier.padding(start = 82.dp, bottom = 5.dp)) {
-                    val seconds = (0..(duration / 1000L).toInt().coerceAtMost(180)).toList()
-                    seconds.forEach { second ->
-                        Text(if (second % 5 == 0) "${second}s" else "·", color = Color(0xFF8996AC), fontSize = 8.sp,
-                            modifier = Modifier.width(32.dp))
+                    (0..totalSeconds step tickStep).forEach { second ->
+                        Text("${second}s", color = Color(0xFF8996AC), fontSize = 8.sp,
+                            modifier = Modifier.width((tickStep * pixelsPerSecond).dp))
                     }
                 }
                 project.tracks.forEach { track ->
                     Row(Modifier.height(48.dp).padding(bottom = 5.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text(track.name.uppercase(), color = Color(0xFFADB8CC), fontSize = 8.sp, fontWeight = FontWeight.Bold,
                             modifier = Modifier.width(78.dp))
-                        Box(Modifier.height(40.dp).width(((duration / 1000f).coerceAtMost(180f) * 32f).dp)
+                        Box(Modifier.height(40.dp).width((totalSeconds * pixelsPerSecond).dp)
                             .clip(RoundedCornerShape(8.dp)).background(Color(0xFF1A2536))) {
                             track.clips.forEach { clip ->
-                                val left = (clip.timelineStartMs / 1000f * 32f).dp
-                                val width = (clip.durationMs / 1000f * 32f).coerceAtLeast(2.5f).dp
+                                val left = (clip.timelineStartMs / 1000f * pixelsPerSecond).dp
+                                val width = (clip.durationMs / 1000f * pixelsPerSecond).coerceAtLeast(8f).dp
                                 val tint = when (track.kind) {
                                     TrackKind.VIDEO -> Color(0xFF9278FF)
                                     TrackKind.AUDIO -> Color(0xFF27CBB7)
