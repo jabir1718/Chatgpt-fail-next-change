@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.os.SystemClock
 import androidx.media3.common.PlaybackParameters
+import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import com.creatorstudio.app.editor.EditorProject
 import com.creatorstudio.app.editor.MediaKind
@@ -95,24 +96,27 @@ class TimelineAudioPreviewController(context: Context) {
             val asset = project.assets.firstOrNull { it.id == clip.mediaId } ?: return@forEach
             if (asset.kind != MediaKind.AUDIO && asset.kind != MediaKind.VIDEO) return@forEach
 
-            var source = activePlayers[clip.id]
-            val isNew = source == null || source.uri != asset.uri
-            if (isNew) {
-                source?.player?.release()
+            val existing = activePlayers[clip.id]
+            val isNew = existing == null || existing.uri != asset.uri
+            val activeSource = if (isNew) {
+                existing?.player?.release()
                 val player = ExoPlayer.Builder(appContext).build()
-                source = ActiveSource(player, asset.uri)
-                activePlayers[clip.id] = source
+                val created = ActiveSource(player, asset.uri)
+                activePlayers[clip.id] = created
                 player.setMediaItem(MediaItemFactory.create(Uri.parse(asset.uri), asset.mimeType))
                 player.prepare()
                 player.seekTo(scheduled.sourcePositionMs)
+                created
             } else {
-                val drift = kotlin.math.abs(source.player.currentPosition - scheduled.sourcePositionMs)
-                if (forceSeek || (source.player.playbackState == ExoPlayer.STATE_READY && drift > 280L)) {
-                    source.player.seekTo(scheduled.sourcePositionMs)
+                val current = requireNotNull(existing)
+                val drift = kotlin.math.abs(current.player.currentPosition - scheduled.sourcePositionMs)
+                if (forceSeek || (current.player.playbackState == Player.STATE_READY && drift > 280L)) {
+                    current.player.seekTo(scheduled.sourcePositionMs)
                 }
+                current
             }
 
-            val player = source.player
+            val player = activeSource.player
             player.volume = scheduled.effectiveVolume.coerceIn(0f, 1f)
             player.playbackParameters = PlaybackParameters(
                 clip.audio.playbackRate,
