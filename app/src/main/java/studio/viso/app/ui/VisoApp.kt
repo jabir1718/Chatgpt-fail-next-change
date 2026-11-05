@@ -402,13 +402,14 @@ fun CreatorStudioApp() {
                         }
                     },
                     onDelete = {
+                        val deletedId = project.id
+                        undoStack.clear(); redoStack.clear()
+                        activateProject(createStarterProject())
                         scope.launch {
-                            persistenceMutex.withLock {
-                                withContext(Dispatchers.IO) { projectStore.delete(project.id) }
+                            val deleted = persistenceMutex.withLock {
+                                withContext(Dispatchers.IO) { projectStore.delete(deletedId) }
                             }
-                            undoStack.clear(); redoStack.clear()
-                            activateProject(createStarterProject())
-                            status = "Project deleted"
+                            status = if (deleted) "Project deleted" else "Could not delete saved project"
                         }
                     }
                 )
