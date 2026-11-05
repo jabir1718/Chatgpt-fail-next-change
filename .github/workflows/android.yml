@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: creator-studio-android-build
+  cancel-in-progress: true
+
 jobs:
   build:
     name: Assemble debug APK
