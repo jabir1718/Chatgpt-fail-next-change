@@ -218,7 +218,7 @@ private fun ClipAudioControls(
             onValueChange = { pitchValue = it },
             onValueChangeFinished = { onSettingsChange(clip.audio.copy(pitchSemitones = pitchValue)) },
             valueRange = -12f..12f,
-            colors = SliderDefaults.colors(thumbColor = VisualViolet, activeTrackColor = VisualViolet)
+            colors = SliderDefaults.colors(thumbColor = Color(0xFF9278FF), activeTrackColor = VisualViolet)
         )
         Text("TEMPO  ${"%.2f".format(rateValue)}×", color = Color(0xFFB7C4D8), fontSize = 9.sp)
         Slider(
