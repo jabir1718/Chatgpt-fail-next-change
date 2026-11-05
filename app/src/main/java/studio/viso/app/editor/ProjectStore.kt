@@ -1,4 +1,4 @@
-package studio.viso.app.editor
+package com.creatorstudio.app.editor
 
 import android.content.Context
 import org.json.JSONArray
@@ -12,7 +12,7 @@ import java.io.IOException
  * or copy source media into app-managed storage before relying on long-term access.
  */
 class ProjectStore(context: Context) {
-    private val directory = File(context.filesDir, "viso-projects").apply { mkdirs() }
+    private val directory = File(context.filesDir, "creator-projects").apply { mkdirs() }
 
     @Synchronized
     @Throws(IOException::class)
