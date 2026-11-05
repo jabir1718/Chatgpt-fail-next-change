@@ -64,6 +64,7 @@ fun TimelinePanel(
     val duration = project.durationMs.coerceAtLeast(1_000L)
     val density = LocalDensity.current
     var pixelsPerSecond by remember(project.id) { mutableFloatStateOf(24f) }
+    var snappingEnabled by remember(project.id) { mutableStateOf(true) }
     var showMoveMenu by remember(selectedClipId) { mutableStateOf(false) }
     val totalSeconds = (duration / 1_000L).toInt().coerceAtLeast(1)
     val tickStep = when {
@@ -87,6 +88,9 @@ fun TimelinePanel(
             IconButton(onClick = { pixelsPerSecond = (pixelsPerSecond - 4f).coerceAtLeast(12f) }) { Text("−", color = Color.White) }
             Text("${pixelsPerSecond.toInt()} px/s", color = Color(0xFF9AA4B8), fontSize = 8.sp)
             IconButton(onClick = { pixelsPerSecond = (pixelsPerSecond + 4f).coerceAtMost(48f) }) { Text("+", color = Color.White) }
+            TextButton(onClick = { snappingEnabled = !snappingEnabled }, contentPadding = PaddingValues(horizontal = 5.dp)) {
+                Text(if (snappingEnabled) "SNAP ON" else "SNAP OFF", color = if (snappingEnabled) TimelineAccent else Color(0xFF8996AC), fontSize = 8.sp)
+            }
         }
         Spacer(Modifier.height(4.dp))
         Text("ADD TRACK", color = Color(0xFF9AA4B8), fontSize = 8.sp, fontWeight = FontWeight.Bold)
@@ -148,7 +152,7 @@ fun TimelinePanel(
                                     Modifier.offset(x = left + dragOffsetDp).width(width).fillMaxHeight().padding(horizontal = 1.dp, vertical = 2.dp)
                                         .clip(RoundedCornerShape(5.dp))
                                         .background(if (clip.id == selectedClipId) tint else tint.copy(alpha = 0.58f))
-                                        .pointerInput(clip.id, pixelsPerSecond, track.locked) {
+                                        .pointerInput(clip.id, pixelsPerSecond, track.locked, snappingEnabled, playheadMs) {
                                             if (!track.locked) {
                                                 detectDragGestures(
                                                     onDragStart = { onSelectClip(clip.id) },
@@ -160,10 +164,11 @@ fun TimelinePanel(
                                                         val deltaMs = (dragOffsetPx / density.density / pixelsPerSecond * 1_000f).roundToLong()
                                                         dragOffsetPx = 0f
                                                         if (deltaMs != 0L) {
-                                                            onProjectChange(TimelineEditor.moveClip(
-                                                                project, clip.id,
-                                                                (clip.timelineStartMs + deltaMs).coerceAtLeast(0L)
-                                                            ))
+                                                            val proposedStart = (clip.timelineStartMs + deltaMs).coerceAtLeast(0L)
+                                                            val finalStart = if (snappingEnabled) {
+                                                                TimelineEditor.snapClipStart(project, clip.id, proposedStart, playheadMs)
+                                                            } else proposedStart
+                                                            onProjectChange(TimelineEditor.moveClip(project, clip.id, finalStart))
                                                         }
                                                     },
                                                     onDragCancel = { dragOffsetPx = 0f }
