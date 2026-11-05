@@ -19,9 +19,10 @@ class TimelinePlaybackPlanTest {
         val plan = TimelinePlaybackPlan.at(project, 4_500L)
 
         assertEquals(2, plan.activeClips.size)
-        assertEquals(1, plan.audioClips.size)
+        assertEquals(2, plan.audioClips.size) // Music plus embedded video audio.
         assertEquals(1, plan.videoClips.size)
-        assertEquals(3_500L, plan.audioClips.single().sourcePositionMs)
+        assertEquals(3_500L, plan.audioClips.first { it.clip.id == audioClip.id }.sourcePositionMs)
+        assertEquals(1_500L, plan.audioClips.first { it.clip.id == videoClip.id }.sourcePositionMs)
         assertEquals(1_500L, plan.videoClips.single().sourcePositionMs)
     }
 
