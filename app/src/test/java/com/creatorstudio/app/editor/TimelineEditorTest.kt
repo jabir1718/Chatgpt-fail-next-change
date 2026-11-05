@@ -76,6 +76,35 @@ class TimelineEditorTest {
     }
 
     @Test
+    fun movingClipToWrongTrackTypeIsRejected() {
+        val (project, clip) = fixture()
+        val videoTrack = TimelineTrack(name = "Video 2", kind = TrackKind.VIDEO)
+        val withDestination = project.copy(tracks = project.tracks + videoTrack)
+
+        val error = runCatching {
+            TimelineEditor.moveClipToTrack(withDestination, clip.id, videoTrack.id)
+        }.exceptionOrNull()
+
+        assertTrue(error is IllegalArgumentException)
+    }
+
+    @Test
+    fun movingClipFromLockedTrackIsRejected() {
+        val (project, clip) = fixture()
+        val lockedProject = project.copy(
+            tracks = project.tracks.map { it.copy(locked = true) } +
+                TimelineTrack(name = "Audio 2", kind = TrackKind.AUDIO)
+        )
+        val destination = lockedProject.tracks.last()
+
+        val error = runCatching {
+            TimelineEditor.moveClipToTrack(lockedProject, clip.id, destination.id)
+        }.exceptionOrNull()
+
+        assertTrue(error is IllegalArgumentException)
+    }
+
+    @Test
     fun trimStartAdvancesSourceInPointAndShortensClip() {
         val (project, clip) = fixture()
         val result = TimelineEditor.trimStart(project, clip.id, 1_500L)
