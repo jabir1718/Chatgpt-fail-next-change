@@ -120,6 +120,7 @@ data class EditorProject(
     val width: Int = 1080,
     val height: Int = 1920,
     val frameRate: Int = 30,
+    val videoBitRate: Int = 8_000_000,
     val createdAtEpochMs: Long = System.currentTimeMillis(),
     val updatedAtEpochMs: Long = System.currentTimeMillis(),
     val assets: List<MediaAsset> = emptyList(),
@@ -129,7 +130,8 @@ data class EditorProject(
 ) {
     init {
         require(width > 0 && height > 0) { "Canvas dimensions must be positive" }
-        require(frameRate in 1..120) { "Frame rate must be between 1 and 120" }
+        require(frameRate in 1..60) { "Frame rate must be between 1 and 60" }
+        require(videoBitRate in 250_000..80_000_000) { "Video bitrate must be between 250 kbps and 80 Mbps" }
         require(assets.map { it.id }.distinct().size == assets.size) { "Media IDs must be unique" }
         require(tracks.map { it.id }.distinct().size == tracks.size) { "Track IDs must be unique" }
         val allClips = tracks.flatMap { it.clips }
