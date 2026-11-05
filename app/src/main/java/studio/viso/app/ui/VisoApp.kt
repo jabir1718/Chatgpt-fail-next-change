@@ -566,7 +566,7 @@ private fun StudioPage(
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text("My Project", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-            Text("${media.size} imported assets • 9:16 vertical", color = Color(0xFF9AA4B8), fontSize = 11.sp)
+            Text("${media.size} imported assets • ${canvasWidth}×${canvasHeight}", color = Color(0xFF9AA4B8), fontSize = 11.sp)
         }
         Text("LOCAL PROJECT", color = Mint, fontSize = 9.sp, fontWeight = FontWeight.Bold)
     }
