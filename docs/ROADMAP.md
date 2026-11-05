@@ -29,7 +29,7 @@ A polished, original Android creator studio for TikTok, YouTube Shorts, Instagra
 - [x] AAC-LC audio-only encoding/muxing and project audio-mix export pipeline (Run #148 CI build/tests/artifact verified).
 - [x] Export tab audio-mix action with Android SAF save destination (Run #150 CI build/tests/artifact verified).
 - [x] Export progress and cancellation propagation (Run #152 CI build/tests/artifact verified).
-- [x] Conservative disk-space preflight for PCM cache + AAC output + safety reserve (source implemented; CI pending).
+- [x] Conservative disk-space preflight for PCM cache + AAC output + safety reserve (Run #155 CI build/tests/artifact verified).
 - [ ] Preview/export mix parity, retry/recovery, and physical-device audio acceptance.
 **Current note:** OfflineAudioMixEngine consumes decoded PCM buffers and returns contiguous output blocks. It is not yet connected to MediaExtractor/MediaCodec streaming decode or an AAC encoder/muxer. Do not call audio export complete.
 **Gate:** Two or more clips with independent settings render to a valid audio file, with no clipping and correct timing.
