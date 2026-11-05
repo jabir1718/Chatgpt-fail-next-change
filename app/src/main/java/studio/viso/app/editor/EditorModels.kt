@@ -3,6 +3,7 @@ package com.creatorstudio.app.editor
 import java.util.UUID
 
 enum class MediaKind { VIDEO, AUDIO, IMAGE, TEXT }
+enum class CanvasContentMode { FIT, FILL, CROP }
 enum class TrackKind { VIDEO, AUDIO, OVERLAY, CAPTION, EFFECT }
 
 data class Transform(
@@ -45,6 +46,7 @@ data class TimelineClip(
     val sourceStartMs: Long = 0L,
     val sourceEndMs: Long = sourceStartMs + durationMs,
     val transform: Transform = Transform(),
+    val contentMode: CanvasContentMode = CanvasContentMode.FIT,
     val audio: ClipAudioSettings = ClipAudioSettings(),
     val captions: List<CaptionSegment> = emptyList()
 ) {
@@ -352,6 +354,17 @@ object TimelineEditor {
         val track = project.tracks.firstOrNull { it.id == trackId } ?: error("Track not found")
         return project.copy(updatedAtEpochMs = System.currentTimeMillis(),
             tracks = project.tracks.map { if (it.id == trackId) track.copy(muted = muted) else it })
+    }
+
+    fun setClipContentMode(project: EditorProject, clipId: String, mode: CanvasContentMode): EditorProject {
+        return project.copy(
+            updatedAtEpochMs = System.currentTimeMillis(),
+            tracks = project.tracks.map { track ->
+                track.copy(clips = track.clips.map { clip ->
+                    if (clip.id == clipId) clip.copy(contentMode = mode) else clip
+                })
+            }
+        )
     }
 
     fun setTrackGain(project: EditorProject, trackId: String, gain: Float): EditorProject {
