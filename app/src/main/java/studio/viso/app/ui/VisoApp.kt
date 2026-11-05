@@ -157,7 +157,7 @@ fun CreatorStudioApp() {
         player.stop()
         isPlaying = false
         if (firstAsset != null && firstAsset.kind != MediaKind.IMAGE) {
-            player.setMediaItem(MediaItem.fromUri(Uri.parse(firstAsset.uri)))
+            player.setMediaItem(mediaItemFor(Uri.parse(firstAsset.uri), firstAsset.mimeType))
             player.prepare()
             val clip = firstClip
             if (clip != null) {
@@ -260,7 +260,7 @@ fun CreatorStudioApp() {
             selectedClipId = imported.clipId
             playheadMs = 0L
             if (kind != MediaKind.IMAGE) {
-                player.setMediaItem(MediaItem.fromUri(stableUri))
+                player.setMediaItem(mediaItemFor(stableUri, details.second))
                 player.prepare()
                 player.volume = volume
                 player.playbackParameters = PlaybackParameters(speed, pitch)
@@ -294,7 +294,8 @@ fun CreatorStudioApp() {
         val index = media.indexOf(item)
         selectedIndex = index
         if (item.kind != "IMAGE") {
-            player.setMediaItem(MediaItem.fromUri(item.uri))
+            val mimeType = project.assets.firstOrNull { it.uri == item.uri.toString() }?.mimeType
+        player.setMediaItem(mediaItemFor(item.uri, mimeType))
             player.prepare()
             player.volume = volume
             player.playbackParameters = PlaybackParameters(speed, pitch)
@@ -748,4 +749,10 @@ private fun ToolPage(title: String, subtitle: String, tools: List<String>) {
             if (row.size == 1) Spacer(Modifier.weight(1f))
         }
     }
+}
+
+private fun mediaItemFor(uri: Uri, mimeType: String?): MediaItem {
+    val builder = MediaItem.Builder().setUri(uri)
+    if (!mimeType.isNullOrBlank()) builder.setMimeType(mimeType)
+    return builder.build()
 }
