@@ -27,7 +27,8 @@ data class RenderFramePlan(
     val frameRate: Int,
     val layers: List<RenderLayerPlan>,
     val audio: List<ScheduledClip>,
-    val audioProcessing: AudioProcessingSettings
+    val audioProcessing: AudioProcessingSettings,
+    val visualizerFrame: OfflineVisualizerFrameData? = null
 )
 
 /**
@@ -44,7 +45,7 @@ object RenderCompositionPlan {
             (remainingMs * project.frameRate + 999L) / 1000L
     }
 
-    fun frameAt(project: EditorProject, frameIndex: Long): RenderFramePlan {
+    fun frameAt(project: EditorProject, frameIndex: Long, visualizerFrame: OfflineVisualizerFrameData? = null): RenderFramePlan {
         val totalFrames = frameCount(project)
         require(frameIndex in 0 until totalFrames) { "Frame index is outside the project duration" }
         val timestampMs = (frameIndex / project.frameRate) * 1000L +
@@ -114,7 +115,8 @@ object RenderCompositionPlan {
             frameRate = project.frameRate,
             layers = layers.sortedBy { it.zOrder },
             audio = playback.audioClips,
-            audioProcessing = project.audioProcessing
+            audioProcessing = project.audioProcessing,
+            visualizerFrame = visualizerFrame
         )
     }
 }
