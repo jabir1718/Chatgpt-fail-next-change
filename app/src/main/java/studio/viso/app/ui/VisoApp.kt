@@ -543,6 +543,10 @@ fun CreatorStudioApp() {
                         }
                         commitProject(next)
                     },
+                    onAddTrack = { name, kind ->
+                        commitProject(TimelineEditor.addTrack(project, name, kind))
+                        status = "$name track added"
+                    },
                     onUndo = { undoProject() },
                     onRedo = { redoProject() }
                 )
