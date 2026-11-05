@@ -39,7 +39,7 @@ class OfflineVisualizerVideoExportPipeline(
         audioSampleRate: Int = 48_000,
         audioChannels: Int = 2,
         audioBitRate: Int = 192_000,
-        videoBitRate: Int = 8_000_000,
+        videoBitRate: Int = project.videoBitRate,
         shouldCancel: () -> Boolean = { false },
         onProgress: (Float) -> Unit = {}
     ): OfflineVisualizerVideoExportResult {
