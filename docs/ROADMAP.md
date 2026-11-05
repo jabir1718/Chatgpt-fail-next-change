@@ -27,8 +27,8 @@ A polished, original Android creator studio for TikTok, YouTube Shorts, Instagra
 **Gate:** Import multiple video/audio/image assets, edit timeline, save/reopen project, playback stays synchronized, no crash.
 
 ## M2 — Audio engine & sound design
-- [ ] Independent clip volume/gain, mute/solo, pan, fades and keyframe automation.
-- [x] Waveform generation/cache and timeline waveform display (MediaCodec PCM decode, peak-envelope cache, timeline waveform bars; CI verification pending).
+- [ ] Per-clip/track volume and gain, mute/solo, and fades in preview scheduling (CI-verified); pan and keyframe automation remain open.
+- [x] Waveform generation/cache and timeline waveform display (MediaCodec PCM decode, peak-envelope cache, timeline waveform bars; CI-verified in Run #137).
 - [ ] Pitch shift/formant and pitch-preserving time stretch; independent pitch and tempo.
 - [ ] BPM and beat/onset detection with editable beat markers.
 - [ ] Parametric EQ, bass boost/cut, compressor, limiter, normalization.
@@ -36,7 +36,7 @@ A polished, original Android creator studio for TikTok, YouTube Shorts, Instagra
 - [ ] Voiceover recording, microphone monitor, input gain and take management.
 - [ ] Audio extraction from video; mix bus and master output meter.
 - [ ] Optional vocal/instrumental separation only if a suitable model/runtime/license is validated.
-**Current implementation note:** Per-clip volume/mute, pitch-semitone, playback-rate and fade duration values are stored. TimelinePlaybackPlan calculates overlapping clip schedules, playback-rate-aware source positions and fade envelopes. The new timeline preview controller applies these values to concurrent Media3 players during live playback; this is an initial real-time preview mix, not sample-accurate DSP or an offline rendered mix. Independent EQ/bass/compression, waveform cache, mix bus and final offline mix/render remain unimplemented.
+**Current implementation note:** Per-clip volume/mute, pitch-semitone, playback-rate and fade duration values are stored. TimelinePlaybackPlan calculates overlapping clip schedules, playback-rate-aware source positions and fade envelopes. The timeline preview controller applies clip settings and track gain/solo decisions to concurrent Media3 players during live playback; Run #138 CI verified the track gain/solo scheduling and project schema v3 changes. This is an initial real-time preview mix, not sample-accurate DSP or an offline rendered mix. Independent EQ/bass/compression, pan/keyframe audio automation, mix bus and final offline mix/render remain unimplemented.
 **Gate:** Two clips can have different settings; preview and exported mix match; no clipping or broken sync.
 
 ## M3 — Visualizer Studio (highest product priority)

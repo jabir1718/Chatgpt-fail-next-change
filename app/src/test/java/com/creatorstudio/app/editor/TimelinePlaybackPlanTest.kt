@@ -164,4 +164,18 @@ class TimelinePlaybackPlanTest {
         assertEquals(500L, slow.sourcePositionMs)
     }
 
+
+    @Test
+    fun soloOnNonAudioTrackDoesNotSilenceAudioTracks() {
+        val asset = MediaAsset(uri = "content://audio/solo-edge", displayName = "music.mp3", kind = MediaKind.AUDIO)
+        val clip = TimelineClip(mediaId = asset.id, kind = MediaKind.AUDIO, timelineStartMs = 0L, durationMs = 3_000L)
+        val audioTrack = TimelineTrack(id = "audio", name = "Music", kind = TrackKind.AUDIO, clips = listOf(clip))
+        val overlayTrack = TimelineTrack(id = "overlay", name = "Overlay", kind = TrackKind.OVERLAY, solo = true)
+        val project = EditorProject(assets = listOf(asset), tracks = listOf(audioTrack, overlayTrack))
+
+        val plan = TimelinePlaybackPlan.at(project, 1_000L)
+
+        assertEquals(1, plan.audioClips.size)
+        assertEquals("audio", plan.audioClips.single().trackId)
+    }
 }

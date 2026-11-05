@@ -135,8 +135,10 @@ fun TimelinePanel(
                                 IconButton(onClick = { onProjectChange(TimelineEditor.setTrackMuted(project, track.id, !track.muted)) }, modifier = Modifier.size(20.dp)) {
                                     Icon(if (track.muted) Icons.Default.VolumeOff else Icons.Default.VolumeUp, contentDescription = if (track.muted) "Unmute track" else "Mute track", tint = if (track.muted) Color(0xFFFFC45C) else Color(0xFF8996AC), modifier = Modifier.size(12.dp))
                                 }
-                                TextButton(onClick = { onProjectChange(TimelineEditor.setTrackSolo(project, track.id, !track.solo)) }, contentPadding = PaddingValues(0.dp), modifier = Modifier.height(20.dp)) {
-                                    Text(if (track.solo) "S" else "s", color = if (track.solo) Color(0xFFFFC45C) else Color(0xFF8996AC), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                if (track.kind == TrackKind.AUDIO || track.kind == TrackKind.VIDEO) {
+                                    TextButton(onClick = { onProjectChange(TimelineEditor.setTrackSolo(project, track.id, !track.solo)) }, contentPadding = PaddingValues(0.dp), modifier = Modifier.height(20.dp)) {
+                                        Text(if (track.solo) "S" else "s", color = if (track.solo) Color(0xFFFFC45C) else Color(0xFF8996AC), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                    }
                                 }
                             }
                             if (track.kind == TrackKind.AUDIO || track.kind == TrackKind.VIDEO) {

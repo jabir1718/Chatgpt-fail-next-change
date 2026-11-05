@@ -1,6 +1,6 @@
 # Creator Studio — Current State
 
-Last updated: 2026-11-05
+Last updated: 2026-11-06
 
 ## Repository identity
 - Repository: `jabir1718/Chatgpt-fail-next-change`
@@ -12,11 +12,12 @@ Last updated: 2026-11-05
 
 ## Verified CI evidence
 - Workflow: `.github/workflows/android.yml`
-- Latest verified successful run: Run #133, ID `42102793854`, commit `cbbc237b7ac91704d8cdb82e155b09eb76f10103`.
-- Run #133 completed successfully: Android SDK setup, `assembleDebug`, configured tests, and APK artifact upload all succeeded.
-- Verified job: `Assemble debug APK`, job ID `127510217347`, conclusion `success`.
-- Artifact: `Creator-Studio-debug-apk`, 19,600,564 bytes, not expired at verification time.
-- Run #133 verifies the concurrent Media3 timeline audio preview integration and preceding playback-rate/fade scheduling fixes. CI success verifies compilation/tests configured in the workflow and artifact upload, not device behavior or product completion.
+- Latest verified successful run: Run #138, ID `42109959801`, commit `0af7a9e183fb8990da328d4bd8011bf3f7d8c6a1`.
+- Run #138 completed successfully: Android SDK setup, `assembleDebug`, configured tests, and APK artifact upload all succeeded.
+- Verified job: `Assemble debug APK`, job ID `127534594428`, conclusion `success`.
+- Artifact: `Creator-Studio-debug-apk`, 19,625,438 bytes, SHA-256 `8d3aa3ebb950ffb76afb34450ce8af2be7531fe864c13e4cc81a53db9f42632e`, not expired at verification time.
+- Run #138 verifies per-track gain/solo source implementation, playback-plan tests, and project schema v3 persistence code compile and pass configured tests. A follow-up edge-case fix restricting Solo to audio-capable tracks is being prepared and requires its own CI run.
+- Run #137 (ID `42105888737`) verified waveform decoder compilation/tests and artifact upload. Run #133 (ID `42102793854`) verified concurrent Media3 timeline audio preview. CI success verifies configured tests and artifact upload, not device behavior or product completion.
 - Earlier Run #130 (ID `42091206185`) verified ripple-delete, track mute/lock, and interrupted-save recovery.
 - User has not confirmed device installation, launch, or real-device editing/export.
 
@@ -27,16 +28,16 @@ Last updated: 2026-11-05
 - Persistable URI permission is attempted; if that fails, selected media is copied into app-managed files.
 - Project create/open/rename/duplicate/delete flows and autosave through `ProjectStore`, including fallback recovery from a valid backup when the primary project file is missing or corrupt.
 - Media3 ExoPlayer preview path for selected video/audio, plus a video preview surface.
-- Multi-track timeline rows and clip blocks; selection, ±1 second move, trim start/end, split at playhead, normal delete, ripple delete (closes the gap on the affected track), undo/redo, playhead seek, add typed tracks, compatible cross-track movement, direct drag repositioning, clip duplication, snapping, and per-track lock/mute controls.
+- Multi-track timeline rows and clip blocks; selection, ±1 second move, trim start/end, split at playhead, normal delete, ripple delete (closes the gap on the affected track), undo/redo, playhead seek, add typed tracks, compatible cross-track movement, direct drag repositioning, clip duplication, snapping, and per-track lock/mute/gain/solo controls. Gain and solo values are included in ProjectStore schema v3, with defaults for older projects.
 - Per-clip volume/mute, pitch-semitone and playback-rate settings are stored in the project; selected-clip preview settings are applied to the player.
-- A pure immutable `TimelinePlaybackPlan` identifies overlapping audio/video clips, source positions, mute state and effective gain, including fade envelopes and playback-rate-aware source positions.
+- A pure immutable `TimelinePlaybackPlan` identifies overlapping audio/video clips, source positions, mute state and effective gain, including per-track gain, audio-capable track solo rules, fade envelopes and playback-rate-aware source positions. Run #138 CI verified the gain/solo plan and persistence changes; the non-audio Solo edge-case guard is in the next change.
 - A new `TimelineAudioPreviewController` is connected to the Studio timeline Play/Pause transport. It creates one Media3 player per active audible audio/video clip, aligns new players to the timeline source position, applies per-clip playback rate/pitch and live fade/volume gain, removes players when clips leave the active range, and periodically corrects source drift. This is concurrent timeline audio preview using Android's platform output mixer; it is not yet an offline rendered mix or synchronized moving-video compositor.
 - Live audio-session analysis via Android `Visualizer`: FFT-derived spectrum bands, waveform samples, onset/beat pulse and rough BPM estimate. This is live playback analysis, not offline source-file analysis.
 - Visualizer UI has Spectrum, Radial, Waveform, Rings and Particles presentations; Rings/Particles animate from live FFT band levels and detected beat pulses. Project-linked image background/foreground references and foreground beat pulse/scale controls remain available.
 
 ## Important limitations — do not misrepresent
 - Timeline edit operations listed above are source-implemented; snapping, clip drag, duplication, playback scheduling and fade gain planning passed CI through Run #130. Device verification remains open.
-- Track mute currently affects the selected-clip preview; it does not yet mix multiple tracks.
+- Track mute/gain/solo are now included in the concurrent timeline audio preview scheduling plan. Track gain scales each clip; when an audio-capable track is soloed, other audio-capable tracks are suppressed. Overlay/caption/effect tracks must not participate in solo logic. Device verification of this mix behavior remains open.
 - Timeline audio preview now uses concurrent Media3 players for audible audio/video clips, with a monotonic timeline clock and periodic source-position correction. This is preview playback, not sample-accurate studio mixing or offline export. The current video preview surface is not yet switched/composited across all timeline video clips in sync.
 - Project save/reopen and media URI recovery are implemented in source but still need device acceptance testing, including revoked permissions and app restart.
 - Per-clip audio settings are saved, but advanced DSP is not implemented: no independent EQ, bass, compressor, limiter, formant, pitch-preserving time stretch, or final mix rendering.
@@ -50,14 +51,14 @@ Last updated: 2026-11-05
 
 ## Current milestone status
 - M0: CI foundation and debug APK artifact pipeline complete; device install/launch acceptance remains open.
-- M1: Timeline/project foundation implemented in source; CI-verified through Run #130; device acceptance remains open.
-- M2: Partial foundation only (clip settings and gain/fade scheduling data); synchronized playback, actual audio mixing and DSP are not complete.
+- M1: Timeline/project foundation implemented in source; latest project schema and track settings CI-verified through Run #138; device acceptance remains open.
+- M2: Partial foundation; waveform decoder and track gain/solo scheduling are CI-verified. Concurrent Media3 preview is implemented, but sample-accurate mixing, offline render and advanced DSP are not complete.
 - M3: Partial live-preview visualizer foundation; offline renderer and advanced visual/compositing features remain open.
 - M4–M8: Not complete. See roadmap.
 
 ## Next engineering priorities
-1. Extend timeline audio preview with track gain/solo controls and validate long overlapping sessions, resource use and sync on device.
-2. Add waveform generation/cache and independent audio processing (EQ, bass, compressor, limiter, pitch/time-stretch) with preview/render parity.
+1. Finish the track Solo edge-case guard and CI verification; then validate long overlapping sessions, resource use and sync on device.
+2. Add independent audio processing (EQ, bass, compressor, limiter, pitch/time-stretch) with preview/render parity.
 3. Implement a real render pipeline and establish a reusable composition graph before adding export UI.
 4. Extend visualizer from live session analysis to offline audio analysis and frame rendering; add actual layer compositing and 3D/GPU rendering.
 5. Implement transcription with a disclosed provider, language/script selection, and editable timestamps.

@@ -25,7 +25,11 @@ data class TimelinePlaybackPlan(
     companion object {
         fun at(project: EditorProject, playheadMs: Long): TimelinePlaybackPlan {
             require(playheadMs >= 0L) { "Playhead cannot be negative" }
-            val soloTrackIds = project.tracks.filter { it.solo }.mapTo(hashSetOf()) { it.id }
+            // Only audio-capable tracks participate in solo logic. A stale or malformed solo
+            // flag on an overlay/caption/effect track must never silence the audio mix.
+            val soloTrackIds = project.tracks
+                .filter { it.solo && (it.kind == TrackKind.AUDIO || it.kind == TrackKind.VIDEO) }
+                .mapTo(hashSetOf()) { it.id }
             val hasSolo = soloTrackIds.isNotEmpty()
             val active = project.tracks.flatMap { track ->
                 track.clips.asSequence()
