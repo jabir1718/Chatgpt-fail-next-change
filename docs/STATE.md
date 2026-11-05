@@ -12,11 +12,11 @@ Last updated: 2026-11-05
 
 ## Verified CI evidence
 - Workflow: `.github/workflows/android.yml`
-- Latest verified successful run: Run #129, ID `42097706364`, commit `7cb16f13125c6e5204a4bf6282fec2a34005589d`.
-- Run #129 completed successfully: Android SDK setup, `assembleDebug`, configured tests, and APK artifact upload all succeeded.
-- Verified job: `Assemble debug APK`, job ID `127492248546`, conclusion `success`.
-- Artifact: `Creator-Studio-debug-apk`, 19,592,906 bytes, not expired at verification time.
-- Run #129 verifies the timeline snapping annotation fix, immutable overlapping-clip playback schedule, and audio/video source inclusion. CI success verifies compilation/tests configured in the workflow and artifact upload, not device behavior or product completion.
+- Latest verified successful run: Run #130, ID `42098238456`, commit `9dc0ae2c2eb482671598fd99e601c8cf0b31b4c4`.
+- Run #130 completed successfully: Android SDK setup, `assembleDebug`, configured tests, and APK artifact upload all succeeded.
+- Verified job: `Assemble debug APK`, job ID `127493847701`, conclusion `success`.
+- Artifact: `Creator-Studio-debug-apk`, 19,593,124 bytes, not expired at verification time.
+- Run #130 verifies fade-in/fade-out gain scheduling and the preceding overlapping audio/video schedule and snapping fixes. CI success verifies compilation/tests configured in the workflow and artifact upload, not device behavior or product completion.
 - Earlier Run #111 (ID `42091206185`) verified ripple-delete, track mute/lock, and interrupted-save recovery.
 - User has not confirmed device installation, launch, or real-device editing/export.
 
@@ -34,7 +34,7 @@ Last updated: 2026-11-05
 - Visualizer UI has Spectrum, Radial, and Waveform presentations; project-linked image background/foreground references; foreground beat pulse/scale controls.
 
 ## Important limitations — do not misrepresent
-- Timeline edit operations listed above are source-implemented; snapping, clip drag, duplication, and playback scheduling passed the latest CI Run #129. Device verification remains open.
+- Timeline edit operations listed above are source-implemented; snapping, clip drag, duplication, playback scheduling and fade gain planning passed CI through Run #130. Device verification remains open.
 - Track mute currently affects the selected-clip preview; it does not yet mix multiple tracks.
 - TimelinePlaybackPlan is only a pure schedule. No synchronized multi-player timeline transport, concurrent audio decoding, gain automation playback, or actual audio mixing is connected yet.
 - Project save/reopen and media URI recovery are implemented in source but still need device acceptance testing, including revoked permissions and app restart.
@@ -49,13 +49,13 @@ Last updated: 2026-11-05
 
 ## Current milestone status
 - M0: CI foundation and debug APK artifact pipeline complete; device install/launch acceptance remains open.
-- M1: Timeline/project foundation implemented in source; CI-verified through Run #129; device acceptance remains open.
+- M1: Timeline/project foundation implemented in source; CI-verified through Run #130; device acceptance remains open.
 - M2: Partial foundation only (clip settings and gain/fade scheduling data); synchronized playback, actual audio mixing and DSP are not complete.
 - M3: Partial live-preview visualizer foundation; offline renderer and advanced visual/compositing features remain open.
 - M4–M8: Not complete. See roadmap.
 
 ## Next engineering priorities
-1. Connect TimelinePlaybackPlan to a real synchronized transport and concurrent audio playback/mixing engine; account for source ranges, clip speed, fades, mute and track gain.
+1. Connect TimelinePlaybackPlan to a real synchronized transport and concurrent audio playback/mixing engine; account for source ranges, clip speed, fades, mute and track gain. Playback-rate-aware source-position mapping is now in the plan model, pending CI.
 2. Add waveform generation/cache and independent audio processing (EQ, bass, compressor, limiter, pitch/time-stretch) with preview/render parity.
 3. Implement a real render pipeline and establish a reusable composition graph before adding export UI.
 4. Extend visualizer from live session analysis to offline audio analysis and frame rendering; add actual layer compositing.

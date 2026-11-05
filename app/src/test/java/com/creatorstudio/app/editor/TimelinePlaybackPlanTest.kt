@@ -102,5 +102,28 @@ class TimelinePlaybackPlanTest {
         assertEquals(0.4f, fadeInHalf.effectiveVolume, 0.0001f)
         assertEquals(0.8f, middle.effectiveVolume, 0.0001f)
         assertEquals(0.4f, fadeOutHalf.effectiveVolume, 0.0001f)
+    } 
+    @Test
+    fun sourcePositionRespectsClipPlaybackRate() {
+        val asset = MediaAsset(uri = "content://audio/speed", displayName = "speed.mp3", kind = MediaKind.AUDIO)
+        val doubleSpeed = TimelineClip(
+            mediaId = asset.id, kind = MediaKind.AUDIO, timelineStartMs = 1_000L, durationMs = 4_000L,
+            audio = ClipAudioSettings(playbackRate = 2f)
+        )
+        val halfSpeed = TimelineClip(
+            mediaId = asset.id, kind = MediaKind.AUDIO, timelineStartMs = 6_000L, durationMs = 4_000L,
+            audio = ClipAudioSettings(playbackRate = 0.5f)
+        )
+        val project = EditorProject(
+            assets = listOf(asset),
+            tracks = listOf(TimelineTrack(name = "Speed", kind = TrackKind.AUDIO, clips = listOf(doubleSpeed, halfSpeed)))
+        )
+
+        val fast = TimelinePlaybackPlan.at(project, 2_500L).audioClips.single()
+        val slow = TimelinePlaybackPlan.at(project, 7_000L).audioClips.single()
+
+        assertEquals(3_000L, fast.sourcePositionMs)
+        assertEquals(500L, slow.sourcePositionMs)
     }
+
 }

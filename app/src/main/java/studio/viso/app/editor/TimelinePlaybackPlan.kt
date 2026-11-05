@@ -28,7 +28,9 @@ data class TimelinePlaybackPlan(
                     .filter { playheadMs >= it.timelineStartMs && playheadMs < it.timelineEndMs }
                     .map { clip ->
                         val elapsed = playheadMs - clip.timelineStartMs
-                        val sourcePosition = (clip.sourceStartMs + elapsed)
+                        // Timeline time advances at 1x; source time follows the clip's playback rate.
+                        val sourceElapsed = (elapsed.toDouble() * clip.audio.playbackRate.toDouble()).toLong()
+                        val sourcePosition = (clip.sourceStartMs + sourceElapsed)
                             .coerceIn(clip.sourceStartMs, clip.sourceEndMs)
                         val hasAudio = clip.kind == MediaKind.AUDIO || clip.kind == MediaKind.VIDEO
                         val muted = clip.audio.muted || track.muted
