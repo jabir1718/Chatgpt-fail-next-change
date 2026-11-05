@@ -60,6 +60,32 @@ class RenderCompositionPlanTest {
         assertEquals(1.25f, frame.layers.last().transform.scaleX)
     }
 
+
+    @Test
+    fun framePlanCarriesClipCanvasContentModeForVideoAndImageLayers() {
+        val source = project()
+        val changedTracks = source.tracks.map { track ->
+            track.copy(clips = track.clips.map { clip ->
+                when (clip.id) {
+                    "video-clip" -> clip.copy(contentMode = CanvasContentMode.CROP)
+                    "image-clip" -> clip.copy(contentMode = CanvasContentMode.FILL)
+                    else -> clip
+                }
+            })
+        }
+        val changed = source.copy(tracks = changedTracks)
+        val frame = RenderCompositionPlan.frameAt(changed, 15L)
+
+        assertEquals(
+            CanvasContentMode.CROP,
+            frame.layers.first { it.role == RenderLayerRole.VIDEO }.contentMode
+        )
+        assertEquals(
+            CanvasContentMode.FILL,
+            frame.layers.first { it.role == RenderLayerRole.IMAGE }.contentMode
+        )
+    }
+
     @Test
     fun captionsAreSelectedAtFrameTimeUsingClipLocalTimestamps() {
         val frame = RenderCompositionPlan.frameAt(project(), 15L)
