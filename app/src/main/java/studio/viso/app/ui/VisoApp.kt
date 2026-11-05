@@ -13,6 +13,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import com.creatorstudio.app.editor.EditorProject
 import com.creatorstudio.app.editor.MediaKind
 import com.creatorstudio.app.editor.ProjectStore
@@ -98,6 +100,7 @@ fun CreatorStudioApp() {
     var savedProjects by remember { mutableStateOf<List<ProjectSummary>>(emptyList()) }
     val scope = rememberCoroutineScope()
     val projectStore = remember(context) { ProjectStore(context) }
+    val persistenceMutex = remember { Mutex() }
 
     fun commitProject(next: EditorProject) {
         if (next == project) return
@@ -169,10 +172,13 @@ fun CreatorStudioApp() {
 
     LaunchedEffect(project, projectLoaded) {
         if (projectLoaded) {
-            val result = withContext(Dispatchers.IO) {
-                runCatching {
-                    projectStore.save(project)
-                    projectStore.listProjects()
+            val snapshot = project
+            val result = persistenceMutex.withLock {
+                withContext(Dispatchers.IO) {
+                    runCatching {
+                        projectStore.save(snapshot)
+                        projectStore.listProjects()
+                    }
                 }
             }
             result.onSuccess { savedProjects = it }
@@ -350,14 +356,28 @@ fun CreatorStudioApp() {
                     projectName = project.name,
                     projects = savedProjects,
                     onNew = {
-                        undoStack.clear(); redoStack.clear()
-                        activateProject(createStarterProject())
-                        status = "New project created"
+                        scope.launch {
+                            val saved = persistenceMutex.withLock {
+                                withContext(Dispatchers.IO) { runCatching { projectStore.save(project) } }
+                            }
+                            if (saved.isFailure) {
+                                status = "Could not save current project: ${saved.exceptionOrNull()?.message}"
+                            } else {
+                                undoStack.clear(); redoStack.clear()
+                                activateProject(createStarterProject())
+                                status = "New project created"
+                            }
+                        }
                     },
                     onRename = { name -> commitProject(project.updateProjectName(name)) },
                     onOpen = { id ->
                         scope.launch {
-                            val loaded = withContext(Dispatchers.IO) { projectStore.load(id) }
+                            val loaded = persistenceMutex.withLock {
+                                withContext(Dispatchers.IO) {
+                                    projectStore.save(project)
+                                    projectStore.load(id)
+                                }
+                            }
                             undoStack.clear(); redoStack.clear()
                             activateProject(loaded)
                             status = "Opened ${loaded.name}"
@@ -369,14 +389,23 @@ fun CreatorStudioApp() {
                         }
                     },
                     onDuplicate = {
-                        val copy = project.duplicateProject()
-                        undoStack.clear(); redoStack.clear()
-                        activateProject(copy)
-                        status = "Project duplicated"
+                        scope.launch {
+                            val copy = persistenceMutex.withLock {
+                                withContext(Dispatchers.IO) {
+                                    projectStore.save(project)
+                                    project.duplicateProject()
+                                }
+                            }
+                            undoStack.clear(); redoStack.clear()
+                            activateProject(copy)
+                            status = "Project duplicated"
+                        }
                     },
                     onDelete = {
                         scope.launch {
-                            withContext(Dispatchers.IO) { projectStore.delete(project.id) }
+                            persistenceMutex.withLock {
+                                withContext(Dispatchers.IO) { projectStore.delete(project.id) }
+                            }
                             undoStack.clear(); redoStack.clear()
                             activateProject(createStarterProject())
                             status = "Project deleted"
