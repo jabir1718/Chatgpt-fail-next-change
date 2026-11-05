@@ -55,7 +55,6 @@ class TimelineEditorTest {
     }
 
     @Test
-    @Test
     fun snapAlignsClipStartToNearbyClipStart() {
         val (project, clip) = fixture()
         val neighbor = clip.copy(id = "neighbor", timelineStartMs = 12_000L)
@@ -76,6 +75,7 @@ class TimelineEditorTest {
         assertEquals(0L, TimelineEditor.snapClipStart(project, clip.id, 100L, 0L))
     }
 
+    @Test
     fun moveClipToCompatibleTrackPreservesClipIdentityAndSourceRange() {
         val (project, clip) = fixture()
         val destination = TimelineTrack(name = "Music 2", kind = TrackKind.AUDIO)
