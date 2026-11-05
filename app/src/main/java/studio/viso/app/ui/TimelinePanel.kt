@@ -218,7 +218,7 @@ private fun ClipAudioControls(
             onValueChange = { pitchValue = it },
             onValueChangeFinished = { onSettingsChange(clip.audio.copy(pitchSemitones = pitchValue)) },
             valueRange = -12f..12f,
-            colors = SliderDefaults.colors(thumbColor = Color(0xFF9278FF), activeTrackColor = VisualViolet)
+            colors = SliderDefaults.colors(thumbColor = Color(0xFF9278FF), activeTrackColor = Color(0xFF9278FF))
         )
         Text("TEMPO  ${"%.2f".format(rateValue)}×", color = Color(0xFFB7C4D8), fontSize = 9.sp)
         Slider(
@@ -226,7 +226,7 @@ private fun ClipAudioControls(
             onValueChange = { rateValue = it },
             onValueChangeFinished = { onSettingsChange(clip.audio.copy(playbackRate = rateValue)) },
             valueRange = 0.25f..4f,
-            colors = SliderDefaults.colors(thumbColor = VisualViolet, activeTrackColor = VisualViolet)
+            colors = SliderDefaults.colors(thumbColor = Color(0xFF9278FF), activeTrackColor = Color(0xFF9278FF))
         )
         Text("Saved per clip • preview playback uses these settings; export DSP is not connected yet",
             color = Color(0xFF8996AC), fontSize = 8.sp)
