@@ -15,7 +15,8 @@ A polished, original Android creator studio for TikTok, YouTube Shorts, Instagra
 - [x] Video/audio/image/transparent PNG picker and media URI persistence/copy fallback (source; device acceptance open).
 - [x] Media3 selected-source preview and multi-track timeline editing foundation.
 - [x] Clip select/move/trim/split/delete/ripple-delete, snapping, undo/redo, track lock/mute/gain/solo.
-- [ ] Synchronized multi-video preview/compositing, canvas fit/fill/crop and safe areas (export presets exist; live multi-video preview remains open).
+- [x] Synchronized multi-video timeline preview with independent Media3 players, timeline source-time alignment, drift correction, track-order compositing and clip transforms (Run #195 source + CI verified; device sync/memory acceptance open).
+- [x] Per-video/image-clip FIT/FILL/CROP modes persisted in ProjectStore schema v6 and applied in live source preview, synchronized video preview and offline MP4 frame composition; preview-only safe-area guides (Run #208 CI verified; device preview/export parity open).
 **Gate:** Multi-asset edit, save/reopen, synchronized playback, no crash.
 
 ## M2 — Audio engine & sound design
@@ -47,6 +48,7 @@ A polished, original Android creator studio for TikTok, YouTube Shorts, Instagra
 - [x] Add source video frame decoding and connect video clips to the offline visualizer MP4 compositor (Run #171 CI build/tests/artifact verified; device decoding/rotation/performance acceptance open).
 - [x] Include decodable embedded audio from source-video clips in the visualizer MP4 soundtrack; safely skip video-only sources with no audio stream and fail clearly for missing audio on audio-kind clips (Run #173 CI build/tests/artifact verified; device A/V sync acceptance open).
 - [ ] Background image/video, multiple independent foreground PNG/video layers and beat response.
+- [x] Shared per-clip canvas content mode flows through render plans; offline image/video layers support FIT, FILL and CROP while live video preview uses the same mode; safe guides stay out of exports (Run #208 CI verified).
 - [ ] Lyrics overlay, masks, blend modes, keyframes, presets and transitions.
 - [x] Deterministic frame composition planning contract (Run #141 CI build/tests/artifact verified).
 - [x] Android still-image and source-video frame decoding, Canvas pixel compositing and H.264 video frame encoding are connected in the offline visualizer export pipeline (Run #171 CI build/tests/artifact verified; physical-device validation open).
