@@ -422,6 +422,7 @@ fun CreatorStudioApp() {
             when (selectedTab) {
                 0 -> StudioPage(
                     media = media, selectedIndex = selectedIndex, player = player,
+                    projectName = project.name,
                     canvasWidth = project.width, canvasHeight = project.height,
                     onCanvasChange = { width, height -> commitProject(project.copy(width = width, height = height, updatedAtEpochMs = System.currentTimeMillis())) },
                     isPlaying = isPlaying, status = status,
@@ -568,7 +569,7 @@ private fun Header() {
 @Composable
 private fun StudioPage(
     media: List<StudioMedia>, selectedIndex: Int, player: ExoPlayer, isPlaying: Boolean, status: String,
-    canvasWidth: Int, canvasHeight: Int, onCanvasChange: (Int, Int) -> Unit,
+    projectName: String, canvasWidth: Int, canvasHeight: Int, onCanvasChange: (Int, Int) -> Unit,
     onAddVideo: () -> Unit, onAddAudio: () -> Unit, onAddImage: () -> Unit,
     onSelect: (StudioMedia) -> Unit, onDelete: (Int) -> Unit, onPlay: () -> Unit,
     volume: Float, onVolume: (Float) -> Unit, pitch: Float, onPitch: (Float) -> Unit,
@@ -576,7 +577,7 @@ private fun StudioPage(
 ) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
-            Text("My Project", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            Text(projectName, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 1)
             Text("${media.size} imported assets • ${canvasWidth}×${canvasHeight}", color = Color(0xFF9AA4B8), fontSize = 11.sp)
         }
         Text("LOCAL PROJECT", color = Mint, fontSize = 9.sp, fontWeight = FontWeight.Bold)
