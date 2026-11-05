@@ -1,10 +1,14 @@
 package com.creatorstudio.app.ui
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.media.MediaMetadataRetriever
 import android.provider.OpenableColumns
 import java.io.File
 import java.util.UUID
+import androidx.core.content.ContextCompat
+import com.creatorstudio.app.audio.AudioReactiveEngine
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -81,6 +85,11 @@ fun CreatorStudioApp() {
     var selectedClipId by remember { mutableStateOf<String?>(null) }
     var playheadMs by remember { mutableLongStateOf(0L) }
     var projectLoaded by remember { mutableStateOf(false) }
+    var spectrumLevels by remember { mutableStateOf(List(32) { 0f }) }
+    var waveformSamples by remember { mutableStateOf(emptyList<Float>()) }
+    var visualizerMode by remember { mutableStateOf("Spectrum") }
+    var visualizerRunning by remember { mutableStateOf(false) }
+    var visualizerMessage by remember { mutableStateOf("Select audio/video, start playback, then start live analysis.") }
     val undoStack = remember { mutableStateListOf<EditorProject>() }
     val redoStack = remember { mutableStateListOf<EditorProject>() }
     var savedProjects by remember { mutableStateOf<List<ProjectSummary>>(emptyList()) }
@@ -115,6 +124,13 @@ fun CreatorStudioApp() {
     var isPlaying by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf("Import video, audio or PNG to begin") }
     val player = remember { ExoPlayer.Builder(context).build() }
+    val audioReactiveEngine = remember {
+        AudioReactiveEngine(
+            onSpectrum = { spectrumLevels = it },
+            onWaveform = { waveformSamples = it },
+            onError = { visualizerMessage = it; visualizerRunning = false }
+        )
+    }
 
     fun activateProject(loaded: EditorProject) {
         project = loaded
@@ -244,7 +260,18 @@ fun CreatorStudioApp() {
     }
 
     DisposableEffect(player) {
-        onDispose { player.release() }
+        onDispose {
+            audioReactiveEngine.stop()
+            player.release()
+        }
+    }
+
+    LaunchedEffect(selectedTab) {
+        if (selectedTab != 2 && visualizerRunning) {
+            audioReactiveEngine.stop()
+            visualizerRunning = false
+            visualizerMessage = "Live analysis stopped when leaving Visualizer Studio."
+        }
     }
 
     fun selectMedia(item: StudioMedia) {
@@ -262,6 +289,22 @@ fun CreatorStudioApp() {
             isPlaying = false
             status = "Image layer selected • ${item.name}"
         }
+    }
+
+    fun startLiveVisualizer() {
+        val active = media.getOrNull(selectedIndex)
+        if (active == null || active.kind == "IMAGE") {
+            visualizerMessage = "Import and select an audio or video source first."
+            return
+        }
+        val started = audioReactiveEngine.start(player.audioSessionId)
+        visualizerRunning = started
+        if (started) visualizerMessage = "Live FFT and waveform capture active."
+    }
+
+    val visualizerPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) startLiveVisualizer()
+        else visualizerMessage = "Audio capture permission was denied. Enable it to use live analysis."
     }
 
     val videoPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -377,7 +420,26 @@ fun CreatorStudioApp() {
                     speed = speed, onSpeed = { speed = it; player.playbackParameters = PlaybackParameters(it, pitch) }
                 )
                 1 -> AudioPage(volume, { volume = it; player.volume = it }, pitch, { pitch = it; player.playbackParameters = PlaybackParameters(speed, it) }, speed, { speed = it; player.playbackParameters = PlaybackParameters(it, pitch) })
-                2 -> ToolPage("Visualizer Studio", "Visual design controls • audio-reactive engine is a later milestone", listOf("Spectrum Visualizer", "Circular / Radial", "Waveform", "3D Particles", "Background Artwork", "Foreground PNG", "Beat Pulse", "Green Screen"))
+                2 -> VisualizerPage(
+                    spectrum = spectrumLevels,
+                    waveform = waveformSamples,
+                    mode = visualizerMode,
+                    running = visualizerRunning,
+                    message = visualizerMessage,
+                    onModeChange = { visualizerMode = it },
+                    onStart = {
+                        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                            startLiveVisualizer()
+                        } else {
+                            visualizerPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                        }
+                    },
+                    onStop = {
+                        audioReactiveEngine.stop()
+                        visualizerRunning = false
+                        visualizerMessage = "Live analysis stopped."
+                    }
+                )
                 3 -> ToolPage("AI Lyrics & Captions", "Transcription integration is not connected yet", listOf("Auto Transcribe", "Language Detection", "Roman Urdu", "Urdu Script", "Roman English", "Word Sync", "Emoji Captions", "Voice Typing"))
                 else -> ToolPage("Export & Share", "Render/export engine is not connected yet", listOf("TikTok 9:16", "YouTube Shorts", "Instagram Reels", "1080p / 4K", "Frame Rate", "Bitrate", "Save to Device", "Share Video"))
             }
