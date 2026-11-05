@@ -45,11 +45,11 @@ class OfflineAudioVideoMuxer {
 
             videoExtractor.selectTrack(videoTrack)
             audioExtractor.selectTrack(audioTrack)
-            copyTrack(videoExtractor, muxer, outputVideoTrack, shouldCancel) { progress ->
+            copyTrack(videoExtractor, videoTrack, muxer, outputVideoTrack, shouldCancel) { progress ->
                 onProgress(progress * 0.5f)
             }
             if (shouldCancel()) throw CancellationException("Audio/video mux cancelled")
-            copyTrack(audioExtractor, muxer, outputAudioTrack, shouldCancel) { progress ->
+            copyTrack(audioExtractor, audioTrack, muxer, outputAudioTrack, shouldCancel) { progress ->
                 onProgress(0.5f + progress * 0.5f)
             }
 
@@ -78,12 +78,13 @@ class OfflineAudioVideoMuxer {
 
     private fun copyTrack(
         extractor: MediaExtractor,
+        sourceTrack: Int,
         muxer: MediaMuxer,
         outputTrack: Int,
         shouldCancel: () -> Boolean,
         onProgress: (Float) -> Unit
     ) {
-        val format = extractor.getTrackFormat(extractor.sampleTrackIndex)
+        val format = extractor.getTrackFormat(sourceTrack)
         val capacity = (if (format.containsKey(MediaFormat.KEY_MAX_INPUT_SIZE)) {
             format.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE)
         } else 0).coerceAtLeast(4 * 1024 * 1024)
