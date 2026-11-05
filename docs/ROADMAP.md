@@ -8,39 +8,38 @@ A polished, original Android creator studio for TikTok, YouTube Shorts, Instagra
 ## M0 — Clean foundation & build
 - [x] Fresh Android Kotlin/Jetpack Compose project in this repository.
 - [x] GitHub Actions Android SDK build workflow.
-- [x] Debug APK artifact pipeline verified; the current artifact name is `Creator-Studio-debug-apk`.
+- [x] Debug APK artifact pipeline verified; current artifact name is `Creator-Studio-debug-apk`.
 - [ ] User installs the APK and confirms it launches on device.
 - [ ] Add crash reporting/log capture for debug builds (opt-in, privacy-conscious).
 **Gate:** CI build + artifact + user launch smoke test.
 
 ## M1 — Real editor workspace
-- [ ] Project create/open/rename/duplicate/delete; autosave and recovery.
-- [ ] Android document picker import for video, audio, still image, transparent PNG.
-- [ ] Persist read permissions and copy/import assets into managed project storage safely.
-- [ ] Real video preview and audio preview; synchronized playhead and transport.
-- [ ] Multi-track timeline: video, audio, image/overlay, text/caption, effect tracks.
-- [ ] Clip selection, trim handles, split at playhead, move/reorder, ripple delete, snapping, markers.
-- [ ] Undo/redo history, autosave, project serialization/versioning.
-- [ ] Per-clip properties and independent source-audio controls.
-- [ ] Portrait/landscape canvas, fit/fill/crop, safe areas and aspect presets.
-**Current implementation note:** Project management, autosave/recovery, media import, selected-source preview, typed tracks, clip selection, trim/split/delete/ripple-delete, ±1 second repositioning, undo/redo, playhead seeking, compatible cross-track movement, direct drag, duplication, snapping, and track lock/mute controls are implemented in source. A concurrent Media3 timeline audio preview is now connected to Studio Play/Pause: active audio/video clips get independent players, timeline-clock source alignment, clip gain/fades, pitch and playback rate. Run #133 verified the concurrent preview integration and APK artifact. Moving multi-clip video composition and device verification remain open.
+- [x] Project create/open/rename/duplicate/delete; autosave and recovery (source + CI; device acceptance open).
+- [x] Android document picker import for video, audio, still image and transparent PNG (source; device acceptance open).
+- [x] Persist read permissions and copy/import assets into managed project storage (source; device acceptance open).
+- [x] Real selected-source video/audio preview (source; device acceptance open).
+- [x] Multi-track timeline model and editing foundation: video/audio/image/text tracks, clip selection, trim, split, move/reorder, delete/ripple delete, snapping, undo/redo and playhead seek (source + configured CI; device acceptance open).
+- [x] Per-clip audio settings and timeline playback scheduling (source + configured CI; device acceptance open).
+- [ ] Synchronized multi-video compositing, canvas fit/fill/crop, safe areas and aspect presets.
+**Current implementation note:** Project management, autosave/recovery, media import, selected-source preview, typed tracks, clip selection, trim/split/delete/ripple-delete, undo/redo, playhead seeking, compatible cross-track movement, direct drag, duplication, snapping, and track lock/mute/gain/solo are implemented in source. Concurrent Media3 timeline audio preview is connected to Studio Play/Pause; active audio/video clips get independent players, timeline-clock source alignment, clip gain/fades, pitch and playback rate. CI Runs #133, #138 and #139 verified the preview scheduling and track rules. Device verification remains open.
 **Gate:** Import multiple video/audio/image assets, edit timeline, save/reopen project, playback stays synchronized, no crash.
 
 ## M2 — Audio engine & sound design
-- [ ] Per-clip/track volume and gain, mute/solo, and fades in preview scheduling (CI-verified); pan and keyframe automation remain open.
-- [x] Waveform generation/cache and timeline waveform display (MediaCodec PCM decode, peak-envelope cache, timeline waveform bars; CI-verified in Run #137).
+- [x] Per-clip/track volume, gain, mute/solo, fades in preview scheduling (source + CI-verified).
+- [x] Waveform generation/cache and timeline waveform display (MediaCodec PCM decode, peak-envelope cache, timeline waveform bars; Run #137 CI-verified).
 - [ ] Pitch shift/formant and pitch-preserving time stretch; independent pitch and tempo.
 - [ ] BPM and beat/onset detection with editable beat markers.
-- [ ] Parametric EQ, bass boost/cut and compressor: native Android DynamicsProcessing preview path implemented in source; CI/device verification pending. Limiter and normalization remain open.
+- [x] Five-band EQ, low-frequency EQ boost and compressor: Android DynamicsProcessing attached to selected-source and timeline preview audio sessions (source + Run #140 CI build/tests verified; actual device audibility/support pending).
+- [ ] Limiter and normalization.
 - [ ] Voice changer, reverb, echo, delay, chorus, de-esser and noise reduction.
 - [ ] Voiceover recording, microphone monitor, input gain and take management.
 - [ ] Audio extraction from video; mix bus and master output meter.
 - [ ] Optional vocal/instrumental separation only if a suitable model/runtime/license is validated.
-**Current implementation note:** Per-clip volume/mute, pitch-semitone, playback-rate and fade duration values are stored. TimelinePlaybackPlan calculates overlapping clip schedules, playback-rate-aware source positions and fade envelopes. The timeline preview controller applies clip settings and track gain/solo decisions to concurrent Media3 players during live playback; Run #138 CI verified track gain/solo scheduling and project schema v3; Run #139 verified the non-audio Solo edge-case guard. Native Android DynamicsProcessing EQ/bass/compressor controls have since been connected to selected-source and timeline preview sessions in source, with CI/device verification pending. This is an initial real-time preview mix, not sample-accurate DSP or an offline rendered mix. Independent EQ/bass/compression, pan/keyframe audio automation, mix bus and final offline mix/render remain unimplemented.
+**Current implementation note:** Per-clip volume/mute, pitch-semitone, playback-rate and fade values are stored. TimelinePlaybackPlan calculates overlapping clip schedules, playback-rate-aware source positions and fade envelopes. Timeline preview uses concurrent Media3 players and Android's platform output mixer; it is not sample-accurate studio mixing. Native Android DynamicsProcessing applies five EQ bands, a low-band boost and a compressor to supported live preview sessions. Run #140 verified build/tests and artifact upload. The phone's actual effect support/audibility is not yet device-verified. Offline DSP/render, limiter, formant, pitch-preserving time stretch, and mix-bus processing remain unimplemented.
 **Gate:** Two clips can have different settings; preview and exported mix match; no clipping or broken sync.
 
 ## M3 — Visualizer Studio (highest product priority)
-- [ ] Real audio analysis (FFT/spectrum, RMS, transient/onset and beat tracking).
+- [x] Live audio analysis (FFT/spectrum, waveform, onset/beat pulse and rough BPM estimate).
 - [x] Visualizer types: spectrum bars, circular/radial, waveform, animated rings and audio-reactive particles (2D Canvas).
 - [ ] Equalizer shapes and 3D/GPU objects.
 - [ ] 3D/GPU renderer with quality/performance settings and device fallback.
@@ -51,7 +50,7 @@ A polished, original Android creator studio for TikTok, YouTube Shorts, Instagra
 - [ ] Keyframes, easing, masks, blend modes, shadows, outlines and effects.
 - [ ] Lyrics/captions over visualizer with safe placement and word highlighting.
 - [ ] Save reusable visualizer presets/templates.
-**Current implementation note:** A live Android playback-session analyser produces FFT spectrum bands, waveform samples, beat pulses and a rough BPM estimate. Spectrum, radial, waveform, animated rings and audio-reactive particle preview modes plus image layer references and foreground beat pulse controls are present. Rings/particles are 2D Canvas effects, not 3D/GPU. This is not offline analysis/rendering; full compositing, multiple independent layers, 3D GPU modes and export remain open.
+**Current implementation note:** Live Android playback-session analysis provides FFT spectrum, waveform samples, onset/beat pulse and rough BPM. Spectrum, radial, waveform, animated rings and particle previews are present; Rings/Particles are 2D Canvas, not 3D/GPU. A deterministic `RenderCompositionPlan` now describes per-frame layer order, video source time, clip-local captions, concurrent audio clips and audio-processing settings. It is a planning model only: it does not decode media, composite pixels, perform offline audio analysis or encode frames. Full offline rendering, 3D/GPU, video backgrounds and independently animated overlays remain open.
 **Gate:** Imported song drives visualizer; background art and foreground transparent PNG are composited; foreground reacts independently to beat; exported video matches preview.
 
 ## M4 — Automatic lyrics, captions & voice input

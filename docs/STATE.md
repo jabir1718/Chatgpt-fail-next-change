@@ -12,14 +12,14 @@ Last updated: 2026-11-06
 
 ## Verified CI evidence
 - Workflow: `.github/workflows/android.yml`
-- Latest verified successful run: Run #139, ID `42110526128`, commit `298020f8feadbe83641b5b6e048e58d108b211c5`.
-- Run #139 completed successfully: Android SDK setup, `assembleDebug`, configured tests, and APK artifact upload all succeeded.
-- Verified job: `Assemble debug APK`, job ID `127536551343`, conclusion `success`.
-- Artifact: `Creator-Studio-debug-apk`, 19,625,530 bytes, SHA-256 `609e0163abef9066ff94c2a0433d1ec7c06e6ccf3ef67c582287535d41ff21a8`, not expired at verification time.
-- Run #139 verifies the audio-only Solo edge-case guard and regression test. It does not verify later audio DSP work.
-- Run #137 (ID `42105888737`) verified waveform decoder compilation/tests and artifact upload. Run #133 (ID `42102793854`) verified concurrent Media3 timeline audio preview. CI success verifies configured tests and artifact upload, not device behavior or product completion.
-- Earlier Run #130 (ID `42091206185`) verified ripple-delete, track mute/lock, and interrupted-save recovery.
-- User has not confirmed device installation, launch, or real-device editing/export.
+- Latest verified successful run: Run #140, ID `42111311750`, commit `2cf41b10f4eda848d6de2d4c66793e515a3974b7`.
+- Run #140 completed successfully: Android SDK setup, `assembleDebug`, configured tests, and APK artifact upload all succeeded.
+- Verified job: `Assemble debug APK`, job ID `127539289681`, conclusion `success`.
+- Artifact: `Creator-Studio-debug-apk`, 19,643,832 bytes, SHA-256 `77f565128599e024f7d6c1e94d06d82021da940351ec7f6e54c0244848569d1a`, not expired at verification time.
+- Run #140 verifies the native DynamicsProcessing source integration compiles and the configured test suite passes. It does not prove the effect is audible or supported on every device.
+- Run #139 verified the audio-only Solo edge-case guard. Run #138 verified per-track gain/solo scheduling and persistence. Run #137 verified waveform decoder compilation/tests. Run #133 verified concurrent Media3 timeline audio preview.
+- CI success verifies configured tests and artifact upload, not device behavior or product completion.
+- User has not confirmed device installation, launch, real-time DSP audibility, or editing/export on device.
 
 ## Implemented in source (not all device-verified)
 - Kotlin + Jetpack Compose Android application with Studio, Audio, Visuals, Lyrics, and Export navigation areas.
@@ -27,21 +27,20 @@ Last updated: 2026-11-06
 - Imported assets are represented in a versioned project model and placed on typed video/audio/overlay/caption tracks.
 - Persistable URI permission is attempted; if that fails, selected media is copied into app-managed files.
 - Project create/open/rename/duplicate/delete flows and autosave through `ProjectStore`, including fallback recovery from a valid backup when the primary project file is missing or corrupt.
-- Media3 ExoPlayer preview path for selected video/audio, plus a video preview surface.
-- Multi-track timeline rows and clip blocks; selection, ±1 second move, trim start/end, split at playhead, normal delete, ripple delete (closes the gap on the affected track), undo/redo, playhead seek, add typed tracks, compatible cross-track movement, direct drag repositioning, clip duplication, snapping, and per-track lock/mute/gain/solo controls. Gain and solo values are included in ProjectStore schema v3, with defaults for older projects.
-- Per-clip volume/mute, pitch-semitone and playback-rate settings are stored in the project; selected-clip preview settings are applied to the player.
-- A pure immutable `TimelinePlaybackPlan` identifies overlapping audio/video clips, source positions, mute state and effective gain, including per-track gain, audio-capable track solo rules, fade envelopes and playback-rate-aware source positions. Run #138 CI verified the gain/solo plan and persistence changes; the non-audio Solo edge-case guard is in the next change.
-- A new `TimelineAudioPreviewController` is connected to the Studio timeline Play/Pause transport. It creates one Media3 player per active audible audio/video clip, aligns new players to the timeline source position, applies per-clip playback rate/pitch and live fade/volume gain, removes players when clips leave the active range, and periodically corrects source drift. This is concurrent timeline audio preview using Android's platform output mixer; it is not yet an offline rendered mix or synchronized moving-video compositor.
-- Live audio-session analysis via Android `Visualizer`: FFT-derived spectrum bands, waveform samples, onset/beat pulse and rough BPM estimate. This is live playback analysis, not offline source-file analysis.
-- Visualizer UI has Spectrum, Radial, Waveform, Rings and Particles presentations; Rings/Particles animate from live FFT band levels and detected beat pulses. Project-linked image background/foreground references and foreground beat pulse/scale controls remain available.
+- Multi-track timeline rows and clip blocks; selection, ±1 second move, trim start/end, split at playhead, normal delete, ripple delete, undo/redo, playhead seek, add typed tracks, compatible cross-track movement, direct drag repositioning, clip duplication, snapping, and per-track lock/mute/gain/solo controls.
+- Per-clip volume/mute, pitch-semitone, playback-rate and fade settings are stored in the project. The immutable playback plan computes overlapping source schedules, playback-rate-aware source positions, fade envelopes, track gain and audio-capable solo rules.
+- Concurrent Media3 timeline audio preview is connected to Studio Play/Pause. Active audio/video clips receive independent players aligned to a monotonic timeline clock; clip volume/fades, pitch and playback rate are applied with periodic source-position correction. This uses Android's platform output mixer; it is not sample-accurate studio DSP or offline rendering.
+- Waveform decoder/cache uses MediaExtractor/MediaCodec PCM decode and peak-envelope timeline rendering; CI-verified in Run #137.
+- Live Android playback-session analysis provides FFT-derived spectrum bands, waveform samples, onset/beat pulse and rough BPM estimate.
+- Visualizer UI has Spectrum, Radial, Waveform, Rings and Particles presentations. Rings/Particles are 2D Canvas renderers, not 3D/GPU. Project-linked background/foreground image references and foreground beat pulse/scale controls exist.
+- Master audio processing settings (five EQ bands, low-frequency EQ boost labelled Bass Boost, and compressor amount) are persisted in ProjectStore schema v4. Android `DynamicsProcessing` is attached to selected-source and timeline Media3 audio sessions for supported API 28+ devices. Run #140 CI verified compilation/tests and artifact upload. Device audibility/support remains unverified.
+- A deterministic, encoder-independent `RenderCompositionPlan` now describes frame timestamps, ordered visual layers, video source positions, clip-local active captions, concurrent audio clips and master audio-processing settings. This is a planning contract only; no media decoding/compositing/encoding is performed by it.
 
 ## Important limitations — do not misrepresent
-- Timeline edit operations listed above are source-implemented; snapping, clip drag, duplication, playback scheduling and fade gain planning passed CI through Run #130. Device verification remains open.
-- Track mute/gain/solo are now included in the concurrent timeline audio preview scheduling plan. Track gain scales each clip; when an audio-capable track is soloed, other audio-capable tracks are suppressed. Overlay/caption/effect tracks must not participate in solo logic. Device verification of this mix behavior remains open.
-- Timeline audio preview now uses concurrent Media3 players for audible audio/video clips, with a monotonic timeline clock and periodic source-position correction. This is preview playback, not sample-accurate studio mixing or offline export. The current video preview surface is not yet switched/composited across all timeline video clips in sync.
-- Project save/reopen and media URI recovery are implemented in source but still need device acceptance testing, including revoked permissions and app restart.
-- Per-clip audio settings are saved. Master EQ/bass/compressor controls and Android DynamicsProcessing session attachment are now implemented in source for live preview on supported API 28+ devices; this new DSP integration requires CI and device verification. Offline export processing, limiter, formant and pitch-preserving time stretch remain unimplemented.
-- Visualizer is real-time audio-reactive for the active Android playback session only. Rings and Particles are 2D Canvas renderers, not 3D/GPU effects. Offline render synchronization, video background compositing, multiple independently animated overlays, 3D GPU renderer, and export are not implemented.
+- Timeline editing, project save/reopen and media URI recovery are source-implemented but still need device acceptance testing, including revoked permissions and app restart.
+- Native DynamicsProcessing is a live-preview path on supported Android versions/devices. Bass boost currently raises the lowest EQ band; it is not a separate BassBoost effect. Offline export DSP, limiter, formant and pitch-preserving time stretch remain unimplemented.
+- Current concurrent preview is not sample-accurate DSP/offline mix; multiple timeline video clips are not composited and switched in synchronized playback.
+- Visualizer analysis is real-time for the active Android playback session only. Offline source analysis/render synchronization, full independent multi-layer compositing, true 3D/GPU rendering and export remain unimplemented.
 - Image selection stores layer references and basic preview animation; actual alpha compositing, automatic background removal, edge refinement, masks and chroma key are not implemented.
 - Lyrics transcription, automatic language detection, Urdu/Roman Urdu/Roman English script conversion, karaoke word sync and voice typing are not connected.
 - Video transitions, effects, filters, reverse, speed ramps, keyframes, motion tracking and complete multi-clip render are not implemented.
@@ -51,19 +50,18 @@ Last updated: 2026-11-06
 
 ## Current milestone status
 - M0: CI foundation and debug APK artifact pipeline complete; device install/launch acceptance remains open.
-- M1: Timeline/project foundation implemented in source; latest project schema and track settings CI-verified through Run #138; device acceptance remains open.
-- M2: Partial foundation; waveform decoder, track gain/solo scheduling and audio-only Solo guard are CI-verified. Native DynamicsProcessing EQ/bass/compressor preview integration is source-implemented but awaits CI/device verification. Concurrent Media3 preview is not sample-accurate DSP or offline rendering.
-- M3: Partial live-preview visualizer foundation; offline renderer and advanced visual/compositing features remain open.
+- M1: Timeline/project foundation implemented in source; track settings and project schema changes CI-verified through Run #140; device acceptance remains open.
+- M2: Partial foundation; waveform decoding, per-track gain/solo scheduling, concurrent Media3 preview, and native EQ/low-band boost/compressor session attachment are CI-verified. Device behavior, limiter, advanced pitch/time-stretch and offline mix/render remain open.
+- M3: Partial live-preview visualizer foundation. The new deterministic frame composition plan is source-implemented; offline frame rendering, audio analysis, 3D/GPU, and full layer compositing remain open.
 - M4–M8: Not complete. See roadmap.
 
 ## Next engineering priorities
-1. Finish the track Solo edge-case guard and CI verification; then validate long overlapping sessions, resource use and sync on device.
-2. Add independent audio processing (EQ, bass, compressor, limiter, pitch/time-stretch) with preview/render parity.
-3. Implement a real render pipeline and establish a reusable composition graph before adding export UI.
-4. Extend visualizer from live session analysis to offline audio analysis and frame rendering; add actual layer compositing and 3D/GPU rendering.
-5. Implement transcription with a disclosed provider, language/script selection, and editable timestamps.
-6. Implement chroma key/background removal, video effects, and export acceptance gates.
-7. Update this state and roadmap whenever verified implementation changes.
+1. Build the actual offline renderer behind the new composition-plan contract: decode source video/image frames, composite in z-order, mix/decode audio, apply supported DSP, encode MP4/audio, and verify A/V timestamps.
+2. Extend the render contract with visualizer frame data driven by offline audio analysis and independent foreground/background beat animation.
+3. Add deterministic tests for project schema v4 round-trip and backward compatibility, then validate audio DSP resource/failure handling.
+4. Implement lyrics transcription with a disclosed provider, language/script selection, and editable timestamps.
+5. Implement chroma key/background removal, video effects, and export acceptance gates.
+6. Update this state and roadmap whenever verified implementation changes.
 
 ## Working rules
 - User explicitly asked not to be asked for repeated OK/start confirmations. Do not ask them to monitor builds or keep the screen on.
