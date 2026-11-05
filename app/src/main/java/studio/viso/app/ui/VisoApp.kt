@@ -117,6 +117,38 @@ fun CreatorStudioApp() {
     var cachedWaveforms by remember { mutableStateOf<Map<String, List<Float>>>(emptyMap()) }
     val persistenceMutex = remember { Mutex() }
 
+    fun commitProject(next: EditorProject) {
+        if (next == project) return
+        undoStack.add(project)
+        if (undoStack.size > 40) undoStack.removeAt(0)
+        redoStack.clear()
+        project = next
+    }
+
+    fun undoProject() {
+        if (undoStack.isNotEmpty()) {
+            redoStack.add(project)
+            project = undoStack.removeAt(undoStack.lastIndex)
+        }
+    }
+
+    fun redoProject() {
+        if (redoStack.isNotEmpty()) {
+            undoStack.add(project)
+            project = redoStack.removeAt(redoStack.lastIndex)
+        }
+    }
+    var selectedIndex by remember { mutableIntStateOf(-1) }
+    var volume by remember { mutableFloatStateOf(1f) }
+    var pitch by remember { mutableFloatStateOf(1f) }
+    var speed by remember { mutableFloatStateOf(1f) }
+    var isPlaying by remember { mutableStateOf(false) }
+    var timelineMixing by remember { mutableStateOf(false) }
+    var status by remember { mutableStateOf("Import video, audio or PNG to begin") }
+    var audioExporting by remember { mutableStateOf(false) }
+    var audioExportProgress by remember { mutableFloatStateOf(0f) }
+    var audioExportMessage by remember { mutableStateOf("Choose a destination to export the timeline audio mix.") }
+
     val audioMixExportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("audio/mp4")
     ) { destinationUri ->
@@ -152,39 +184,6 @@ fun CreatorStudioApp() {
             }
         }
     }
-
-
-    fun commitProject(next: EditorProject) {
-        if (next == project) return
-        undoStack.add(project)
-        if (undoStack.size > 40) undoStack.removeAt(0)
-        redoStack.clear()
-        project = next
-    }
-
-    fun undoProject() {
-        if (undoStack.isNotEmpty()) {
-            redoStack.add(project)
-            project = undoStack.removeAt(undoStack.lastIndex)
-        }
-    }
-
-    fun redoProject() {
-        if (redoStack.isNotEmpty()) {
-            undoStack.add(project)
-            project = redoStack.removeAt(redoStack.lastIndex)
-        }
-    }
-    var selectedIndex by remember { mutableIntStateOf(-1) }
-    var volume by remember { mutableFloatStateOf(1f) }
-    var pitch by remember { mutableFloatStateOf(1f) }
-    var speed by remember { mutableFloatStateOf(1f) }
-    var isPlaying by remember { mutableStateOf(false) }
-    var timelineMixing by remember { mutableStateOf(false) }
-    var status by remember { mutableStateOf("Import video, audio or PNG to begin") }
-    var audioExporting by remember { mutableStateOf(false) }
-    var audioExportProgress by remember { mutableFloatStateOf(0f) }
-    var audioExportMessage by remember { mutableStateOf("Choose a destination to export the timeline audio mix.") }
     val selectedAudioSessionId = remember(context) {
         runCatching { (context.getSystemService(android.content.Context.AUDIO_SERVICE) as AudioManager).generateAudioSessionId() }.getOrDefault(0)
     }
