@@ -3,6 +3,8 @@ package studio.viso.app.ui
 import android.net.Uri
 import android.media.MediaMetadataRetriever
 import android.provider.OpenableColumns
+import java.io.File
+import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -133,7 +135,16 @@ fun VisoApp() {
     LaunchedEffect(isPlaying, selectedClipId) {
         while (isPlaying) {
             val clip = project.tracks.asSequence().flatMap { it.clips.asSequence() }.firstOrNull { it.id == selectedClipId }
-            if (clip != null) playheadMs = clip.timelineStartMs + player.currentPosition
+            if (clip != null) {
+                val position = player.currentPosition
+                if (position >= clip.sourceEndMs) {
+                    player.pause()
+                    isPlaying = false
+                    playheadMs = clip.timelineEndMs
+                } else {
+                    playheadMs = clip.timelineStartMs + (position - clip.sourceStartMs).coerceAtLeast(0L)
+                }
+            }
             delay(180)
         }
     }
@@ -161,19 +172,36 @@ fun VisoApp() {
                 Triple(name, mime, duration)
             }
             val duration = details.third?.takeIf { it > 0L } ?: if (kind == MediaKind.IMAGE) 5_000L else 10_000L
-            runCatching {
-                context.contentResolver.takePersistableUriPermission(uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            val stableUri = withContext(Dispatchers.IO) {
+                try {
+                    context.contentResolver.takePersistableUriPermission(uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    uri
+                } catch (_: Exception) {
+                    val extension = when (kind) {
+                        MediaKind.VIDEO -> "mp4"
+                        MediaKind.AUDIO -> "audio"
+                        MediaKind.IMAGE -> "img"
+                        MediaKind.TEXT -> "txt"
+                    }
+                    val destination = File(context.filesDir, "creator-media/${UUID.randomUUID()}.$extension")
+                    destination.parentFile?.mkdirs()
+                    val copied = context.contentResolver.openInputStream(uri)?.use { input ->
+                        destination.outputStream().use { output -> input.copyTo(output) }
+                    } ?: throw IllegalStateException("Unable to read selected media")
+                    if (copied <= 0L) throw IllegalStateException("Selected media is empty")
+                    Uri.fromFile(destination)
+                }
             }
-            val imported = project.importAsset(uri, details.first, kind, duration, details.second)
+            val imported = project.importAsset(stableUri, details.first, kind, duration, details.second)
             commitProject(imported.project)
             val kindLabel = when (kind) { MediaKind.VIDEO -> "VIDEO"; MediaKind.AUDIO -> "AUDIO"; else -> "IMAGE" }
-            val item = StudioMedia(uri, details.first, kindLabel)
+            val item = StudioMedia(stableUri, details.first, kindLabel)
             media.add(item)
             selectedIndex = media.lastIndex
             selectedClipId = imported.clipId
             playheadMs = 0L
             if (kind != MediaKind.IMAGE) {
-                player.setMediaItem(MediaItem.fromUri(uri))
+                player.setMediaItem(MediaItem.fromUri(stableUri))
                 player.prepare()
                 player.volume = volume
                 player.playbackParameters = PlaybackParameters(speed, pitch)
@@ -250,6 +278,11 @@ fun VisoApp() {
                         selectedClipId = project.assets.firstOrNull { it.uri == item.uri.toString() }?.let { asset ->
                             project.tracks.asSequence().flatMap { it.clips.asSequence() }.firstOrNull { it.mediaId == asset.id }?.id
                         }
+                        val selectedClip = project.tracks.asSequence().flatMap { it.clips.asSequence() }.firstOrNull { it.id == selectedClipId }
+                        if (selectedClip != null) {
+                            player.volume = if (selectedClip.audio.muted) 0f else selectedClip.audio.volume.coerceIn(0f, 1f)
+                            player.playbackParameters = PlaybackParameters(selectedClip.audio.playbackRate, 1f)
+                        }
                     },
                     onDelete = { index ->
                         val removed = media[index]
@@ -297,6 +330,8 @@ fun VisoApp() {
                         if (clip != null) {
                             playheadMs = clip.timelineStartMs
                             player.seekTo(clip.sourceStartMs)
+                            player.volume = if (clip.audio.muted) 0f else clip.audio.volume.coerceIn(0f, 1f)
+                            player.playbackParameters = PlaybackParameters(clip.audio.playbackRate, 1f)
                         }
                     },
                     onPlayheadChange = { next ->
