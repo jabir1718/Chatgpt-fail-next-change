@@ -167,7 +167,7 @@ fun VisualizerPage(
             }
         }
         Text(
-            "Background and foreground image choices are saved in this project. Foreground PNG reacts to detected beats. Offline rendering and GPU/3D modes are separate milestones.",
+            "Background and foreground image choices are saved in this project. Foreground PNG reacts to detected beats. Android audio permission is used to read live playback levels; this preview does not save or upload audio. Offline rendering and GPU/3D modes are separate milestones.",
             color = Color(0xFF7F8BA2), fontSize = 9.sp, modifier = Modifier.padding(top = 8.dp)
         )
     }
