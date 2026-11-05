@@ -25,6 +25,7 @@ data class TimelineVideoPreviewLayer(
     val zOrder: Int,
     val transform: Transform,
     val contentMode: CanvasContentMode,
+    val videoAspectRatio: Float,
     val player: ExoPlayer
 )
 
@@ -176,6 +177,13 @@ class TimelineVideoPreviewController(context: Context) {
                 zOrder = active.zOrder,
                 transform = active.transform,
                 contentMode = active.contentMode,
+                videoAspectRatio = active.player.videoSize.let { size ->
+                    if (size.width > 0 && size.height > 0) {
+                        val rotated = size.unappliedRotationDegrees == 90 || size.unappliedRotationDegrees == 270
+                        (if (rotated) size.height else size.width).toFloat() /
+                            (if (rotated) size.width else size.height).toFloat()
+                    } else 0f
+                },
                 player = active.player
             )
         }.sortedBy { it.zOrder }
