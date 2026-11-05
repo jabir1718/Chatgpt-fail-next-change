@@ -152,6 +152,27 @@ class TimelineEditorTest {
     }
 
     @Test
+    fun duplicateClipCreatesNewIdentityImmediatelyAfterOriginal() {
+        val (project, clip) = fixture()
+        val result = TimelineEditor.duplicateClip(project, clip.id)
+        val clips = result.tracks.single().clips.sortedBy { it.timelineStartMs }
+        assertEquals(2, clips.size)
+        assertEquals(clip.id, clips[0].id)
+        assertEquals(10_000L, clips[1].timelineStartMs)
+        assertEquals(clip.sourceStartMs, clips[1].sourceStartMs)
+        assertEquals(clip.sourceEndMs, clips[1].sourceEndMs)
+        assertTrue(clip.id != clips[1].id)
+    }
+
+    @Test
+    fun duplicateClipOnLockedTrackIsRejected() {
+        val (project, clip) = fixture()
+        val locked = project.copy(tracks = project.tracks.map { it.copy(locked = true) })
+        val error = runCatching { TimelineEditor.duplicateClip(locked, clip.id) }.exceptionOrNull()
+        assertTrue(error is IllegalArgumentException)
+    }
+
+    @Test
     fun deleteClipRemovesOnlyTheTimelineClip() {
         val (project, clip, asset) = fixture()
         val result = TimelineEditor.deleteClip(project, clip.id)
