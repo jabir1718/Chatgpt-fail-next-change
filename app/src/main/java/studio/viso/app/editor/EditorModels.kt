@@ -1,4 +1,4 @@
-package studio.viso.app.editor
+package com.creatorstudio.app.editor
 
 import java.util.UUID
 
