@@ -1,4 +1,4 @@
-package studio.viso.app.ui
+package com.creatorstudio.app.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -27,11 +27,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import studio.viso.app.editor.EditorProject
-import studio.viso.app.editor.TimelineClip
-import studio.viso.app.editor.TimelineEditor
-import studio.viso.app.editor.TrackKind
-import studio.viso.app.editor.updateClipAudio
+import com.creatorstudio.app.editor.EditorProject
+import com.creatorstudio.app.editor.TimelineClip
+import com.creatorstudio.app.editor.TimelineEditor
+import com.creatorstudio.app.editor.TrackKind
+import com.creatorstudio.app.editor.updateClipAudio
 
 private val TimelinePanelBg = Color(0xFF101827)
 private val TimelineAccent = Color(0xFF34D8C5)
@@ -190,7 +190,7 @@ private fun formatTimelineTime(valueMs: Long): String {
 @Composable
 private fun ClipAudioControls(
     clip: TimelineClip,
-    onSettingsChange: (studio.viso.app.editor.ClipAudioSettings) -> Unit
+    onSettingsChange: (com.creatorstudio.app.editor.ClipAudioSettings) -> Unit
 ) {
     var volumeValue by remember(clip.id, clip.audio.volume) { mutableFloatStateOf(clip.audio.volume) }
     Column(Modifier.fillMaxWidth().padding(top = 8.dp)) {
