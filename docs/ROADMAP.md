@@ -24,8 +24,8 @@ A polished, original Android creator studio for TikTok, YouTube Shorts, Instagra
 - [x] Native live-preview five-band EQ, low-band bass boost and compressor (Run #140 CI-verified; phone audibility/support open).
 - [ ] Pitch-preserving time stretch, formant and independent pitch/tempo.
 - [ ] BPM/beat markers, limiter/normalization, voice effects, voiceover recording, extraction and mix bus.
-- [ ] Streaming source PCM decode adapter for offline export.
-- [x] Block-based offline PCM mixing core: timeline placement, linear interpolation, clip rate/gain/fades, track gain/mute/solo, EQ, compressor and peak limiting (source committed; Run #144 compiled but one fade-out boundary assertion failed; corrected test pending CI re-run).
+- [ ] Streaming/disk-backed source PCM decode adapter for offline export (source implemented; CI verification pending).
+- [x] Block-based offline PCM mixing core: timeline placement, linear interpolation, clip rate/gain/fades, track gain/mute/solo, EQ, compressor and peak limiting (source + Run #145 unit tests/build/artifact verified).
 - [ ] AAC audio encoding/muxing and preview/export mix parity.
 **Current note:** OfflineAudioMixEngine consumes decoded PCM buffers and returns contiguous output blocks. It is not yet connected to MediaExtractor/MediaCodec streaming decode or an AAC encoder/muxer. Do not call audio export complete.
 **Gate:** Two or more clips with independent settings render to a valid audio file, with no clipping and correct timing.

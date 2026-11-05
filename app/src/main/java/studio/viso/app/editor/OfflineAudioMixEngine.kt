@@ -5,28 +5,12 @@ import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.pow
 import kotlin.math.sin
-import kotlin.math.sqrt
 
 /**
  * Decoded, normalized floating-point PCM supplied by the media decoder.
  * Samples are interleaved and must be in [-1, 1]. This buffer abstraction keeps
  * decoding separate from deterministic timeline mixing.
  */
-data class PcmAudioBuffer(
-    val sampleRate: Int,
-    val channelCount: Int,
-    val samples: FloatArray
-) {
-    init {
-        require(sampleRate > 0) { "Sample rate must be positive" }
-        require(channelCount in 1..2) { "Only mono and stereo PCM are supported" }
-        require(samples.size % channelCount == 0) { "PCM sample count must align to complete frames" }
-    }
-
-    val frameCount: Int get() = samples.size / channelCount
-    val durationMs: Long get() = frameCount.toLong() * 1000L / sampleRate
-}
-
 /** Result of one contiguous export-audio block. */
 data class MixedPcmBlock(
     val startFrame: Long,
@@ -47,9 +31,9 @@ data class MixedPcmBlock(
  */
 class OfflineAudioMixEngine(
     private val project: EditorProject,
-    private val sources: Map<String, PcmAudioBuffer>,
-    private val outputSampleRate: Int = 48_000,
-    private val outputChannels: Int = 2
+    private val sources: Map<String, PcmAudioSource>,
+    private val val outputSampleRate: Int = 48_000,
+    val outputChannels: Int = 2
 ) {
     private val soloTrackIds = project.tracks
         .filter { it.solo && (it.kind == TrackKind.AUDIO || it.kind == TrackKind.VIDEO) }
@@ -106,7 +90,7 @@ class OfflineAudioMixEngine(
                     val gain = clip.audio.volume * track.gain * fadeIn * fadeOut
                     val outBase = ((timelineFrame - startFrame).toInt()) * outputChannels
                     for (channel in 0 until outputChannels) {
-                        output[outBase + channel] += sampleAt(pcm, sourceFrame, channel) * gain.toFloat()
+                        output[outBase + channel] += pcm.sampleAt(sourceFrame, channel, outputChannels) * gain.toFloat()
                     }
                 }
             }
@@ -118,26 +102,6 @@ class OfflineAudioMixEngine(
 
     private fun millisecondsToFrames(milliseconds: Long): Long =
         (milliseconds.toDouble() * outputSampleRate / 1000.0).toLong()
-
-    private fun sampleAt(buffer: PcmAudioBuffer, position: Double, outputChannel: Int): Float {
-        if (position < 0.0 || position >= buffer.frameCount) return 0f
-        val first = position.toInt()
-        val second = minOf(first + 1, buffer.frameCount - 1)
-        val fraction = (position - first).toFloat()
-        fun channelSample(frame: Int): Float {
-            val base = frame * buffer.channelCount
-            return if (buffer.channelCount == 1) {
-                buffer.samples[base]
-            } else if (outputChannels == 1) {
-                (buffer.samples[base] + buffer.samples[base + 1]) * 0.5f
-            } else {
-                buffer.samples[base + outputChannel.coerceAtMost(1)]
-            }
-        }
-        val a = channelSample(first)
-        val b = channelSample(second)
-        return a + (b - a) * fraction
-    }
 
     private fun processMaster(samples: FloatArray) {
         val settings = project.audioProcessing
