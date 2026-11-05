@@ -19,6 +19,7 @@ import com.creatorstudio.app.editor.ProjectStore
 import com.creatorstudio.app.editor.ProjectSummary
 import com.creatorstudio.app.editor.duplicateProject
 import com.creatorstudio.app.editor.updateProjectName
+import com.creatorstudio.app.editor.pitchRatio
 import com.creatorstudio.app.editor.TimelineEditor
 import com.creatorstudio.app.editor.createStarterProject
 import com.creatorstudio.app.editor.importAsset
@@ -153,7 +154,7 @@ fun CreatorStudioApp() {
             val clip = firstClip
             if (clip != null) {
                 player.volume = if (clip.audio.muted) 0f else clip.audio.volume.coerceIn(0f, 1f)
-                player.playbackParameters = PlaybackParameters(clip.audio.playbackRate, 1f)
+                player.playbackParameters = PlaybackParameters(clip.audio.playbackRate, clip.audio.pitchRatio())
             }
         }
     }
@@ -396,7 +397,7 @@ fun CreatorStudioApp() {
                             player.seekTo(selectedClip.sourceStartMs)
                             playheadMs = selectedClip.timelineStartMs
                             player.volume = if (selectedClip.audio.muted) 0f else selectedClip.audio.volume.coerceIn(0f, 1f)
-                            player.playbackParameters = PlaybackParameters(selectedClip.audio.playbackRate, 1f)
+                            player.playbackParameters = PlaybackParameters(selectedClip.audio.playbackRate, selectedClip.audio.pitchRatio())
                         }
                     },
                     onDelete = { index ->
@@ -482,7 +483,7 @@ fun CreatorStudioApp() {
                         val activeClip = next.tracks.asSequence().flatMap { it.clips.asSequence() }.firstOrNull { it.id == selectedClipId }
                         if (activeClip != null) {
                             player.volume = if (activeClip.audio.muted) 0f else activeClip.audio.volume.coerceIn(0f, 1f)
-                            player.playbackParameters = PlaybackParameters(activeClip.audio.playbackRate, 1f)
+                            player.playbackParameters = PlaybackParameters(activeClip.audio.playbackRate, activeClip.audio.pitchRatio())
                         }
                         commitProject(next)
                     },
