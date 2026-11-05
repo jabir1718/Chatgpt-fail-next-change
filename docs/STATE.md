@@ -26,7 +26,7 @@ Last updated: 2026-11-05
 - Android document pickers for video, audio, and images.
 - Imported assets are represented in a versioned project model and placed on typed video/audio/overlay/caption tracks.
 - Persistable URI permission is attempted; if that fails, selected media is copied into app-managed files.
-- Project create/open/rename/duplicate/delete flows and autosave through `ProjectStore`.
+- Project create/open/rename/duplicate/delete flows and autosave through `ProjectStore`, including fallback recovery from a valid backup when the primary project file is missing or corrupt.
 - Media3 ExoPlayer preview path for selected video/audio, plus a video preview surface.
 - Multi-track timeline rows and clip blocks; selection, ±1 second move, trim start/end, split at playhead, normal delete, ripple delete (closes the gap on the affected track), undo/redo, playhead seek, add typed tracks, compatible cross-track movement, and per-track lock/mute controls. Track mute is applied to the selected clip's active preview; this is not yet a multi-track audio mixer.
 - Per-clip volume/mute, pitch-semitone and playback-rate settings are stored in the project; selected-clip preview settings are applied to the player.
@@ -34,7 +34,7 @@ Last updated: 2026-11-05
 - Visualizer UI has Spectrum, Radial, and Waveform presentations; project-linked image background/foreground references; foreground beat pulse/scale controls.
 
 ## Important limitations — do not misrepresent
-- Ripple-delete and track mute/lock changes were committed after Run #102 and are awaiting their own CI verification. Track mute currently affects the active selected-clip preview only; it does not yet mix multiple tracks.
+- Ripple-delete, track mute/lock, and interrupted-save backup recovery changes were committed after Run #102 and are awaiting their own CI verification. Track mute currently affects the active selected-clip preview only; it does not yet mix multiple tracks.
 - Timeline still lacks direct drag-and-drop clip movement, true trim handles, ripple editing, snapping/markers, track reorder/lock UI, and full synchronized multi-clip playback.
 - Project save/reopen and media URI recovery are implemented in source but still need device acceptance testing, including revoked permissions and app restart.
 - Per-clip audio settings are saved, but advanced DSP is not implemented: no independent EQ, bass, compressor, limiter, formant, pitch-preserving time stretch, fades automation, or final mix rendering.
