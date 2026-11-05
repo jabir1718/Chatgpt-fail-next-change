@@ -1,4 +1,4 @@
-package studio.viso.app.ui.theme
+package com.creatorstudio.app.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -6,7 +6,7 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-private val VisoColors = darkColorScheme(
+private val CreatorStudioColors = darkColorScheme(
     primary = Color(0xFF9B7BFF),
     secondary = Color(0xFF34D8C5),
     tertiary = Color(0xFFFF6FAE),
@@ -21,9 +21,9 @@ private val VisoColors = darkColorScheme(
 )
 
 @Composable
-fun VisoTheme(content: @Composable () -> Unit) {
+fun CreatorStudioTheme(content: @Composable () -> Unit) {
     MaterialTheme(
-        colorScheme = VisoColors,
+        colorScheme = CreatorStudioColors,
         typography = MaterialTheme.typography,
         content = content
     )
