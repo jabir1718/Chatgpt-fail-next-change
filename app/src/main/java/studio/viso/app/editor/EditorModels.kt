@@ -156,6 +156,22 @@ object TimelineEditor {
         )
     }
 
+    fun duplicateClip(project: EditorProject, clipId: String): EditorProject {
+        val track = project.tracks.firstOrNull { row -> row.clips.any { it.id == clipId } }
+            ?: error("Clip not found")
+        require(!track.locked) { "Track is locked" }
+        val original = track.clips.first { it.id == clipId }
+        val duplicate = original.copy(
+            id = UUID.randomUUID().toString(),
+            timelineStartMs = original.timelineEndMs
+        )
+        val updatedTrack = track.copy(clips = (track.clips + duplicate).sortedBy { it.timelineStartMs })
+        return project.copy(
+            updatedAtEpochMs = System.currentTimeMillis(),
+            tracks = project.tracks.map { if (it.id == track.id) updatedTrack else it }
+        )
+    }
+
     fun moveClip(project: EditorProject, clipId: String, newStartMs: Long): EditorProject {
         require(newStartMs >= 0L) { "Clip cannot start before zero" }
         val track = project.tracks.firstOrNull { t -> t.clips.any { it.id == clipId } } ?: error("Clip not found")
