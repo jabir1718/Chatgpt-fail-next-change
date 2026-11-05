@@ -88,6 +88,13 @@ class ProjectStore(context: Context) {
         put("updatedAtEpochMs", project.updatedAtEpochMs)
         put("assets", JSONArray().apply { project.assets.forEach { put(assetJson(it)) } })
         put("tracks", JSONArray().apply { project.tracks.forEach { put(trackJson(it)) } })
+        put("visualizer", JSONObject().apply {
+            put("backgroundAssetId", project.visualizer.backgroundAssetId ?: JSONObject.NULL)
+            put("foregroundAssetId", project.visualizer.foregroundAssetId ?: JSONObject.NULL)
+            put("mode", project.visualizer.mode)
+            put("foregroundScale", project.visualizer.foregroundScale)
+            put("beatSensitivity", project.visualizer.beatSensitivity)
+        })
     }
 
     private fun assetJson(asset: MediaAsset) = JSONObject().apply {
@@ -143,13 +150,21 @@ class ProjectStore(context: Context) {
                 clips = item.getJSONArray("clips").mapObjects { clip -> decodeClip(clip) }
             )
         }
+        val visualizerJson = json.optJSONObject("visualizer") ?: JSONObject()
         return EditorProject(
             id = json.getString("id"), name = json.optString("name", "Untitled Project"),
             width = json.optInt("width", 1080), height = json.optInt("height", 1920),
             frameRate = json.optInt("frameRate", 30),
             createdAtEpochMs = json.optLong("createdAtEpochMs", 0L),
             updatedAtEpochMs = json.optLong("updatedAtEpochMs", 0L),
-            assets = assets, tracks = tracks
+            assets = assets, tracks = tracks,
+            visualizer = VisualizerSettings(
+                backgroundAssetId = visualizerJson.stringOrNull("backgroundAssetId"),
+                foregroundAssetId = visualizerJson.stringOrNull("foregroundAssetId"),
+                mode = visualizerJson.optString("mode", "Spectrum"),
+                foregroundScale = visualizerJson.optDouble("foregroundScale", 1.0).toFloat(),
+                beatSensitivity = visualizerJson.optDouble("beatSensitivity", 1.08).toFloat()
+            )
         )
     }
 
@@ -193,7 +208,7 @@ class ProjectStore(context: Context) {
     private fun JSONObject.stringOrNull(key: String): String? =
         if (isNull(key) || !has(key)) null else optString(key)
 
-    companion object { const val SCHEMA_VERSION = 1 }
+    companion object { const val SCHEMA_VERSION = 2 }
 }
 
 data class ProjectSummary(val id: String, val name: String, val updatedAtEpochMs: Long)
