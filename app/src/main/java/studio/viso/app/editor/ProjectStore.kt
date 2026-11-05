@@ -145,6 +145,7 @@ class ProjectStore(context: Context) {
         put("id", clip.id); put("mediaId", clip.mediaId); put("kind", clip.kind.name)
         put("timelineStartMs", clip.timelineStartMs); put("durationMs", clip.durationMs)
         put("sourceStartMs", clip.sourceStartMs); put("sourceEndMs", clip.sourceEndMs)
+        put("contentMode", clip.contentMode.name)
         put("transform", JSONObject().apply {
             put("x", clip.transform.x); put("y", clip.transform.y)
             put("scaleX", clip.transform.scaleX); put("scaleY", clip.transform.scaleY)
@@ -222,6 +223,7 @@ class ProjectStore(context: Context) {
             kind = MediaKind.valueOf(item.getString("kind")),
             timelineStartMs = item.getLong("timelineStartMs"), durationMs = item.getLong("durationMs"),
             sourceStartMs = item.optLong("sourceStartMs", 0L), sourceEndMs = item.getLong("sourceEndMs"),
+            contentMode = runCatching { CanvasContentMode.valueOf(item.optString("contentMode", "FIT")) }.getOrDefault(CanvasContentMode.FIT),
             transform = Transform(
                 x = transform.optDouble("x", 0.0).toFloat(), y = transform.optDouble("y", 0.0).toFloat(),
                 scaleX = transform.optDouble("scaleX", 1.0).toFloat(), scaleY = transform.optDouble("scaleY", 1.0).toFloat(),
@@ -253,7 +255,7 @@ class ProjectStore(context: Context) {
     private fun JSONObject.stringOrNull(key: String): String? =
         if (isNull(key) || !has(key)) null else optString(key)
 
-    companion object { const val SCHEMA_VERSION = 5 }
+    companion object { const val SCHEMA_VERSION = 6 }
 }
 
 data class ProjectSummary(val id: String, val name: String, val updatedAtEpochMs: Long)
