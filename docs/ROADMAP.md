@@ -23,7 +23,7 @@ A polished, original Android creator studio for TikTok, YouTube Shorts, Instagra
 - [ ] Undo/redo history, autosave, project serialization/versioning.
 - [ ] Per-clip properties and independent source-audio controls.
 - [ ] Portrait/landscape canvas, fit/fill/crop, safe areas and aspect presets.
-**Current implementation note:** Project management, autosave/recovery, media import, selected-source preview, typed tracks, clip selection, trim/split/delete/ripple-delete, ±1 second repositioning, undo/redo, playhead seeking, compatible cross-track movement, direct drag, duplication, snapping, and track lock/mute controls are implemented in source. CI Run #130 verified the current timeline edit/scheduling code and APK artifact. Track mute still affects only the selected-source preview. The timeline playback plan is a pure schedule, not a synchronized playback engine. Device verification remains required.
+**Current implementation note:** Project management, autosave/recovery, media import, selected-source preview, typed tracks, clip selection, trim/split/delete/ripple-delete, ±1 second repositioning, undo/redo, playhead seeking, compatible cross-track movement, direct drag, duplication, snapping, and track lock/mute controls are implemented in source. A concurrent Media3 timeline audio preview is now connected to Studio Play/Pause: active audio/video clips get independent players, timeline-clock source alignment, clip gain/fades, pitch and playback rate. Run #131 verified the preceding playback-rate source mapping and APK artifact; the new concurrent preview integration is awaiting its own CI verification. Moving multi-clip video composition and device verification remain open.
 **Gate:** Import multiple video/audio/image assets, edit timeline, save/reopen project, playback stays synchronized, no crash.
 
 ## M2 — Audio engine & sound design
@@ -36,7 +36,7 @@ A polished, original Android creator studio for TikTok, YouTube Shorts, Instagra
 - [ ] Voiceover recording, microphone monitor, input gain and take management.
 - [ ] Audio extraction from video; mix bus and master output meter.
 - [ ] Optional vocal/instrumental separation only if a suitable model/runtime/license is validated.
-**Current implementation note:** Per-clip volume/mute, pitch-semitone, playback-rate and fade duration values are stored. TimelinePlaybackPlan now calculates effective clip gain with fade-in/fade-out envelopes, and its tests cover overlapping clips, source offsets, mute rules and fades. Fade gain is calculated in the schedule, but it does not yet play fades or mix audio. Full synchronized playback, independent DSP, waveform cache, mix bus and offline mix/render are not implemented.
+**Current implementation note:** Per-clip volume/mute, pitch-semitone, playback-rate and fade duration values are stored. TimelinePlaybackPlan calculates overlapping clip schedules, playback-rate-aware source positions and fade envelopes. The new timeline preview controller applies these values to concurrent Media3 players during live playback; this is an initial real-time preview mix, not sample-accurate DSP or an offline rendered mix. Independent EQ/bass/compression, waveform cache, mix bus and final offline mix/render remain unimplemented.
 **Gate:** Two clips can have different settings; preview and exported mix match; no clipping or broken sync.
 
 ## M3 — Visualizer Studio (highest product priority)

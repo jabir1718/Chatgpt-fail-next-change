@@ -12,12 +12,12 @@ Last updated: 2026-11-05
 
 ## Verified CI evidence
 - Workflow: `.github/workflows/android.yml`
-- Latest verified successful run: Run #130, ID `42098238456`, commit `9dc0ae2c2eb482671598fd99e601c8cf0b31b4c4`.
-- Run #130 completed successfully: Android SDK setup, `assembleDebug`, configured tests, and APK artifact upload all succeeded.
-- Verified job: `Assemble debug APK`, job ID `127493847701`, conclusion `success`.
-- Artifact: `Creator-Studio-debug-apk`, 19,593,124 bytes, not expired at verification time.
-- Run #130 verifies fade-in/fade-out gain scheduling and the preceding overlapping audio/video schedule and snapping fixes. CI success verifies compilation/tests configured in the workflow and artifact upload, not device behavior or product completion.
-- Earlier Run #111 (ID `42091206185`) verified ripple-delete, track mute/lock, and interrupted-save recovery.
+- Latest verified successful run: Run #131, ID `42098633205`, commit `f3df310b5ca1398d4d1accf6340cd4fdc258d677`.
+- Run #131 completed successfully: Android SDK setup, `assembleDebug`, configured tests, and APK artifact upload all succeeded.
+- Verified job: `Assemble debug APK`, job ID `127495226013`, conclusion `success`.
+- Artifact: `Creator-Studio-debug-apk`, 19,593,158 bytes, not expired at verification time.
+- Run #131 verifies playback-rate-aware source-position mapping/tests plus preceding fade gain scheduling and timeline fixes. CI success verifies compilation/tests configured in the workflow and artifact upload, not device behavior or product completion.
+- Earlier Run #130 (ID `42091206185`) verified ripple-delete, track mute/lock, and interrupted-save recovery.
 - User has not confirmed device installation, launch, or real-device editing/export.
 
 ## Implemented in source (not all device-verified)
@@ -29,14 +29,15 @@ Last updated: 2026-11-05
 - Media3 ExoPlayer preview path for selected video/audio, plus a video preview surface.
 - Multi-track timeline rows and clip blocks; selection, ±1 second move, trim start/end, split at playhead, normal delete, ripple delete (closes the gap on the affected track), undo/redo, playhead seek, add typed tracks, compatible cross-track movement, direct drag repositioning, clip duplication, snapping, and per-track lock/mute controls.
 - Per-clip volume/mute, pitch-semitone and playback-rate settings are stored in the project; selected-clip preview settings are applied to the player.
-- A pure immutable `TimelinePlaybackPlan` identifies overlapping audio/video clips, source positions, mute state and effective gain. Fade-in/fade-out envelope calculation is now included in the schedule model. This remains a planning model: it does not create synchronized playback, decode concurrent media, or mix audio.
+- A pure immutable `TimelinePlaybackPlan` identifies overlapping audio/video clips, source positions, mute state and effective gain, including fade envelopes and playback-rate-aware source positions.
+- A new `TimelineAudioPreviewController` is connected to the Studio timeline Play/Pause transport. It creates one Media3 player per active audible audio/video clip, aligns new players to the timeline source position, applies per-clip playback rate/pitch and live fade/volume gain, removes players when clips leave the active range, and periodically corrects source drift. This is concurrent timeline audio preview using Android's platform output mixer; it is not yet an offline rendered mix or synchronized moving-video compositor.
 - Live audio-session analysis via Android `Visualizer`: FFT-derived spectrum bands, waveform samples, onset/beat pulse and rough BPM estimate. This is live playback analysis, not offline source-file analysis.
 - Visualizer UI has Spectrum, Radial, and Waveform presentations; project-linked image background/foreground references; foreground beat pulse/scale controls.
 
 ## Important limitations — do not misrepresent
 - Timeline edit operations listed above are source-implemented; snapping, clip drag, duplication, playback scheduling and fade gain planning passed CI through Run #130. Device verification remains open.
 - Track mute currently affects the selected-clip preview; it does not yet mix multiple tracks.
-- TimelinePlaybackPlan is only a pure schedule. No synchronized multi-player timeline transport, concurrent audio decoding, gain automation playback, or actual audio mixing is connected yet.
+- Timeline audio preview now uses concurrent Media3 players for audible audio/video clips, with a monotonic timeline clock and periodic source-position correction. This is preview playback, not sample-accurate studio mixing or offline export. The current video preview surface is not yet switched/composited across all timeline video clips in sync.
 - Project save/reopen and media URI recovery are implemented in source but still need device acceptance testing, including revoked permissions and app restart.
 - Per-clip audio settings are saved, but advanced DSP is not implemented: no independent EQ, bass, compressor, limiter, formant, pitch-preserving time stretch, or final mix rendering.
 - Visualizer is real-time audio-reactive for the active Android playback session only. Offline render synchronization, video background compositing, multiple independently animated overlays, particles/rings/3D GPU renderer, and export are not implemented.

@@ -10,6 +10,7 @@ import java.io.File
 import java.util.UUID
 import androidx.core.content.ContextCompat
 import com.creatorstudio.app.audio.AudioReactiveEngine
+import com.creatorstudio.app.audio.TimelineAudioPreviewController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -133,8 +134,10 @@ fun CreatorStudioApp() {
     var pitch by remember { mutableFloatStateOf(1f) }
     var speed by remember { mutableFloatStateOf(1f) }
     var isPlaying by remember { mutableStateOf(false) }
+    var timelineMixing by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf("Import video, audio or PNG to begin") }
     val player = remember { ExoPlayer.Builder(context).build() }
+    val timelineAudioPreview = remember(context) { TimelineAudioPreviewController(context) }
     val audioReactiveEngine = remember {
         AudioReactiveEngine(
             onSpectrum = { spectrumLevels = it },
@@ -210,8 +213,8 @@ fun CreatorStudioApp() {
         }
     }
 
-    LaunchedEffect(isPlaying, selectedClipId) {
-        while (isPlaying) {
+    LaunchedEffect(isPlaying, selectedClipId, timelineMixing) {
+        while (isPlaying && !timelineMixing) {
             val clip = project.tracks.asSequence().flatMap { it.clips.asSequence() }.firstOrNull { it.id == selectedClipId }
             if (clip != null) {
                 val position = player.currentPosition
@@ -294,9 +297,24 @@ fun CreatorStudioApp() {
         }
     }
 
-    DisposableEffect(player) {
+    LaunchedEffect(timelineMixing, project) {
+        while (timelineMixing) {
+            val nextPosition = timelineAudioPreview.update(project)
+            playheadMs = nextPosition
+            if (!timelineAudioPreview.isPlaying) {
+                timelineMixing = false
+                isPlaying = false
+                player.volume = volume
+                status = "Timeline audio preview finished"
+            }
+            delay(60)
+        }
+    }
+
+    DisposableEffect(player, timelineAudioPreview) {
         onDispose {
             audioReactiveEngine.stop()
+            timelineAudioPreview.release()
             player.release()
         }
     }
@@ -485,10 +503,20 @@ fun CreatorStudioApp() {
                         status = "Media removed from project timeline"
                     },
                     onPlay = {
-                        if (selectedIndex >= 0 && media.getOrNull(selectedIndex)?.kind != "IMAGE") {
-                            if (player.isPlaying) { player.pause(); isPlaying = false }
-                            else { player.play(); isPlaying = true }
-                        } else status = "Select an audio or video clip first"
+                        if (timelineMixing) {
+                            playheadMs = timelineAudioPreview.pause()
+                            timelineMixing = false
+                            isPlaying = false
+                            player.volume = volume
+                            status = "Timeline audio preview paused"
+                        } else if (project.tracks.any { track -> track.clips.any { it.kind == MediaKind.AUDIO || it.kind == MediaKind.VIDEO } }) {
+                            player.pause()
+                            player.volume = 0f
+                            timelineAudioPreview.play(project, playheadMs)
+                            timelineMixing = timelineAudioPreview.isPlaying
+                            isPlaying = timelineMixing
+                            status = if (timelineMixing) "Playing all active timeline audio clips" else "No audible clips at this playhead"
+                        } else status = "Add an audio or video clip to the timeline first"
                     },
                     volume = volume, onVolume = { volume = it; player.volume = it },
                     pitch = pitch, onPitch = { pitch = it; player.playbackParameters = PlaybackParameters(speed, it) },
@@ -537,6 +565,12 @@ fun CreatorStudioApp() {
                     canUndo = undoStack.isNotEmpty(),
                     canRedo = redoStack.isNotEmpty(),
                     onSelectClip = { clipId ->
+                        if (timelineMixing) {
+                            timelineAudioPreview.pause()
+                            timelineMixing = false
+                            isPlaying = false
+                            player.volume = volume
+                        }
                         selectedClipId = clipId
                         val clip = project.tracks.asSequence().flatMap { it.clips.asSequence() }.firstOrNull { it.id == clipId }
                         val asset = project.assets.firstOrNull { it.id == clip?.mediaId }
@@ -552,8 +586,12 @@ fun CreatorStudioApp() {
                     },
                     onPlayheadChange = { next ->
                         playheadMs = next
-                        val clip = project.tracks.asSequence().flatMap { it.clips.asSequence() }.firstOrNull { it.id == selectedClipId }
-                        if (clip != null) player.seekTo((clip.sourceStartMs + (next - clip.timelineStartMs).coerceAtLeast(0L)).coerceIn(clip.sourceStartMs, clip.sourceEndMs))
+                        if (timelineMixing) {
+                            timelineAudioPreview.seek(project, next)
+                        } else {
+                            val clip = project.tracks.asSequence().flatMap { it.clips.asSequence() }.firstOrNull { it.id == selectedClipId }
+                            if (clip != null) player.seekTo((clip.sourceStartMs + (next - clip.timelineStartMs).coerceAtLeast(0L)).coerceIn(clip.sourceStartMs, clip.sourceEndMs))
+                        }
                     },
                     onProjectChange = { next ->
                         val activeClip = next.tracks.asSequence().flatMap { it.clips.asSequence() }.firstOrNull { it.id == selectedClipId }
