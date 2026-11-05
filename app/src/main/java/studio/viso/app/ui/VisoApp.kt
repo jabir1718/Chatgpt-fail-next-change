@@ -434,7 +434,10 @@ fun CreatorStudioApp() {
                     message = visualizerMessage,
                     onModeChange = { visualizerMode = it },
                     onStart = {
-                        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                        val active = media.getOrNull(selectedIndex)
+                        if (active == null || active.kind == "IMAGE") {
+                            visualizerMessage = "Import and select an audio or video source first."
+                        } else if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
                             startLiveVisualizer()
                         } else {
                             visualizerPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
