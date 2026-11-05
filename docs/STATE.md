@@ -56,9 +56,9 @@ Last updated: 2026-11-06
 - M4–M8: Not complete. See roadmap.
 
 ## Next engineering priorities
-1. Add image URI decoding/cache and connect RenderCompositionPlan + OfflineVisualizerFrameRenderer to the H.264 encoder.
-2. Mux AAC and H.264 tracks into one MP4 with exact timestamps and cancellation/recovery.
-3. Add source video frame decoding and verify complete export on Android hardware.
+1. Verify image loader and AAC/H.264 muxer source/tests in CI; build a visualizer-only video pipeline for still-image layers.
+2. Add source video frame decoding, then connect the full render plan to H.264 and AAC muxing.
+3. Verify complete export, cancellation and sync on Android hardware.
 2. Implement streaming MediaExtractor/MediaCodec audio decoding into bounded PCM blocks, including seek/source-in and sample-rate/channel conversion.
 3. Add AAC encoder/muxer output and align encoded audio timestamps to video frame timestamps.
 4. Implement Android video/image frame decoding and GPU/Canvas composition in z-order from RenderCompositionPlan.

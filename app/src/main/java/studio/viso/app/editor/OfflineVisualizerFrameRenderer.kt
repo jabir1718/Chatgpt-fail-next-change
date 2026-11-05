@@ -61,7 +61,15 @@ class OfflineVisualizerFrameRenderer {
 
     private fun drawFullCanvas(canvas: Canvas, bitmap: Bitmap, width: Int, height: Int, alpha: Int) {
         val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG).apply { this.alpha = alpha }
-        canvas.drawBitmap(bitmap, null, RectF(0f, 0f, width.toFloat(), height.toFloat()), paint)
+        val scale = maxOf(width.toFloat() / bitmap.width, height.toFloat() / bitmap.height)
+        val drawWidth = bitmap.width * scale
+        val drawHeight = bitmap.height * scale
+        val left = (width - drawWidth) * 0.5f
+        val top = (height - drawHeight) * 0.5f
+        canvas.save()
+        canvas.clipRect(0f, 0f, width.toFloat(), height.toFloat())
+        canvas.drawBitmap(bitmap, null, RectF(left, top, left + drawWidth, top + drawHeight), paint)
+        canvas.restore()
     }
 
     private fun drawLayerBitmap(
@@ -79,10 +87,13 @@ class OfflineVisualizerFrameRenderer {
         val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG).apply {
             alpha = (transform.opacity.coerceIn(0f, 1f) * 255f).toInt()
         }
+        val fitScale = min(width.toFloat() / bitmap.width, height.toFloat() / bitmap.height)
+        val drawWidth = bitmap.width * fitScale
+        val drawHeight = bitmap.height * fitScale
         canvas.drawBitmap(
             bitmap,
             null,
-            RectF(-width * 0.5f, -height * 0.5f, width * 0.5f, height * 0.5f),
+            RectF(-drawWidth * 0.5f, -drawHeight * 0.5f, drawWidth * 0.5f, drawHeight * 0.5f),
             paint
         )
         canvas.restoreToCount(save)
