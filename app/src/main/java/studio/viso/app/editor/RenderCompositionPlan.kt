@@ -16,6 +16,7 @@ data class RenderLayerPlan(
     val zOrder: Int,
     val sourcePositionMs: Long?,
     val transform: Transform,
+    val contentMode: CanvasContentMode = CanvasContentMode.FIT,
     val activeCaptions: List<CaptionSegment> = emptyList()
 )
 
@@ -90,6 +91,7 @@ object RenderCompositionPlan {
                     zOrder = trackIndex,
                     sourcePositionMs = sourcePosition,
                     transform = clip.transform,
+                    contentMode = clip.contentMode,
                     activeCaptions = captions
                 )
             }
