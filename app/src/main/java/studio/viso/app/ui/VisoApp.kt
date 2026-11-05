@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.media.MediaMetadataRetriever
+import android.graphics.BitmapFactory
 import android.provider.OpenableColumns
 import java.io.File
 import java.util.UUID
@@ -27,6 +28,7 @@ import com.creatorstudio.app.editor.createStarterProject
 import com.creatorstudio.app.editor.importAsset
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -57,10 +59,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.platform.LocalContext
 import androidx.media3.common.MediaItem
@@ -611,27 +616,47 @@ private fun StudioPage(
 
 @Composable
 private fun PreviewStage(player: ExoPlayer, item: StudioMedia?, isPlaying: Boolean, onPlay: () -> Unit) {
+    val context = LocalContext.current
+    val imageBitmap by produceState<ImageBitmap?>(initialValue = null, key1 = item?.uri) {
+        value = if (item?.kind == "IMAGE") withContext(Dispatchers.IO) {
+            runCatching {
+                val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                context.contentResolver.openInputStream(item.uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
+                val largestSide = maxOf(bounds.outWidth, bounds.outHeight).coerceAtLeast(1)
+                val sample = (largestSide / 1600).coerceAtLeast(1)
+                val options = BitmapFactory.Options().apply { inSampleSize = sample }
+                context.contentResolver.openInputStream(item.uri)?.use { BitmapFactory.decodeStream(it, null, options)?.asImageBitmap() }
+            }.getOrNull()
+        } else null
+    }
     Box(Modifier.fillMaxWidth().aspectRatio(0.88f).clip(RoundedCornerShape(22.dp)).background(Color(0xFF111827)).border(1.dp, Color(0xFF51447B), RoundedCornerShape(22.dp))) {
-        if (item?.kind == "VIDEO") {
-            AndroidView(factory = { ctx -> PlayerView(ctx).apply { this.player = player; useController = true } },
+        when (item?.kind) {
+            "VIDEO" -> AndroidView(factory = { ctx -> PlayerView(ctx).apply { this.player = player; useController = true } },
                 update = { it.player = player }, modifier = Modifier.fillMaxSize())
-        } else {
-            Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
-                val bars = remember { List(36) { (0.2f + (it % 7) * 0.1f).coerceAtMost(0.9f) } }
-                Row(Modifier.height(110.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                    bars.forEachIndexed { i, h ->
-                        Box(Modifier.width(5.dp).height((if (isPlaying) h * 110f else h * 75f).dp).clip(CircleShape).background(if (i % 3 == 0) Pink else Mint))
-                    }
+            "IMAGE" -> {
+                if (imageBitmap != null) {
+                    Image(bitmap = imageBitmap!!, contentDescription = item.name, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
+                } else {
+                    Text("Loading image preview…", color = Color(0xFFB9C2D5), modifier = Modifier.align(Alignment.Center))
                 }
+            }
+            "AUDIO" -> Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(Icons.Default.GraphicEq, null, tint = Mint, modifier = Modifier.size(56.dp))
                 Spacer(Modifier.height(14.dp))
-                Text(item?.name ?: "YOUR CREATIVE CANVAS", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 1)
-                Text(when (item?.kind) { "AUDIO" -> "Audio loaded • visualizer engine next"; "IMAGE" -> "Image layer imported"; else -> "Import video, audio or PNG to begin" }, color = Color(0xFFB9C2D5), fontSize = 10.sp)
+                Text(item.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 1)
+                Text("Audio source ready • open Visualizer Studio for live FFT", color = Color(0xFFB9C2D5), fontSize = 10.sp)
+            }
+            else -> Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(Icons.Default.GraphicEq, null, tint = Mint, modifier = Modifier.size(56.dp))
+                Spacer(Modifier.height(14.dp))
+                Text("YOUR CREATIVE CANVAS", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                Text("Import video, audio or PNG to begin", color = Color(0xFFB9C2D5), fontSize = 10.sp)
             }
         }
         Surface(Modifier.align(Alignment.TopStart).padding(10.dp), color = Color.Black.copy(alpha = 0.5f), shape = RoundedCornerShape(8.dp)) {
             Text("PREVIEW", color = Mint, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp))
         }
-        if (item?.kind != "VIDEO") {
+        if (item?.kind == "AUDIO") {
             FilledIconButton(onClick = onPlay, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp), colors = IconButtonDefaults.filledIconButtonColors(containerColor = Violet)) {
                 Icon(if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow, contentDescription = "Play or pause", tint = Color.White)
             }
