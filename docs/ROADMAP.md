@@ -8,7 +8,7 @@ A polished, original Android creator studio for TikTok, YouTube Shorts, Instagra
 ## M0 — Clean foundation & build
 - [x] Fresh Android Kotlin/Jetpack Compose project in this repository.
 - [x] GitHub Actions Android SDK build workflow.
-- [x] First debug APK built and uploaded as `Viso-debug-apk`.
+- [x] Debug APK artifact pipeline verified; the current artifact name is `Creator-Studio-debug-apk`.
 - [ ] User installs the APK and confirms it launches on device.
 - [ ] Add crash reporting/log capture for debug builds (opt-in, privacy-conscious).
 **Gate:** CI build + artifact + user launch smoke test.
@@ -23,6 +23,7 @@ A polished, original Android creator studio for TikTok, YouTube Shorts, Instagra
 - [ ] Undo/redo history, autosave, project serialization/versioning.
 - [ ] Per-clip properties and independent source-audio controls.
 - [ ] Portrait/landscape canvas, fit/fill/crop, safe areas and aspect presets.
+**Current implementation note:** Project create/open/rename/duplicate/delete and autosave, typed tracks, clip selection, trim/split/delete, ±1 second repositioning, undo/redo, playhead seeking, typed-track creation and compatible cross-track movement are present in source. Media import attempts persistable URI permission and falls back to app-managed copies. Latest typed-track/cross-track changes still require CI and device verification; direct drag gestures, ripple editing, snapping, markers, and complete synchronized multi-clip transport remain open.
 **Gate:** Import multiple video/audio/image assets, edit timeline, save/reopen project, playback stays synchronized, no crash.
 
 ## M2 — Audio engine & sound design
@@ -35,6 +36,7 @@ A polished, original Android creator studio for TikTok, YouTube Shorts, Instagra
 - [ ] Voiceover recording, microphone monitor, input gain and take management.
 - [ ] Audio extraction from video; mix bus and master output meter.
 - [ ] Optional vocal/instrumental separation only if a suitable model/runtime/license is validated.
+**Current implementation note:** Per-clip volume/mute, pitch-semitone and playback-rate values are stored and applied to the selected preview clip. Full independent DSP, waveform cache, mix bus and offline mix/render are not implemented.
 **Gate:** Two clips can have different settings; preview and exported mix match; no clipping or broken sync.
 
 ## M3 — Visualizer Studio (highest product priority)
@@ -48,6 +50,7 @@ A polished, original Android creator studio for TikTok, YouTube Shorts, Instagra
 - [ ] Keyframes, easing, masks, blend modes, shadows, outlines and effects.
 - [ ] Lyrics/captions over visualizer with safe placement and word highlighting.
 - [ ] Save reusable visualizer presets/templates.
+**Current implementation note:** A live Android playback-session analyser produces FFT spectrum bands, waveform samples, beat pulses and a rough BPM estimate. Spectrum, radial and waveform preview modes plus image layer references and foreground beat pulse controls are present. This is not offline analysis/rendering; full compositing, multiple independent layers, particle/ring/3D GPU modes and export remain open.
 **Gate:** Imported song drives visualizer; background art and foreground transparent PNG are composited; foreground reacts independently to beat; exported video matches preview.
 
 ## M4 — Automatic lyrics, captions & voice input
