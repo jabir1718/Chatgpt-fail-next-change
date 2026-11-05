@@ -8,6 +8,7 @@ import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import com.creatorstudio.app.editor.CanvasContentMode
 import com.creatorstudio.app.editor.EditorProject
 import com.creatorstudio.app.editor.MediaKind
 import com.creatorstudio.app.editor.TimelinePlaybackPlan
@@ -23,6 +24,7 @@ data class TimelineVideoPreviewLayer(
     val trackId: String,
     val zOrder: Int,
     val transform: Transform,
+    val contentMode: CanvasContentMode,
     val player: ExoPlayer
 )
 
@@ -38,7 +40,8 @@ class TimelineVideoPreviewController(context: Context) {
         val uri: String,
         var trackId: String,
         var zOrder: Int,
-        var transform: Transform
+        var transform: Transform,
+        var contentMode: CanvasContentMode
     )
 
     private val appContext = context.applicationContext
@@ -146,7 +149,7 @@ class TimelineVideoPreviewController(context: Context) {
                 )
                 player.prepare()
                 player.seekTo(scheduled.sourcePositionMs)
-                active = ActiveVideo(player, asset.uri, scheduled.trackId, zOrder, clip.transform)
+                active = ActiveVideo(player, asset.uri, scheduled.trackId, zOrder, clip.transform, clip.contentMode)
                 activeVideos[clip.id] = active
             } else {
                 val drift = kotlin.math.abs(active.player.currentPosition - scheduled.sourcePositionMs)
@@ -156,6 +159,7 @@ class TimelineVideoPreviewController(context: Context) {
                 active.trackId = scheduled.trackId
                 active.zOrder = zOrder
                 active.transform = clip.transform
+                active.contentMode = clip.contentMode
             }
 
             active.player.volume = 0f
@@ -171,6 +175,7 @@ class TimelineVideoPreviewController(context: Context) {
                 trackId = active.trackId,
                 zOrder = active.zOrder,
                 transform = active.transform,
+                contentMode = active.contentMode,
                 player = active.player
             )
         }.sortedBy { it.zOrder }
