@@ -237,6 +237,35 @@ class TimelineEditorTest {
         assertEquals(1, locked.tracks.single().clips.size)
     }
 
+
+    @Test
+    fun clipCanvasContentModeCanBeChangedWithoutChangingTimelineOrAudioSettings() {
+        val (base, original) = fixture()
+        val video = MediaAsset(
+            id = "video", uri = "file:///video.mp4", displayName = "video.mp4",
+            kind = MediaKind.VIDEO, durationMs = 10_000L
+        )
+        val videoClip = TimelineClip(
+            id = "video-clip", mediaId = video.id, kind = MediaKind.VIDEO,
+            timelineStartMs = 2_000L, durationMs = 5_000L,
+            audio = ClipAudioSettings(volume = 0.4f, playbackRate = 1.5f)
+        )
+        val project = base.copy(
+            assets = base.assets + video,
+            tracks = base.tracks + TimelineTrack(name = "Video", kind = TrackKind.VIDEO, clips = listOf(videoClip))
+        )
+
+        val changed = TimelineEditor.setClipContentMode(project, videoClip.id, CanvasContentMode.CROP)
+        val updated = changed.tracks.last().clips.single()
+
+        assertEquals(CanvasContentMode.CROP, updated.contentMode)
+        assertEquals(videoClip.timelineStartMs, updated.timelineStartMs)
+        assertEquals(videoClip.durationMs, updated.durationMs)
+        assertEquals(videoClip.audio, updated.audio)
+        assertEquals(original.id, changed.tracks.first().clips.single().id)
+        assertEquals(CanvasContentMode.FIT, changed.tracks.first().clips.single().contentMode)
+    }
+
     @Test
     fun duplicateProjectRemapsAssetTrackAndClipIds() {
         val (baseProject, clip, _) = fixture()
