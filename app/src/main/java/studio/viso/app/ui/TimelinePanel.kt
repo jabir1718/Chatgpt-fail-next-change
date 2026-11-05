@@ -32,6 +32,7 @@ import com.creatorstudio.app.editor.TimelineClip
 import com.creatorstudio.app.editor.TimelineEditor
 import com.creatorstudio.app.editor.TrackKind
 import com.creatorstudio.app.editor.updateClipAudio
+import com.creatorstudio.app.editor.pitchRatio
 
 private val TimelinePanelBg = Color(0xFF101827)
 private val TimelineAccent = Color(0xFF34D8C5)
@@ -193,6 +194,8 @@ private fun ClipAudioControls(
     onSettingsChange: (com.creatorstudio.app.editor.ClipAudioSettings) -> Unit
 ) {
     var volumeValue by remember(clip.id, clip.audio.volume) { mutableFloatStateOf(clip.audio.volume) }
+    var pitchValue by remember(clip.id, clip.audio.pitchSemitones) { mutableFloatStateOf(clip.audio.pitchSemitones) }
+    var rateValue by remember(clip.id, clip.audio.playbackRate) { mutableFloatStateOf(clip.audio.playbackRate) }
     Column(Modifier.fillMaxWidth().padding(top = 8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("CLIP VOLUME", color = Color(0xFFB7C4D8), fontSize = 9.sp, modifier = Modifier.weight(1f))
@@ -209,6 +212,23 @@ private fun ClipAudioControls(
             valueRange = 0f..2f,
             colors = SliderDefaults.colors(thumbColor = TimelineAccent, activeTrackColor = TimelineAccent)
         )
-        Text("Saved per clip • mute and gain are stored with this project", color = Color(0xFF8996AC), fontSize = 8.sp)
+        Text("PITCH  ${pitchValue.toInt()} semitones", color = Color(0xFFB7C4D8), fontSize = 9.sp)
+        Slider(
+            value = pitchValue.coerceIn(-12f, 12f),
+            onValueChange = { pitchValue = it },
+            onValueChangeFinished = { onSettingsChange(clip.audio.copy(pitchSemitones = pitchValue)) },
+            valueRange = -12f..12f,
+            colors = SliderDefaults.colors(thumbColor = VisualViolet, activeTrackColor = VisualViolet)
+        )
+        Text("TEMPO  ${"%.2f".format(rateValue)}×", color = Color(0xFFB7C4D8), fontSize = 9.sp)
+        Slider(
+            value = rateValue.coerceIn(0.25f, 4f),
+            onValueChange = { rateValue = it },
+            onValueChangeFinished = { onSettingsChange(clip.audio.copy(playbackRate = rateValue)) },
+            valueRange = 0.25f..4f,
+            colors = SliderDefaults.colors(thumbColor = VisualViolet, activeTrackColor = VisualViolet)
+        )
+        Text("Saved per clip • preview playback uses these settings; export DSP is not connected yet",
+            color = Color(0xFF8996AC), fontSize = 8.sp)
     }
 }
