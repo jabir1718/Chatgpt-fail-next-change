@@ -146,6 +146,41 @@ class TimelineEditorTest {
     }
 
     @Test
+    fun rippleDeleteClosesGapOnSameTrackAndPreservesOtherTracks() {
+        val (project, first) = fixture()
+        val second = first.copy(id = "later", timelineStartMs = 12_000L)
+        val otherTrack = TimelineTrack(name = "Video", kind = TrackKind.VIDEO)
+        val expanded = project.copy(tracks = listOf(project.tracks.single().copy(clips = listOf(first, second)), otherTrack))
+
+        val result = TimelineEditor.rippleDeleteClip(expanded, first.id)
+        val remaining = result.tracks.first().clips.single()
+
+        assertEquals(2_000L, remaining.timelineStartMs)
+        assertEquals(second.id, remaining.id)
+        assertTrue(result.tracks.last().clips.isEmpty())
+    }
+
+    @Test
+    fun rippleDeleteIsRejectedOnLockedTrack() {
+        val (project, clip) = fixture()
+        val locked = project.copy(tracks = project.tracks.map { it.copy(locked = true) })
+        val error = runCatching { TimelineEditor.rippleDeleteClip(locked, clip.id) }.exceptionOrNull()
+        assertTrue(error is IllegalArgumentException)
+    }
+
+    @Test
+    fun trackMuteAndLockCanBeChangedIndependently() {
+        val (project) = fixture()
+        val trackId = project.tracks.single().id
+        val muted = TimelineEditor.setTrackMuted(project, trackId, true)
+        val locked = TimelineEditor.setTrackLocked(muted, trackId, true)
+
+        assertTrue(locked.tracks.single().muted)
+        assertTrue(locked.tracks.single().locked)
+        assertEquals(1, locked.tracks.single().clips.size)
+    }
+
+    @Test
     fun duplicateProjectRemapsAssetTrackAndClipIds() {
         val (baseProject, clip, _) = fixture()
         val image = MediaAsset(
