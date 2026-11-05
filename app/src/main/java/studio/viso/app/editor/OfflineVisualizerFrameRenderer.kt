@@ -53,7 +53,7 @@ class OfflineVisualizerFrameRenderer {
                 }
                 RenderLayerRole.VIDEO -> {
                     decodedFrames[layer.clipId ?: layer.assetId]?.let { bitmap ->
-                        drawLayerBitmap(canvas, bitmap, layer.transform, framePlan.width, framePlan.height, 1f)
+                        drawLayerBitmap(canvas, bitmap, layer.transform, framePlan.width, framePlan.height, 1f, layer.contentMode)
                     }
                     drawCaptions(canvas, layer.activeCaptions.map { it.text }, framePlan.width, framePlan.height)
                 }
