@@ -41,7 +41,7 @@ Last updated: 2026-11-06
 - Native DynamicsProcessing is live preview only on supported Android versions/devices. Offline mixer DSP is a separate pure Kotlin implementation and has not yet been CI-verified.
 - Offline mixer currently consumes PCM buffers supplied by a decoder; it is not yet connected to MediaExtractor/MediaCodec streaming decode or AAC encoding/muxing.
 - Concurrent preview is not sample-accurate DSP/offline mix; multiple timeline video clips are not composited in synchronized playback.
-- Live visualizer analysis is real-time for active Android playback. A pure Kotlin offline audio analyzer now derives per-frame RMS, FFT bands, waveform and beat pulses from the same timeline mix; source committed, CI verification pending. Rendering these data into output frames, full compositing and true 3D/GPU remain open.
+- Live visualizer analysis is real-time for active Android playback. A pure Kotlin offline audio analyzer derives per-frame RMS, FFT bands, waveform and beat pulses from the same timeline mix; Run #157 verified build/tests. RenderCompositionPlan can carry the matching per-frame visualizer snapshot. Rendering these data into output frames, full compositing and true 3D/GPU remain open.
 - Automatic background removal, edge refinement, masks, chroma key, lyrics transcription, language/script conversion, karaoke sync and voice typing are not implemented.
 - Video transitions/effects/filters/reverse/speed ramps/keyframes/motion tracking and full multi-clip rendering are not implemented.
 - Export pipeline, MP4/audio encoding, presets, progress/cancel/retry/recovery and social upload are not implemented.
@@ -56,7 +56,7 @@ Last updated: 2026-11-06
 - M4–M8: Not complete. See roadmap.
 
 ## Next engineering priorities
-1. Verify offline visualizer analysis source/tests in CI; then connect analyzed frames to the composition/render pipeline.
+1. Implement an Android bitmap/canvas visualizer frame renderer using the offline per-frame snapshots and image layers.
 2. Add retry/recovery and verify cancellation cleanup, storage preflight, codec decode/encode and SAF behavior on device.
 3. Implement video frame decoding/compositing and synchronized MP4 export.
 2. Implement streaming MediaExtractor/MediaCodec audio decoding into bounded PCM blocks, including seek/source-in and sample-rate/channel conversion.

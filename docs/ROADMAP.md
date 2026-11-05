@@ -38,7 +38,7 @@ A polished, original Android creator studio for TikTok, YouTube Shorts, Instagra
 - [x] Live FFT/spectrum, waveform, onset/beat pulse and rough BPM analysis.
 - [x] Spectrum, radial, waveform, rings and particle previews (rings/particles are 2D Canvas).
 - [ ] True 3D/GPU renderer, quality settings and fallback.
-- [x] Offline audio analysis produces per-frame RMS/FFT/waveform/beat snapshots from timeline PCM (source implemented; CI pending).
+- [x] Offline audio analysis produces per-frame RMS/FFT/waveform/beat snapshots from timeline PCM (Run #157 CI build/tests/artifact verified).
 - [ ] Render offline visualizer snapshots into output frames and synchronize with export.
 - [ ] Background image/video, multiple independent foreground PNG/video layers and beat response.
 - [ ] Lyrics overlay, masks, blend modes, keyframes, presets and transitions.
