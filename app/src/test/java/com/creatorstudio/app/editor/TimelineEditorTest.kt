@@ -84,7 +84,10 @@ class TimelineEditorTest {
 
     @Test
     fun duplicateProjectRemapsAssetTrackAndClipIds() {
-        val (project, clip, asset) = fixture()
+        val (baseProject, clip, asset) = fixture()
+        val project = baseProject.copy(
+            visualizer = VisualizerSettings(backgroundAssetId = asset.id, foregroundAssetId = asset.id)
+        )
         val copy = project.duplicateProject()
         val copiedClip = copy.tracks.single().clips.single()
 
@@ -93,6 +96,8 @@ class TimelineEditorTest {
         assertNotEquals(project.tracks.single().id, copy.tracks.single().id)
         assertNotEquals(clip.id, copiedClip.id)
         assertEquals(copy.assets.single().id, copiedClip.mediaId)
+        assertEquals(copy.assets.single().id, copy.visualizer.backgroundAssetId)
+        assertEquals(copy.assets.single().id, copy.visualizer.foregroundAssetId)
     }
 
     @Test
