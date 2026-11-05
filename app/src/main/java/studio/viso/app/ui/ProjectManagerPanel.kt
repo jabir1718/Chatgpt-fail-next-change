@@ -108,7 +108,7 @@ fun ProjectManagerPanel(
         AlertDialog(
             onDismissRequest = { showDelete = false },
             title = { Text("Delete this project?") },
-            text = { Text("The saved project file will be deleted. Imported media files are kept in app storage.") },
+            text = { Text("The saved project file will be deleted. Imported media files are not deleted.") },
             confirmButton = {
                 TextButton(onClick = { onDelete(); showDelete = false }) { Text("Delete", color = Color(0xFFCF334E)) }
             },
