@@ -56,9 +56,9 @@ Last updated: 2026-11-06
 - M4–M8: Not complete. See roadmap.
 
 ## Next engineering priorities
-1. Add image/video frame decoding and a bounded frame stream into MediaCodec H.264 encoder.
-2. Mux the encoded video with the existing AAC mix, keeping exact presentation timestamps and cancellation/recovery.
-3. Verify image/audio/video export on Android hardware and maintain preview/export parity.
+1. Implement/verify the H.264 encoder's flexible-YUV input path and image-to-frame feed.
+2. Add compressed audio/video muxing with exact presentation timestamps and cancellation/recovery.
+3. Add source video frame decoding, then verify complete export on Android hardware.
 2. Implement streaming MediaExtractor/MediaCodec audio decoding into bounded PCM blocks, including seek/source-in and sample-rate/channel conversion.
 3. Add AAC encoder/muxer output and align encoded audio timestamps to video frame timestamps.
 4. Implement Android video/image frame decoding and GPU/Canvas composition in z-order from RenderCompositionPlan.
