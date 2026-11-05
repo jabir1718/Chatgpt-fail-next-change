@@ -16,11 +16,11 @@ class AudioReactiveEngine(
     private var visualizer: Visualizer? = null
 
     @Synchronized
-    fun start(audioSessionId: Int) {
+    fun start(audioSessionId: Int): Boolean {
         stop()
         if (audioSessionId <= 0) {
             onError("Audio session is not ready. Start playback and try again.")
-            return
+            return false
         }
         try {
             val effect = Visualizer(audioSessionId)
@@ -53,8 +53,10 @@ class AudioReactiveEngine(
             )
             effect.enabled = true
             visualizer = effect
+            return true
         } catch (error: Exception) {
             onError(error.message ?: "Live audio analysis could not start.")
+            return false
         }
     }
 
