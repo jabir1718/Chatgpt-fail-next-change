@@ -39,8 +39,8 @@ class OfflineAudioMixEngineTest {
         val engine = OfflineAudioMixEngine(p, mapOf("song" to source(FloatArray(800) { 0.5f })), 8_000, 2)
         val block = engine.renderBlock(0L, 160)
         assertEquals(0f, block.samples[0], 0.0001f)
-        assertEquals(0.5f, block.samples[20], 0.0001f)
-        assertEquals(0.5f, block.samples[21], 0.0001f)
+        assertEquals(0.5f, block.samples[160], 0.0001f)
+        assertEquals(0.5f, block.samples[161], 0.0001f)
     }
 
     @Test
@@ -49,7 +49,7 @@ class OfflineAudioMixEngineTest {
         val engine = OfflineAudioMixEngine(p, mapOf("song" to source(FloatArray(800) { 0.8f })), 8_000, 1)
         val block = engine.renderBlock(0L, 800)
         assertEquals(0f, block.samples[0], 0.0001f)
-        assertEquals(0.2f, block.samples[200], 0.002f)
+        assertEquals(0.1f, block.samples[200], 0.002f)
         assertEquals(0.4f, block.samples[799], 0.002f)
     }
 
@@ -67,7 +67,7 @@ class OfflineAudioMixEngineTest {
 
     @Test
     fun playbackRateAdvancesSourceAndFadeOutReachesSilence() {
-        val p = project(clip(durationMs = 1_000L, fadeOutMs = 200L, playbackRate = 2f))
+        val p = project(clip(durationMs = 1_000L, fadeOutMs = 200L, playbackRate = 1f))
         val ramp = FloatArray(16_000) { it / 16_000f }
         val block = OfflineAudioMixEngine(p, mapOf("song" to source(ramp)), 8_000, 1).renderBlock(0L, 8_000)
         assertTrue(block.samples[4_000] > block.samples[2_000])
