@@ -92,3 +92,6 @@ fun EditorProject.duplicateProject(copyName: String = "${name} Copy"): EditorPro
         tracks = copiedTracks
     )
 }
+
+fun ClipAudioSettings.pitchRatio(): Float =
+    Math.pow(2.0, pitchSemitones.toDouble() / 12.0).toFloat()
