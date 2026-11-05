@@ -1002,6 +1002,10 @@ private fun ExportPage(
 ) {
     val hasAudioClips = project.tracks.any { track ->
         (track.kind == com.creatorstudio.app.editor.TrackKind.AUDIO || track.kind == com.creatorstudio.app.editor.TrackKind.VIDEO) &&
+            track.clips.any { it.kind == MediaKind.AUDIO || it.kind == MediaKind.VIDEO }
+    }
+    val hasVisualizerAudioClips = project.tracks.any { track ->
+        (track.kind == com.creatorstudio.app.editor.TrackKind.AUDIO || track.kind == com.creatorstudio.app.editor.TrackKind.VIDEO) &&
             track.clips.any { it.kind == MediaKind.AUDIO }
     }
     val hasSourceVideo = project.tracks.any { track -> track.clips.any { it.kind == MediaKind.VIDEO } }
@@ -1049,7 +1053,7 @@ private fun ExportPage(
         )
         Button(
             onClick = onExportVideo,
-            enabled = hasAudioClips && !hasSourceVideo && !exporting,
+            enabled = hasVisualizerAudioClips && !hasSourceVideo && !exporting,
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("EXPORT VISUALIZER VIDEO (.MP4)")
@@ -1060,8 +1064,8 @@ private fun ExportPage(
                 color = Pink,
                 fontSize = 10.sp
             )
-        } else if (!hasAudioClips) {
-            Text("Add an audio clip to drive the offline visualizer export.", color = Color(0xFF9AA4B8), fontSize = 10.sp)
+        } else if (!hasVisualizerAudioClips) {
+            Text("Add an audio-only timeline clip to drive the offline visualizer export.", color = Color(0xFF9AA4B8), fontSize = 10.sp)
         }
         if (!hasStillImageLayers) {
             Text("No artwork layer selected: the visualizer will render over a black background.", color = Color(0xFF9AA4B8), fontSize = 10.sp)
