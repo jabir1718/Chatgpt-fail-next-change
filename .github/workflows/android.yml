@@ -1,4 +1,4 @@
-name: Viso Studio Android Build
+name: Creator Studio Android Build
 
 on:
   push:
@@ -36,7 +36,7 @@ jobs:
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: Viso-debug-apk
+          name: Creator-Studio-debug-apk
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 14
