@@ -11,7 +11,10 @@ Last updated: 2026-11-06
 - Handoff instructions: `docs/CONTINUATION.md`
 
 ## Verified CI evidence
-- Latest completed successful run: Run #173, ID `42128206048`, commit `3b91c6cc7ddd229b286f66a8d36fe6d8ffcf275d`.
+- Latest completed successful run: Run #185, ID `42130806602`, commit `703e1b8ecec6207b201feada96d878a224955831`.
+- Run #185 passed configured unit tests, Android debug APK build and artifact upload. Artifact `Creator-Studio-debug-apk`, 19,745,871 bytes, SHA-256 `28d400a976f9480e71f8a378dcfb68fae6818127035eacb62abde6f622523a3e`.
+- Run #184 verified export retry UI/source compiles and APK artifact upload; retry reruns the selected pipeline with a new save location, not partial resume.
+- Run #183 verified export canvas/FPS/bitrate controls and pipeline wiring; Run #185 adds regression tests for defaults, accepted/rejected FPS and bitrate, and settings preservation.
 - Run #173 completed successfully: source-video embedded audio selection/mixing, configured unit tests, Android debug APK build and artifact upload passed.
 - Run #173 artifact: `Creator-Studio-debug-apk`, 19,737,358 bytes, SHA-256 `008058bcf48bdbbcfa0f6a0a9bdc0a9ecb1139095b85534d0a95108f9625b9b0`.
 - Run #140 completed successfully: Android SDK setup, `assembleDebug`, configured tests, and APK artifact upload all succeeded.
@@ -46,7 +49,7 @@ Last updated: 2026-11-06
 - Live visualizer analysis is real-time for active Android playback. The pure Kotlin offline analyzer derives per-frame RMS, FFT bands, waveform and beat pulses from the timeline mix (Run #157). `OfflineVisualizerFrameRenderer` draws Spectrum, Radial, Waveform, Rings and Particles with still/video bitmaps, captions, background and foreground beat scaling (Run #159). The bounded `OfflineH264VideoEncoder` encodes one rendered bitmap at a time; `ImageAssetBitmapLoader` handles still-image downsampling; `VideoAssetFrameDecoder` uses MediaMetadataRetriever for active source-video frames with bounded scaling; `OfflineAudioVideoMuxer` combines H.264/AAC. These are connected end-to-end to the Export Studio MP4 action and CI-verified through Run #173. Hardware codec support, rotation correctness, A/V sync, thermal behavior and performance remain device-unverified. Decodable embedded audio inside source-video clips is mixed by this visualizer export path (Run #173); device A/V sync remains unverified. True 3D/GPU and preview/render parity remain open.
 - Automatic background removal, edge refinement, masks, chroma key, lyrics transcription, language/script conversion, karaoke sync and voice typing are not implemented.
 - Video transitions/effects/filters/reverse/speed ramps/keyframes/motion tracking and full multi-clip rendering are not implemented.
-- Audio M4A and audio-reactive visualizer MP4 pipelines are source-implemented and CI-verified. Visualizer export aspect/FPS/bitrate selectors are now source-implemented: 9:16, 1:1, 4:5, 16:9; 24/30/60 FPS; 4/8/12/20 Mbps H.264. ProjectStore schema v5 persists bitrate with backward-compatible defaults. Latest UI and pipeline wiring are committed; CI pending. Device acceptance, retry/recovery and official social integrations remain open.
+- Audio M4A and audio-reactive visualizer MP4 pipelines are source-implemented and CI-verified. Visualizer export aspect/FPS/bitrate selectors are source-implemented and CI-verified: 9:16, 1:1, 4:5, 16:9; 24/30/60 FPS; 4/8/12/20 Mbps H.264. ProjectStore schema v5 persists bitrate with backward-compatible defaults. Run #185 regression tests cover defaults, valid/invalid FPS and bitrate, and copy preservation. Export retry is source-implemented and CI-verified (Run #184); it restarts an export and asks for a new save location, not partial resume. Device acceptance and official social integrations remain open.
 - Social integrations must use official supported APIs/OAuth or Android share-sheet fallback. Never claim copyright bypass or “zero copyright”.
 - No release build, signed release APK or complete-app claim.
 
@@ -59,12 +62,12 @@ Last updated: 2026-11-06
 
 ## Next engineering priorities
 1. Verify complete visualizer MP4 export, cancellation, source-video embedded-audio sync, rotation, codec compatibility and memory/performance on Android hardware.
-2. Add synchronized multi-video preview/compositing and preview/export parity.
+2. Add synchronized multi-video preview/compositing and preview/export parity; first create a shared deterministic video-layer compositor contract and test overlapping clip ordering/source-time behavior.
 3. Implement independent multi-layer background/foreground image/video beat response, lyrics overlay, masks, blend modes and keyframes.
 4. Build true 3D/GPU visualizer renderer with capability detection and 2D fallback.
 5. Implement transcription with explicit Start/Stop, language detection and Urdu/Roman Urdu/Roman English script support.
 6. Implement subject cutout/background removal, edge refinement, chroma key and transparent PNG output.
-7. Add advanced video effects, transitions, reverse/speed ramps and export presets/recovery.
+7. Add advanced video effects, transitions, reverse/speed ramps and resumable partial-export recovery.
 8. Continue regression tests and update state/roadmap with exact CI/device evidence.
 
 ## Working rules
