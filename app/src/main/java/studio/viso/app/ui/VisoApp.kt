@@ -12,6 +12,9 @@ import kotlinx.coroutines.withContext
 import com.creatorstudio.app.editor.EditorProject
 import com.creatorstudio.app.editor.MediaKind
 import com.creatorstudio.app.editor.ProjectStore
+import com.creatorstudio.app.editor.ProjectSummary
+import com.creatorstudio.app.editor.duplicateProject
+import com.creatorstudio.app.editor.updateProjectName
 import com.creatorstudio.app.editor.TimelineEditor
 import com.creatorstudio.app.editor.createStarterProject
 import com.creatorstudio.app.editor.importAsset
@@ -80,6 +83,7 @@ fun CreatorStudioApp() {
     var projectLoaded by remember { mutableStateOf(false) }
     val undoStack = remember { mutableStateListOf<EditorProject>() }
     val redoStack = remember { mutableStateListOf<EditorProject>() }
+    var savedProjects by remember { mutableStateOf<List<ProjectSummary>>(emptyList()) }
     val scope = rememberCoroutineScope()
     val projectStore = remember(context) { ProjectStore(context) }
 
@@ -112,24 +116,47 @@ fun CreatorStudioApp() {
     var status by remember { mutableStateOf("Import video, audio or PNG to begin") }
     val player = remember { ExoPlayer.Builder(context).build() }
 
+    fun activateProject(loaded: EditorProject) {
+        project = loaded
+        media.clear()
+        loaded.assets.forEach { asset -> media.add(StudioMedia(Uri.parse(asset.uri), asset.displayName, asset.kind.name)) }
+        val firstClip = loaded.tracks.asSequence().flatMap { it.clips.asSequence() }.firstOrNull()
+        selectedClipId = firstClip?.id
+        val firstAsset = loaded.assets.firstOrNull { it.id == firstClip?.mediaId }
+        selectedIndex = media.indexOfFirst { it.uri.toString() == firstAsset?.uri }
+        playheadMs = firstClip?.timelineStartMs ?: 0L
+        player.stop()
+        isPlaying = false
+        if (firstAsset != null && firstAsset.kind != MediaKind.IMAGE) {
+            player.setMediaItem(MediaItem.fromUri(Uri.parse(firstAsset.uri)))
+            player.prepare()
+            val clip = firstClip
+            if (clip != null) {
+                player.volume = if (clip.audio.muted) 0f else clip.audio.volume.coerceIn(0f, 1f)
+                player.playbackParameters = PlaybackParameters(clip.audio.playbackRate, 1f)
+            }
+        }
+    }
+
     LaunchedEffect(Unit) {
         val restored = withContext(Dispatchers.IO) {
             runCatching { projectStore.listProjects().firstOrNull()?.let { projectStore.load(it.id) } }.getOrNull()
         }
-        if (restored != null) {
-            project = restored
-            media.clear()
-            restored.assets.forEach { asset ->
-                media.add(StudioMedia(Uri.parse(asset.uri), asset.displayName, asset.kind.name))
-            }
-            selectedClipId = restored.tracks.asSequence().flatMap { it.clips.asSequence() }.firstOrNull()?.id
-            selectedIndex = media.indexOfFirst { item -> item.uri.toString() == restored.assets.firstOrNull { it.id == restored.tracks.asSequence().flatMap { row -> row.clips.asSequence() }.firstOrNull()?.mediaId }?.uri }
-        }
+        if (restored != null) activateProject(restored)
         projectLoaded = true
     }
 
     LaunchedEffect(project, projectLoaded) {
-        if (projectLoaded) withContext(Dispatchers.IO) { runCatching { projectStore.save(project) } }
+        if (projectLoaded) {
+            val result = withContext(Dispatchers.IO) {
+                runCatching {
+                    projectStore.save(project)
+                    projectStore.listProjects()
+                }
+            }
+            result.onSuccess { savedProjects = it }
+                .onFailure { status = "Project save failed: ${it.message ?: "storage error"}" }
+        }
     }
 
     LaunchedEffect(isPlaying, selectedClipId) {
@@ -266,6 +293,45 @@ fun CreatorStudioApp() {
                 .verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)
         ) {
             Header()
+            if (selectedTab == 0) {
+                ProjectManagerPanel(
+                    projectName = project.name,
+                    projects = savedProjects,
+                    onNew = {
+                        undoStack.clear(); redoStack.clear()
+                        activateProject(createStarterProject())
+                        status = "New project created"
+                    },
+                    onRename = { name -> commitProject(project.updateProjectName(name)) },
+                    onOpen = { id ->
+                        scope.launch {
+                            val loaded = withContext(Dispatchers.IO) { projectStore.load(id) }
+                            undoStack.clear(); redoStack.clear()
+                            activateProject(loaded)
+                            status = "Opened ${loaded.name}"
+                        }
+                    },
+                    onRefresh = {
+                        scope.launch {
+                            savedProjects = withContext(Dispatchers.IO) { projectStore.listProjects() }
+                        }
+                    },
+                    onDuplicate = {
+                        val copy = project.duplicateProject()
+                        undoStack.clear(); redoStack.clear()
+                        activateProject(copy)
+                        status = "Project duplicated"
+                    },
+                    onDelete = {
+                        scope.launch {
+                            withContext(Dispatchers.IO) { projectStore.delete(project.id) }
+                            undoStack.clear(); redoStack.clear()
+                            activateProject(createStarterProject())
+                            status = "Project deleted"
+                        }
+                    }
+                )
+            }
             when (selectedTab) {
                 0 -> StudioPage(
                     media = media, selectedIndex = selectedIndex, player = player,
