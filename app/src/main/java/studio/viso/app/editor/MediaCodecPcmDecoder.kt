@@ -13,6 +13,8 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.concurrent.CancellationException
 
+class NoAudioTrackException : IllegalStateException("No decodable audio track was found")
+
 data class PcmDecodeResult(
     val source: PcmFileAudioSource,
     val durationMs: Long,
@@ -46,7 +48,6 @@ class MediaCodecPcmDecoder {
         var decodedChannels = 0
         var pcmEncoding = AudioFormat.ENCODING_PCM_16BIT
         var sourceDurationMs = 0L
-        var totalFrames = 0L
         val floatChunk = ByteBuffer.allocate(64 * 1024).order(ByteOrder.LITTLE_ENDIAN)
 
         fun flushFloatChunk() {
@@ -75,7 +76,7 @@ class MediaCodecPcmDecoder {
                     break
                 }
             }
-            require(audioTrack >= 0 && audioFormat != null) { "No decodable audio track was found" }
+            if (audioTrack < 0 || audioFormat == null) throw NoAudioTrackException()
             val mime = audioFormat.getString(MediaFormat.KEY_MIME)!!
             sourceDurationMs = audioFormat.optLong(MediaFormat.KEY_DURATION, 0L) / 1_000L
             extractor.selectTrack(audioTrack)
@@ -131,7 +132,7 @@ class MediaCodecPcmDecoder {
                             pcmEncoding == AudioFormat.ENCODING_PCM_16BIT ||
                                 pcmEncoding == AudioFormat.ENCODING_PCM_FLOAT
                         ) { "Decoder returned an unsupported PCM sample format: $pcmEncoding" }
-                        output = BufferedOutputStream(FileOutputStream(outputFile), 128 * 1024)
+                        if (output == null) output = BufferedOutputStream(FileOutputStream(outputFile), 128 * 1024)
                         madeProgress = true
                     }
                     else -> if (outputIndex >= 0) {
@@ -159,7 +160,6 @@ class MediaCodecPcmDecoder {
                                         data.limit(data.position() + usableBytes)
                                         while (data.remaining() >= 2) {
                                             writeFloat(data.short / 32768f)
-                                            if (floatChunk.position() == 0) totalFrames += 0L
                                         }
                                     }
                                     AudioFormat.ENCODING_PCM_FLOAT -> {
@@ -168,7 +168,6 @@ class MediaCodecPcmDecoder {
                                         while (data.remaining() >= 4) writeFloat(data.float)
                                     }
                                 }
-                                totalFrames = outputFile.length() / (decodedChannels * 4L)
                             }
                         }
                         if (info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) outputEnded = true
@@ -186,9 +185,10 @@ class MediaCodecPcmDecoder {
             output?.flush()
             output?.close()
             output = null
+            require(outputFile.length() > 0L) { "Decoder produced an empty audio stream" }
+            onProgress(1f)
             val source = PcmFileAudioSource(outputFile, decodedRate, decodedChannels)
             success = true
-            onProgress(1f)
             return PcmDecodeResult(source, source.durationMs, sourceDurationMs)
         } finally {
             runCatching { output?.close() }
