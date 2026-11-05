@@ -7,6 +7,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.ui.draw.graphicsLayer
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -31,11 +35,14 @@ fun VisualizerPage(
     waveform: List<Float>,
     mode: String,
     running: Boolean,
+    bpm: Int?,
+    beatPulse: Int,
     message: String,
     onModeChange: (String) -> Unit,
     onStart: () -> Unit,
     onStop: () -> Unit
 ) {
+    val pulseScale by animateFloatAsState(if (beatPulse % 2 == 0) 1f else 1.055f, label = "beat-pulse")
     Column(Modifier.fillMaxWidth()) {
         Text("VISUALIZER STUDIO", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
         Text("Live FFT spectrum and waveform from the selected audio output", color = Color(0xFF9AA4B8), fontSize = 11.sp)
@@ -51,7 +58,8 @@ fun VisualizerPage(
         }
         Spacer(Modifier.height(12.dp))
         Box(
-            Modifier.fillMaxWidth().height(250.dp).background(Color(0xFF111827), RoundedCornerShape(20.dp)).padding(12.dp),
+            Modifier.fillMaxWidth().height(250.dp).graphicsLayer { scaleX = pulseScale; scaleY = pulseScale }
+                .background(Color(0xFF111827), RoundedCornerShape(20.dp)).padding(12.dp),
             contentAlignment = Alignment.Center
         ) {
             when (mode) {
@@ -69,6 +77,10 @@ fun VisualizerPage(
         }
         Spacer(Modifier.height(10.dp))
         Text(message, color = if (running) VisualMint else Color(0xFFB7C4D8), fontSize = 10.sp)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Text("BPM ESTIMATE  ${bpm?.toString() ?: "—"}", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            Text("BEAT PULSES  $beatPulse", color = VisualMint, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+        }
         Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(onClick = onStart, enabled = !running, modifier = Modifier.weight(1f)) {
