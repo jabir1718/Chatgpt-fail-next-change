@@ -36,10 +36,6 @@ class ProjectStore(context: Context) {
             throw IOException("Could not commit project file")
         }
         if (backup.exists()) backup.delete()
-        if (!temporary.renameTo(target)) {
-            temporary.delete()
-            throw IOException("Could not commit project file")
-        }
     }
 
     @Synchronized
