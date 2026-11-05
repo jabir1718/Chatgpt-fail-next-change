@@ -20,10 +20,22 @@ class ProjectStore(context: Context) {
         val target = projectFile(project.id)
         val temporary = File(directory, "${project.id}.json.tmp")
         temporary.writeText(encode(project).toString(), Charsets.UTF_8)
-        if (target.exists() && !target.delete()) {
+        val backup = File(directory, "${project.id}.json.bak")
+        if (backup.exists() && !backup.delete()) {
             temporary.delete()
-            throw IOException("Could not replace previous project file")
+            throw IOException("Could not clear previous project backup")
         }
+        val hadPrevious = target.exists()
+        if (hadPrevious && !target.renameTo(backup)) {
+            temporary.delete()
+            throw IOException("Could not preserve previous project file")
+        }
+        if (!temporary.renameTo(target)) {
+            if (hadPrevious) backup.renameTo(target)
+            temporary.delete()
+            throw IOException("Could not commit project file")
+        }
+        if (backup.exists()) backup.delete()
         if (!temporary.renameTo(target)) {
             temporary.delete()
             throw IOException("Could not commit project file")
@@ -119,7 +131,7 @@ class ProjectStore(context: Context) {
     private fun decode(json: JSONObject): EditorProject {
         val version = json.optInt("schemaVersion", 1)
         require(version in 1..SCHEMA_VERSION) { "Unsupported project schema version: $version" }
-        val assets = json.getJSONArray("assets").toList { item ->
+        val assets = json.getJSONArray("assets").mapObjects { item ->
             MediaAsset(
                 id = item.getString("id"), uri = item.getString("uri"),
                 displayName = item.getString("displayName"), kind = MediaKind.valueOf(item.getString("kind")),
@@ -127,12 +139,12 @@ class ProjectStore(context: Context) {
                 importedAtEpochMs = item.optLong("importedAtEpochMs", 0L)
             )
         }
-        val tracks = json.getJSONArray("tracks").toList { item ->
+        val tracks = json.getJSONArray("tracks").mapObjects { item ->
             TimelineTrack(
                 id = item.getString("id"), name = item.getString("name"),
                 kind = TrackKind.valueOf(item.getString("kind")), muted = item.optBoolean("muted"),
                 locked = item.optBoolean("locked"),
-                clips = item.getJSONArray("clips").toList { clip -> decodeClip(clip) }
+                clips = item.getJSONArray("clips").mapObjects { clip -> decodeClip(clip) }
             )
         }
         return EditorProject(
@@ -166,7 +178,7 @@ class ProjectStore(context: Context) {
                 playbackRate = audio.optDouble("playbackRate", 1.0).toFloat(),
                 fadeInMs = audio.optLong("fadeInMs"), fadeOutMs = audio.optLong("fadeOutMs")
             ),
-            captions = captions.toList { caption ->
+            captions = captions.mapObjects { caption ->
                 CaptionSegment(
                     id = caption.getString("id"), text = caption.getString("text"),
                     startMs = caption.getLong("startMs"), endMs = caption.getLong("endMs"),
@@ -176,19 +188,7 @@ class ProjectStore(context: Context) {
         )
     }
 
-    private fun JSONArray.toList(mapper: (JSONObject) -> EditorProjectItem): List<EditorProjectItem> =
-        (0 until length()).map { mapper(getJSONObject(it)) }
-
-    private fun JSONArray.toList(mapper: (JSONObject) -> MediaAsset): List<MediaAsset> =
-        (0 until length()).map { mapper(getJSONObject(it)) }
-
-    private fun JSONArray.toList(mapper: (JSONObject) -> TimelineTrack): List<TimelineTrack> =
-        (0 until length()).map { mapper(getJSONObject(it)) }
-
-    private fun JSONArray.toList(mapper: (JSONObject) -> TimelineClip): List<TimelineClip> =
-        (0 until length()).map { mapper(getJSONObject(it)) }
-
-    private fun JSONArray.toList(mapper: (JSONObject) -> CaptionSegment): List<CaptionSegment> =
+    private fun <T> JSONArray.mapObjects(mapper: (JSONObject) -> T): List<T> =
         (0 until length()).map { mapper(getJSONObject(it)) }
 
     private fun JSONObject.longOrNull(key: String): Long? =
@@ -201,4 +201,3 @@ class ProjectStore(context: Context) {
 }
 
 data class ProjectSummary(val id: String, val name: String, val updatedAtEpochMs: Long)
-private typealias EditorProjectItem = Any
