@@ -1,4 +1,4 @@
-# Viso Studio Product Specification
+# Creator Studio Product Specification
 
 ## Product
 A professional Android video and audio creator studio for TikTok, YouTube Shorts, Instagram Reels, and long-form video. Use a preview-first editing workspace, contextual tool panels, and a multi-track timeline. Keep an original visual identity while matching the usability of established mobile editors.
