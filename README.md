@@ -1,6 +1,6 @@
-# Viso Studio
+# Creator Studio
 
-**Viso Studio** is a from-scratch Android creator app for editing video and audio, building beat-reactive visualizers, creating automatic multilingual captions, and exporting content for TikTok, YouTube Shorts, Instagram Reels, and other platforms.
+**Creator Studio** is a from-scratch Android creator app for editing video and audio, building beat-reactive visualizers, creating automatic multilingual captions, and exporting content for TikTok, YouTube Shorts, Instagram Reels, and other platforms.
 
 ## Product direction
 - Professional, mobile-first editor with a real multi-track timeline.
@@ -18,4 +18,4 @@ This repository is a clean restart. The first Android Compose workspace UI is be
 See docs/PRODUCT_SPEC.md and docs/ROADMAP.md.
 
 ## Build
-GitHub Actions builds the debug APK on an Ubuntu Android SDK runner. Download the Viso-debug-apk artifact from a successful workflow run.
+GitHub Actions builds the debug APK on an Ubuntu Android SDK runner. Download the Creator-Studio-debug-apk artifact from a successful workflow run.
