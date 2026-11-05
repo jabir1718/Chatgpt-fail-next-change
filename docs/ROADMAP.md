@@ -28,7 +28,7 @@ A polished, original Android creator studio for TikTok, YouTube Shorts, Instagra
 
 ## M2 — Audio engine & sound design
 - [ ] Independent clip volume/gain, mute/solo, pan, fades and keyframe automation.
-- [ ] Waveform generation/cache and timeline waveform display.
+- [x] Waveform generation/cache and timeline waveform display (MediaCodec PCM decode, peak-envelope cache, timeline waveform bars; CI verification pending).
 - [ ] Pitch shift/formant and pitch-preserving time stretch; independent pitch and tempo.
 - [ ] BPM and beat/onset detection with editable beat markers.
 - [ ] Parametric EQ, bass boost/cut, compressor, limiter, normalization.

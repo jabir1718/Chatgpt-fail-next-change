@@ -136,7 +136,7 @@ class WaveformRepository(context: Context) {
             val savedDuration = input.readLong()
             val rate = input.readInt()
             val count = input.readInt()
-            if (savedDuration != duration || rate <= 0 || count !in 1..2_048) return null
+            if (savedDuration <= 0L || rate <= 0 || count !in 1..2_048) return null
             val samples = List(count) { input.readFloat().coerceIn(0f, 1f) }
             if (input.available() != 0) return null
             WaveformData(samples, rate, savedDuration)

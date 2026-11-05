@@ -11,6 +11,7 @@ import java.util.UUID
 import androidx.core.content.ContextCompat
 import com.creatorstudio.app.audio.AudioReactiveEngine
 import com.creatorstudio.app.audio.TimelineAudioPreviewController
+import com.creatorstudio.app.audio.WaveformRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -106,6 +107,8 @@ fun CreatorStudioApp() {
     var savedProjects by remember { mutableStateOf<List<ProjectSummary>>(emptyList()) }
     val scope = rememberCoroutineScope()
     val projectStore = remember(context) { ProjectStore(context) }
+    val waveformRepository = remember(context) { WaveformRepository(context) }
+    var cachedWaveforms by remember { mutableStateOf<Map<String, List<Float>>>(emptyMap()) }
     val persistenceMutex = remember { Mutex() }
 
     fun commitProject(next: EditorProject) {
@@ -195,6 +198,16 @@ fun CreatorStudioApp() {
         }
         if (restored != null) activateProject(restored)
         projectLoaded = true
+    }
+
+    LaunchedEffect(project.assets) {
+        val audioAssets = project.assets.filter { it.kind == MediaKind.AUDIO || it.kind == MediaKind.VIDEO }
+        for (asset in audioAssets) {
+            if (cachedWaveforms.containsKey(asset.id)) continue
+            val duration = asset.durationMs ?: continue
+            val waveform = waveformRepository.getOrCreate(asset.uri, duration)
+            if (waveform != null) cachedWaveforms = cachedWaveforms + (asset.id to waveform.samples)
+        }
     }
 
     LaunchedEffect(project, projectLoaded) {
@@ -564,6 +577,7 @@ fun CreatorStudioApp() {
                     playheadMs = playheadMs,
                     canUndo = undoStack.isNotEmpty(),
                     canRedo = redoStack.isNotEmpty(),
+                    waveforms = cachedWaveforms,
                     onSelectClip = { clipId ->
                         if (timelineMixing) {
                             timelineAudioPreview.pause()

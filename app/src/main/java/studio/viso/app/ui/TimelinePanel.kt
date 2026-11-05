@@ -1,6 +1,8 @@
 package com.creatorstudio.app.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -54,6 +56,7 @@ fun TimelinePanel(
     playheadMs: Long,
     canUndo: Boolean,
     canRedo: Boolean,
+    waveforms: Map<String, List<Float>> = emptyMap(),
     onSelectClip: (String) -> Unit,
     onPlayheadChange: (Long) -> Unit,
     onProjectChange: (EditorProject) -> Unit,
@@ -178,6 +181,24 @@ fun TimelinePanel(
                                         .clickable { onSelectClip(clip.id) }.padding(horizontal = 4.dp),
                                     contentAlignment = Alignment.CenterStart
                                 ) {
+                                    val waveform = waveforms[clip.mediaId]
+                                    if (waveform != null && (clip.kind == com.creatorstudio.app.editor.MediaKind.AUDIO || clip.kind == com.creatorstudio.app.editor.MediaKind.VIDEO)) {
+                                        Canvas(Modifier.fillMaxSize().padding(horizontal = 3.dp, vertical = 3.dp)) {
+                                            val step = (size.width / waveform.size.coerceAtLeast(1)).coerceAtLeast(1f)
+                                            waveform.forEachIndexed { index, amplitude ->
+                                                val x = index * step + step * 0.5f
+                                                val halfHeight = (amplitude * size.height * 0.46f).coerceAtLeast(1f)
+                                                drawLine(
+                                                    color = Color.White.copy(alpha = 0.42f),
+                                                    start = Offset(x, size.height * 0.5f - halfHeight),
+                                                    end = Offset(x, size.height * 0.5f + halfHeight),
+                                                    strokeWidth = step.coerceAtMost(2.2f)
+                                                )
+                                            }
+                                        }
+                                    } else if (clip.kind == com.creatorstudio.app.editor.MediaKind.AUDIO || clip.kind == com.creatorstudio.app.editor.MediaKind.VIDEO) {
+                                        Text("DECODING WAVEFORM", color = Color.White.copy(alpha = 0.42f), fontSize = 6.sp)
+                                    }
                                     Text(project.assets.firstOrNull { it.id == clip.mediaId }?.displayName ?: "Clip",
                                         color = Color.White, fontSize = 8.sp, maxLines = 1)
                                 }

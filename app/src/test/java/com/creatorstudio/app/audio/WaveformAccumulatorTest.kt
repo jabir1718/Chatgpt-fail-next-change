@@ -21,8 +21,8 @@ class WaveformAccumulatorTest {
         reducer.addMonoSamples(floatArrayOf(-2f, 0.25f, 0.5f, 2f), 1, 2)
         reducer.addMonoSamples(floatArrayOf(0.75f, 0f))
         val result = reducer.finish(48_000, 1)
-        assertEquals(0.25f, result.samples[0], 0.0001f)
-        assertEquals(0.5f, result.samples[1], 0.0001f)
-        assertEquals(1f, result.samples[3], 0.0001f)
+        assertEquals(1f / 3f, result.samples[0], 0.0001f)
+        assertEquals(2f / 3f, result.samples[1], 0.0001f)
+        assertEquals(1f, result.samples[2], 0.0001f)
     }
 }
