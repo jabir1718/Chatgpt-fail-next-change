@@ -88,6 +88,7 @@ import androidx.media3.common.PlaybackParameters
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerView
+import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.DisposableEffect
 
@@ -608,6 +609,7 @@ fun CreatorStudioApp() {
                 0 -> StudioPage(
                     media = media, selectedIndex = selectedIndex, player = player,
                     timelineVideoLayers = timelineVideoLayers, timelineMixing = timelineMixing,
+                    selectedClipContentMode = project.tracks.asSequence().flatMap { it.clips.asSequence() }.firstOrNull { it.id == selectedClipId }?.contentMode ?: CanvasContentMode.FIT,
                     projectName = project.name,
                     canvasWidth = project.width, canvasHeight = project.height,
                     onCanvasChange = { width, height -> commitProject(project.copy(width = width, height = height, updatedAtEpochMs = System.currentTimeMillis())) },
@@ -822,6 +824,7 @@ private fun Header() {
 private fun StudioPage(
     media: List<StudioMedia>, selectedIndex: Int, player: ExoPlayer, isPlaying: Boolean, status: String,
     timelineVideoLayers: List<TimelineVideoPreviewLayer>, timelineMixing: Boolean,
+    selectedClipContentMode: CanvasContentMode,
     projectName: String, canvasWidth: Int, canvasHeight: Int, onCanvasChange: (Int, Int) -> Unit,
     onAddVideo: () -> Unit, onAddAudio: () -> Unit, onAddImage: () -> Unit,
     onSelect: (StudioMedia) -> Unit, onDelete: (Int) -> Unit, onPlay: () -> Unit,
@@ -848,7 +851,7 @@ private fun StudioPage(
         }
     }
     Spacer(Modifier.height(12.dp))
-    PreviewStage(player, media.getOrNull(selectedIndex), isPlaying, onPlay, canvasWidth.toFloat() / canvasHeight.toFloat(), timelineVideoLayers, timelineMixing)
+    PreviewStage(player, media.getOrNull(selectedIndex), isPlaying, onPlay, canvasWidth.toFloat() / canvasHeight.toFloat(), timelineVideoLayers, timelineMixing, selectedClipContentMode)
     Text(status, color = Mint, fontSize = 10.sp, modifier = Modifier.padding(vertical = 7.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(7.dp), modifier = Modifier.fillMaxWidth()) {
         Button(onClick = onAddVideo, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Violet), contentPadding = PaddingValues(horizontal = 8.dp, vertical = 11.dp)) {
@@ -898,7 +901,8 @@ private fun StudioPage(
 @Composable
 private fun PreviewStage(
     player: ExoPlayer, item: StudioMedia?, isPlaying: Boolean, onPlay: () -> Unit, aspectRatio: Float,
-    timelineVideoLayers: List<TimelineVideoPreviewLayer>, timelineMixing: Boolean
+    timelineVideoLayers: List<TimelineVideoPreviewLayer>, timelineMixing: Boolean,
+    selectedClipContentMode: CanvasContentMode
 ) {
     val context = LocalContext.current
     val selectedImageUri = item?.takeIf { it.kind == "IMAGE" }?.uri
@@ -952,11 +956,33 @@ private fun PreviewStage(
                     modifier = Modifier.align(Alignment.Center))
             }
         } else when (item?.kind) {
-            "VIDEO" -> AndroidView(factory = { ctx -> PlayerView(ctx).apply { this.player = player; useController = true } },
-                update = { it.player = player }, modifier = Modifier.fillMaxSize())
+            "VIDEO" -> AndroidView(
+                factory = { ctx -> PlayerView(ctx).apply {
+                    this.player = player
+                    useController = true
+                    resizeMode = when (selectedClipContentMode) {
+                        CanvasContentMode.FIT -> AspectRatioFrameLayout.RESIZE_MODE_FIT
+                        CanvasContentMode.FILL -> AspectRatioFrameLayout.RESIZE_MODE_FILL
+                        CanvasContentMode.CROP -> AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                    }
+                } },
+                update = {
+                    it.player = player
+                    it.resizeMode = when (selectedClipContentMode) {
+                        CanvasContentMode.FIT -> AspectRatioFrameLayout.RESIZE_MODE_FIT
+                        CanvasContentMode.FILL -> AspectRatioFrameLayout.RESIZE_MODE_FILL
+                        CanvasContentMode.CROP -> AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                    }
+                },
+                modifier = Modifier.fillMaxSize()
+            )
             "IMAGE" -> {
                 if (imageBitmap != null) {
-                    Image(bitmap = imageBitmap!!, contentDescription = item?.name ?: "Image", contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
+                    Image(bitmap = imageBitmap!!, contentDescription = item?.name ?: "Image", contentScale = when (selectedClipContentMode) {
+                        CanvasContentMode.FIT -> ContentScale.Fit
+                        CanvasContentMode.FILL -> ContentScale.FillBounds
+                        CanvasContentMode.CROP -> ContentScale.Crop
+                    }, modifier = Modifier.fillMaxSize())
                 } else {
                     Text("Loading image preview…", color = Color(0xFFB9C2D5), modifier = Modifier.align(Alignment.Center))
                 }
