@@ -55,6 +55,27 @@ class TimelineEditorTest {
     }
 
     @Test
+    @Test
+    fun snapAlignsClipStartToNearbyClipStart() {
+        val (project, clip) = fixture()
+        val neighbor = clip.copy(id = "neighbor", timelineStartMs = 12_000L)
+        val expanded = project.copy(tracks = project.tracks.map { it.copy(clips = listOf(clip, neighbor)) })
+        assertEquals(12_000L, TimelineEditor.snapClipStart(expanded, clip.id, 11_850L, 0L))
+    }
+
+    @Test
+    fun snapAlignsClipEndToPlayheadAndRespectsThreshold() {
+        val (project, clip) = fixture()
+        assertEquals(5_000L, TimelineEditor.snapClipStart(project, clip.id, 4_850L, 15_000L))
+        assertEquals(4_850L, TimelineEditor.snapClipStart(project, clip.id, 4_850L, 15_000L, thresholdMs = 100L))
+    }
+
+    @Test
+    fun snapIgnoresTheDraggedClipAndNeverReturnsNegativeStart() {
+        val (project, clip) = fixture()
+        assertEquals(0L, TimelineEditor.snapClipStart(project, clip.id, 100L, 0L))
+    }
+
     fun moveClipToCompatibleTrackPreservesClipIdentityAndSourceRange() {
         val (project, clip) = fixture()
         val destination = TimelineTrack(name = "Music 2", kind = TrackKind.AUDIO)
