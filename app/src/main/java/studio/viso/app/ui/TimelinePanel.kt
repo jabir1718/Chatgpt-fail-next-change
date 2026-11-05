@@ -39,6 +39,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.ui.platform.LocalDensity
 import kotlin.math.roundToLong
+import com.creatorstudio.app.editor.CanvasContentMode
 import com.creatorstudio.app.editor.EditorProject
 import com.creatorstudio.app.editor.TimelineClip
 import com.creatorstudio.app.editor.TimelineEditor
@@ -307,6 +308,11 @@ fun TimelinePanel(
             }, onTrimEnd = { end ->
                 onProjectChange(TimelineEditor.trimEnd(project, selected.id, end))
             })
+            if (selected.kind == com.creatorstudio.app.editor.MediaKind.VIDEO || selected.kind == com.creatorstudio.app.editor.MediaKind.IMAGE) {
+                ClipCanvasContentControls(selected.contentMode) { mode ->
+                    onProjectChange(TimelineEditor.setClipContentMode(project, selected.id, mode))
+                }
+            }
             ClipAudioControls(selected, onSettingsChange = { settings ->
                 onProjectChange(project.updateClipAudio(selected.id) { settings })
             })
@@ -314,6 +320,43 @@ fun TimelinePanel(
             Text("Tap a clip block to select it. Import media to populate the correct track.",
                 color = Color(0xFF9AA4B8), fontSize = 9.sp)
         }
+    }
+}
+
+
+@Composable
+private fun ClipCanvasContentControls(
+    selected: CanvasContentMode,
+    onModeChange: (CanvasContentMode) -> Unit
+) {
+    Column(Modifier.fillMaxWidth().padding(top = 8.dp)) {
+        Text("CANVAS CONTENT", color = Color(0xFFB7C4D8), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            listOf(
+                CanvasContentMode.FIT to "FIT",
+                CanvasContentMode.FILL to "FILL",
+                CanvasContentMode.CROP to "CROP"
+            ).forEach { (mode, label) ->
+                OutlinedButton(
+                    onClick = { onModeChange(mode) },
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 3.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = if (selected == mode) TimelineAccent else Color(0xFFB7C4D8)
+                    )
+                ) {
+                    Text(label, fontSize = 9.sp, fontWeight = if (selected == mode) FontWeight.Bold else FontWeight.Normal)
+                }
+            }
+        }
+        Text(
+            when (selected) {
+                CanvasContentMode.FIT -> "Keep the full source visible; empty canvas may remain around it."
+                CanvasContentMode.FILL -> "Stretch the source to the full canvas; proportions may change."
+                CanvasContentMode.CROP -> "Fill the canvas while preserving proportions; edges may be cropped."
+            },
+            color = Color(0xFF8996AC), fontSize = 8.sp
+        )
     }
 }
 
