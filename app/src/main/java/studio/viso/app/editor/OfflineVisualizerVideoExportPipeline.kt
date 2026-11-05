@@ -51,9 +51,9 @@ class OfflineVisualizerVideoExportPipeline(
         val audioClips = project.tracks
             .filter { it.kind == TrackKind.AUDIO || it.kind == TrackKind.VIDEO }
             .flatMap { it.clips }
-            .filter { it.kind == MediaKind.AUDIO }
-        val audioAssetIds = audioClips.map { it.mediaId }.distinct()
-        require(audioAssetIds.isNotEmpty()) { "Add at least one audio clip to drive the visualizer export" }
+            .filter { it.kind == MediaKind.AUDIO || it.kind == MediaKind.VIDEO }
+        val audioAssetIds = visualizerAudioSourceAssetIds(project)
+        require(audioAssetIds.isNotEmpty()) { "Add an audio or video clip to drive the visualizer export" }
         val imageAssetIds = buildList {
             project.visualizer.backgroundAssetId?.let(::add)
             project.visualizer.foregroundAssetId?.let(::add)
@@ -89,18 +89,27 @@ class OfflineVisualizerVideoExportPipeline(
                 val asset = project.assets.first { it.id == assetId }
                 val pcmFile = File(cacheDirectory, "visualizer_pcm_${assetId.sha256()}.f32")
                 pcmFiles += pcmFile
-                val decoded = audioDecoder.decodeToFile(
-                    context = context,
-                    uri = Uri.parse(asset.uri),
-                    outputFile = pcmFile,
-                    shouldCancel = shouldCancel
-                ) { progress ->
-                    val fraction = (index + progress.coerceIn(0f, 1f)) / audioAssetIds.size.coerceAtLeast(1)
-                    onProgress(fraction * 0.14f)
+                try {
+                    val decoded = audioDecoder.decodeToFile(
+                        context = context,
+                        uri = Uri.parse(asset.uri),
+                        outputFile = pcmFile,
+                        shouldCancel = shouldCancel
+                    ) { progress ->
+                        val fraction = (index + progress.coerceIn(0f, 1f)) / audioAssetIds.size.coerceAtLeast(1)
+                        onProgress(fraction * 0.14f)
+                    }
+                    sources[assetId] = decoded.source
+                } catch (missingAudio: NoAudioTrackException) {
+                    val hasAudioOnlyClip = audioClips.any { it.mediaId == assetId && it.kind == MediaKind.AUDIO }
+                    if (hasAudioOnlyClip) {
+                        throw IllegalStateException("An audio clip has no decodable audio track: ${asset.displayName}", missingAudio)
+                    }
+                    pcmFile.delete()
                 }
-                sources[assetId] = decoded.source
             }
 
+            if (sources.isEmpty()) throw IllegalStateException("No decodable audio track was found in the project's audio or video clips")
             if (shouldCancel()) throw CancellationException("Visualizer export cancelled")
             val mixer = OfflineAudioMixEngine(project, sources, audioSampleRate, audioChannels)
             val audioFrames = ceil(project.durationMs.toDouble() * audioSampleRate / 1_000.0).toLong()
@@ -177,6 +186,14 @@ class OfflineVisualizerVideoExportPipeline(
         }
     }
 }
+
+internal fun visualizerAudioSourceAssetIds(project: EditorProject): List<String> =
+    project.tracks
+        .filter { it.kind == TrackKind.AUDIO || it.kind == TrackKind.VIDEO }
+        .flatMap { it.clips }
+        .filter { it.kind == MediaKind.AUDIO || it.kind == MediaKind.VIDEO }
+        .map { it.mediaId }
+        .distinct()
 
 private fun String.sha256(): String = MessageDigest.getInstance("SHA-256")
     .digest(toByteArray(Charsets.UTF_8))

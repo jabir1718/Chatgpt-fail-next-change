@@ -1006,7 +1006,7 @@ private fun ExportPage(
     }
     val hasVisualizerAudioClips = project.tracks.any { track ->
         (track.kind == com.creatorstudio.app.editor.TrackKind.AUDIO || track.kind == com.creatorstudio.app.editor.TrackKind.VIDEO) &&
-            track.clips.any { it.kind == MediaKind.AUDIO }
+            track.clips.any { it.kind == MediaKind.AUDIO || it.kind == MediaKind.VIDEO }
     }
     val hasSourceVideo = project.tracks.any { track -> track.clips.any { it.kind == MediaKind.VIDEO } }
     val hasStillImageLayers = project.visualizer.backgroundAssetId != null ||
@@ -1059,11 +1059,11 @@ private fun ExportPage(
             Text("EXPORT VISUALIZER VIDEO (.MP4)")
         }
         if (!hasVisualizerAudioClips) {
-            Text("Add an audio-only timeline clip to drive the offline visualizer export.", color = Color(0xFF9AA4B8), fontSize = 10.sp)
+            Text("Add an audio or video clip with an audio stream to drive the offline visualizer export.", color = Color(0xFF9AA4B8), fontSize = 10.sp)
         }
         if (hasSourceVideo) {
             Text(
-                "Source video frames are included in the picture composition. Embedded audio from source videos is not mixed in this export stage; add an audio track for the soundtrack.",
+                "Source video frames are included in the picture composition. Embedded source-video audio is included when a decodable audio stream exists. Add an audio track if the video has no sound.",
                 color = Color(0xFFFFC36B),
                 fontSize = 10.sp
             )
