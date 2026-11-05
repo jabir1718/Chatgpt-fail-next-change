@@ -893,6 +893,7 @@ private fun StudioPage(
     Text("Global sliders affect the active preview. Per-clip volume, mute, pitch and tempo are saved from the selected timeline clip. Export DSP is not connected yet.", color = Color(0xFF9AA4B8), fontSize = 10.sp)
 }
 
+@OptIn(UnstableApi::class)
 @Composable
 private fun PreviewStage(
     player: ExoPlayer, item: StudioMedia?, isPlaying: Boolean, onPlay: () -> Unit, aspectRatio: Float,
