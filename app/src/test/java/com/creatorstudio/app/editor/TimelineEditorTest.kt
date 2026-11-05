@@ -25,6 +25,20 @@ class TimelineEditorTest {
     }
 
     @Test
+    fun addTrackPreservesExistingTracksAndCreatesEmptyTypedTrack() {
+        val (project) = fixture()
+        val result = TimelineEditor.addTrack(project, "Overlay 2", TrackKind.OVERLAY)
+
+        assertEquals(2, result.tracks.size)
+        assertEquals("Audio", result.tracks[0].name)
+        assertEquals(TrackKind.AUDIO, result.tracks[0].kind)
+        assertEquals(1, result.tracks[0].clips.size)
+        assertEquals("Overlay 2", result.tracks[1].name)
+        assertEquals(TrackKind.OVERLAY, result.tracks[1].kind)
+        assertTrue(result.tracks[1].clips.isEmpty())
+    }
+
+    @Test
     fun splitPreservesSourceRangesAndCreatesTwoTimelineClips() {
         val (project, clip) = fixture()
         val result = TimelineEditor.split(project, clip.id, 4_000L)
