@@ -31,7 +31,7 @@ A polished, original Android creator studio for TikTok, YouTube Shorts, Instagra
 - [x] Export progress and cancellation propagation (Run #152 CI build/tests/artifact verified).
 - [x] Conservative disk-space preflight for PCM cache + AAC output + safety reserve (Run #155 CI build/tests/artifact verified).
 - [ ] Preview/export mix parity, retry/recovery, and physical-device audio acceptance.
-**Current note:** OfflineAudioMixEngine consumes decoded PCM buffers and returns contiguous output blocks. It is not yet connected to MediaExtractor/MediaCodec streaming decode or an AAC encoder/muxer. Do not call audio export complete.
+**Current note:** OfflineAudioMixEngine consumes disk-backed PCM sources decoded by MediaExtractor/MediaCodec and is connected to AAC-LC M4A export. The visualizer MP4 pipeline reuses the same timeline audio mix for AAC and offline FFT analysis. Source-video embedded audio is not yet included in the visualizer MP4 stage; add an audio-only clip for the soundtrack.
 **Gate:** Two or more clips with independent settings render to a valid audio file, with no clipping and correct timing.
 
 ## M3 — Visualizer Studio (signature priority)
@@ -42,12 +42,13 @@ A polished, original Android creator studio for TikTok, YouTube Shorts, Instagra
 - [x] Android Bitmap/Canvas renderer for Spectrum, Radial, Waveform, Rings and Particles with supplied image/video-frame layers and captions (Run #159 CI build/artifact verified).
 - [x] Bounded H.264 video-only encoder using flexible YUV input and deterministic frame timestamps (Run #161 CI build/tests/artifact verified).
 - [x] Still-image URI decoding with resolution/pixel budget and H.264/AAC MP4 track muxer (Run #164 CI build/tests/artifact verified).
-- [x] Still-image visualizer MP4 pipeline connects audio decode/mix/AAC, offline FFT analysis, PNG/image layers, Canvas frames, H.264 and AAC/H.264 muxing (source implemented; CI pending).
-- [ ] Add source video frame decoding and connect video clips.
+- [x] Still-image visualizer MP4 pipeline connects audio decode/mix/AAC, offline FFT analysis, PNG/image layers, Canvas frames, H.264 and AAC/H.264 muxing; Export Studio SAF action, progress and cancellation are wired (Run #168 CI build/artifact; Run #171 reverified latest integration).
+- [x] Add source video frame decoding and connect video clips to the offline visualizer MP4 compositor (Run #171 CI build/tests/artifact verified; device decoding/rotation/performance acceptance open).
 - [ ] Background image/video, multiple independent foreground PNG/video layers and beat response.
 - [ ] Lyrics overlay, masks, blend modes, keyframes, presets and transitions.
 - [x] Deterministic frame composition planning contract (Run #141 CI build/tests/artifact verified).
-- [ ] Actual video/image decoding, pixel compositing and video frame encoding.
+- [x] Android still-image and source-video frame decoding, Canvas pixel compositing and H.264 video frame encoding are connected in the offline visualizer export pipeline (Run #171 CI build/tests/artifact verified; physical-device validation open).
+- [ ] True 3D/GPU composition, accelerated multi-layer rendering and preview/export parity.
 **Gate:** Imported song drives animation; foreground reacts independently; export matches preview.
 
 ## M4 — Lyrics/captions/voice input
@@ -68,8 +69,9 @@ A polished, original Android creator studio for TikTok, YouTube Shorts, Instagra
 **Gate:** Multi-clip render with stable timing and audio sync.
 
 ## M7 — Export/sharing/social
-- [ ] MP4/audio encoding, presets (9:16, 1:1, 4:5, 16:9), resolution/FPS/bitrate/codec.
-- [ ] Export progress/cancel/retry/recovery and storage estimates.
+- [x] H.264 + AAC MP4 visualizer export for audio + still images/PNG + source video picture layers (Run #171 CI build/tests/artifact verified; device codec compatibility and source-video embedded-audio mix acceptance open).
+- [ ] Configurable presets (9:16, 1:1, 4:5, 16:9), resolution/FPS/bitrate/codec.
+- [x] Export progress/cancel and conservative storage preflight for audio/video visualizer export (Run #171 latest build; retry/recovery remains open).
 - [ ] Android share-sheet fallback; direct social upload only through permitted official APIs/OAuth.
 **Gate:** Valid portrait/landscape files, share locally, official integrations only.
 

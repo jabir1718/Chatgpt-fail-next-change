@@ -23,14 +23,12 @@ Build a serious, original Android creator studio for TikTok, YouTube, Instagram 
 - Device install/physical testing is done by user when the app is ready.
 
 ## Current evidence snapshot
-- Latest pre-timeline verified APK build is Actions run #13:
-  https://github.com/jabir1718/Chatgpt-fail-next-change/actions/runs/42079253528
-- Source SHA built: `e139292bcefa85859796427646a3bcf7a8f96705`
-- Debug APK artifact: `Creator-Studio-debug-apk` will be used from the next workflow run; the prior artifact was `Viso-debug-apk`, 19,414,244 bytes, expires 2026-11-19.
-- CI assembleDebug and artifact upload succeeded.
-- Device installation and app launch are NOT yet user-verified.
-- Current source includes Compose shell, video/audio/image pickers, Media3 playback preview, basic preview audio controls, versioned project JSON persistence, typed multi-track clip models, track timeline UI, clip select/move/trim/split/delete, undo/redo, and playhead seek controls. Latest integration CI still needs verification.
-- Not complete: real multi-track timeline, persisted projects, DSP effects, FFT/3D visualizer, PNG composition/beat animation, background removal, transcription, voice typing, chroma key, export, direct social API.
+- Latest completed successful build is Actions run #171, ID `42127760975`, source SHA `c8fc505e3c6c59a68b5d4ba7087bd45aded00825`.
+- Artifact: `Creator-Studio-debug-apk`, 19,735,833 bytes, SHA-256 `59c7643d9dbcf5aa935abba36b43520ce85689741c1adcf2f1a508ee29d87740`.
+- CI unit tests, debug APK build and artifact upload succeeded.
+- Device installation, launch, real media decode/encode and exported-file playback are NOT yet user-verified.
+- Current source includes Compose editor shell, media pickers, Media3 preview, project persistence, multi-track editing, live visualizer, offline PCM/AAC audio export, offline audio-reactive still-image/source-video visualizer MP4 pipeline, source frame decoding, Canvas compositing, H.264 encoding and AAC/H.264 muxing. Latest integration is CI-verified in Run #171; physical-device acceptance remains open.
+- Not complete: device acceptance, video embedded-audio mix in visualizer export, full synchronized preview compositing, 3D/GPU visualizer, background removal, transcription, voice typing, chroma key, advanced video effects, export presets/recovery and official social integrations.
 - Do not tell user to install this as the final requested app. It is a foundation build only.
 
 ## Next task sequence
@@ -43,8 +41,9 @@ Build a serious, original Android creator studio for TikTok, YouTube, Instagram 
 7. Add proper DSP pipeline for independent clip volume, pitch, time stretch, BPM/beat detection, EQ/bass and voice effects.
 8. Implement visualizer as the product's signature: audio FFT/RMS/onset pipeline, waveform/spectrum/radial/particles, GPU/3D renderer, background artwork, multiple foreground PNG layers, independent beat response and synced lyric overlay. Test preview/render parity.
 9. Implement lyrics/captions: speech/lyrics provider adapter, Start/Stop permissions, language detection, editable word timing, Urdu/Roman Urdu/Roman English, voice typing, karaoke and emoji.
-10. Implement image segmentation/cutout, transparent PNG refinement, chroma key, compositing, transitions and effects.
-11. Implement actual video rendering/export with 9:16, 1:1, 4:5, 16:9 presets, resolution/FPS/bitrate controls, queue/cancel/retry/recovery.
+10. Include source-video embedded audio in the visualizer MP4 soundtrack and test A/V sync.
+11. Add export presets and resolution/FPS/bitrate controls, then implement retry/recovery.
+12. Implement image segmentation/cutout, transparent PNG refinement, chroma key, compositing, transitions and effects.
 12. Add official supported social import/upload only where platform terms and API/OAuth permit; system share-sheet fallback.
 13. Run CI and inspect APK artifact; complete automated tests and static analysis. Keep release status honest.
 14. Update `docs/STATE.md` and `docs/ROADMAP.md` with every material change and exact commit/run/artifact evidence.
