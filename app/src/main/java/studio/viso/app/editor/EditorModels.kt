@@ -82,6 +82,20 @@ data class MediaAsset(
     val importedAtEpochMs: Long = System.currentTimeMillis()
 )
 
+data class VisualizerSettings(
+    val backgroundAssetId: String? = null,
+    val foregroundAssetId: String? = null,
+    val mode: String = "Spectrum",
+    val foregroundScale: Float = 1f,
+    val beatSensitivity: Float = 1.08f
+) {
+    init {
+        require(mode in setOf("Spectrum", "Radial", "Waveform")) { "Unsupported visualizer mode" }
+        require(foregroundScale in 0.5f..2f) { "Foreground scale must be between 0.5 and 2" }
+        require(beatSensitivity in 1f..1.5f) { "Beat sensitivity must be between 1 and 1.5" }
+    }
+}
+
 data class EditorProject(
     val id: String = UUID.randomUUID().toString(),
     val name: String = "Untitled Project",
@@ -91,7 +105,8 @@ data class EditorProject(
     val createdAtEpochMs: Long = System.currentTimeMillis(),
     val updatedAtEpochMs: Long = System.currentTimeMillis(),
     val assets: List<MediaAsset> = emptyList(),
-    val tracks: List<TimelineTrack> = emptyList()
+    val tracks: List<TimelineTrack> = emptyList(),
+    val visualizer: VisualizerSettings = VisualizerSettings()
 ) {
     init {
         require(width > 0 && height > 0) { "Canvas dimensions must be positive" }
@@ -102,6 +117,12 @@ data class EditorProject(
         require(allClips.map { it.id }.distinct().size == allClips.size) { "Clip IDs must be unique" }
         require(allClips.all { clip -> assets.any { it.id == clip.mediaId } }) {
             "Every timeline clip must reference an imported media asset"
+        }
+        require(visualizer.backgroundAssetId == null || assets.any { it.id == visualizer.backgroundAssetId && it.kind == MediaKind.IMAGE }) {
+            "Visualizer background must reference an imported image"
+        }
+        require(visualizer.foregroundAssetId == null || assets.any { it.id == visualizer.foregroundAssetId && it.kind == MediaKind.IMAGE }) {
+            "Visualizer foreground must reference an imported image"
         }
     }
 
