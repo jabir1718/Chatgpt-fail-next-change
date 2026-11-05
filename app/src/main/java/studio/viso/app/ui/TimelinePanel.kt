@@ -157,7 +157,7 @@ private fun ClipTrimControls(clip: TimelineClip, onTrimStart: (Long) -> Unit, on
         Slider(
             value = clip.timelineStartMs.toFloat(),
             onValueChange = { onTrimStart(it.toLong()) },
-            valueRange = 0f..(clip.timelineEndMs - 250L).coerceAtLeast(0L).toFloat(),
+            valueRange = clip.timelineStartMs.toFloat()..(clip.timelineEndMs - 250L).coerceAtLeast(clip.timelineStartMs).toFloat(),
             colors = SliderDefaults.colors(thumbColor = Color(0xFFFFC45C), activeTrackColor = Color(0xFFFFC45C))
         )
         Text("TRIM END  •  ${formatTimelineTime(clip.timelineEndMs)}", color = Color(0xFFB7C4D8), fontSize = 9.sp)
