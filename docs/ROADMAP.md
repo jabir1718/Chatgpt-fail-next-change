@@ -1,4 +1,4 @@
-# Viso Studio — Master Roadmap & Acceptance Gates
+# Creator Studio — Master Roadmap & Acceptance Gates
 
 This is the canonical product plan. Read this file and `docs/STATE.md` before every new development session. Do not restart the roadmap from memory or silently drop requirements.
 
