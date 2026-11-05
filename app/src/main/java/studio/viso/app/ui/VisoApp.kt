@@ -1,4 +1,4 @@
-package studio.viso.app.ui
+package com.creatorstudio.app.ui
 
 import android.net.Uri
 import android.media.MediaMetadataRetriever
@@ -9,12 +9,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import studio.viso.app.editor.EditorProject
-import studio.viso.app.editor.MediaKind
-import studio.viso.app.editor.ProjectStore
-import studio.viso.app.editor.TimelineEditor
-import studio.viso.app.editor.createStarterProject
-import studio.viso.app.editor.importAsset
+import com.creatorstudio.app.editor.EditorProject
+import com.creatorstudio.app.editor.MediaKind
+import com.creatorstudio.app.editor.ProjectStore
+import com.creatorstudio.app.editor.TimelineEditor
+import com.creatorstudio.app.editor.createStarterProject
+import com.creatorstudio.app.editor.importAsset
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -69,7 +69,7 @@ private val Pink = Color(0xFFFF6FAE)
 private data class StudioMedia(val uri: Uri, val name: String, val kind: String)
 
 @Composable
-fun VisoApp() {
+fun CreatorStudioApp() {
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Studio", "Audio", "Visuals", "Lyrics", "Export")
     val context = LocalContext.current
