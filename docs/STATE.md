@@ -1,24 +1,24 @@
-# Viso Studio — Current State
+# Creator Studio — Current State
 
 Last updated: 2026-11-05
 
 ## Repository identity
 - Repository: `jabir1718/Chatgpt-fail-next-change`
 - Branch: `main`
-- Product: Viso Studio — Android video/audio creator app.
+- Product: Creator Studio — Android video/audio creator app.
 - Canonical plan: `docs/ROADMAP.md`
 - Full feature requirements: `docs/PRODUCT_SPEC.md`
 - Handoff instructions: `docs/CONTINUATION.md`
 
 ## Verified build evidence
 - GitHub Actions workflow: `.github/workflows/android.yml`
-- Successful run: [Run #6](https://github.com/jabir1718/Chatgpt-fail-next-change/actions/runs/42079253528)
-- Built commit: `0b8831f35fcee2677bd46e3fc64519c29aec7683`
+- Successful run: [Run #13](https://github.com/jabir1718/Chatgpt-fail-next-change/actions/runs/42081354422)
+- Built commit: `e139292bcefa85859796427646a3bcf7a8f96705`
 - Job: Assemble debug APK — success.
 - Build step: success.
 - Artifact upload: success.
-- Artifact name: `Viso-debug-apk`
-- Artifact size: 19,381,660 bytes (about 18.5 MiB).
+- Artifact name: `Creator-Studio-debug-apk`
+- Artifact size: 19,414,244 bytes (about 18.5 MiB).
 - Artifact expires: 2026-11-19.
 - User has NOT yet confirmed device installation or launch.
 
@@ -26,7 +26,7 @@ Last updated: 2026-11-05
 - Fresh Kotlin + Jetpack Compose Android project.
 - Five navigation areas: Studio, Audio, Visuals, Lyrics, Export.
 - Android document picker actions for video, audio and image.
-- Imported items listed as selectable timeline layers.
+- Imported items are stored as project assets and placed on typed video/audio/overlay tracks.
 - Media3 ExoPlayer playback path for selected video/audio.
 - Video preview surface for selected video.
 - Basic active-preview volume, pitch and speed controls.
@@ -34,8 +34,8 @@ Last updated: 2026-11-05
 - GitHub Actions debug APK pipeline using JDK 17, Gradle 8.11.1 and Android SDK Platform 36.
 
 ## Important limitations — do not misrepresent
-- Current timeline is a list of imported layers, NOT a real editable multi-track timeline.
-- Pitch/speed/volume controls affect active preview only; no persistent per-clip DSP or rendered export.
+- The timeline now has track rows and clip blocks with selection, move-by-one-second, trim, split, delete, undo/redo and a playhead slider. Timeline interaction and project save/reopen still require CI and device verification.
+- Pitch/speed/volume controls still affect active preview only; persistent per-clip DSP and rendered export are not implemented.
 - Visualizer is a placeholder graphic, NOT audio-reactive FFT/3D rendering.
 - PNG picker imports a layer reference, but image compositing/background removal are not implemented.
 - Lyrics/transcription, language detection, Roman Urdu/Urdu/English output and voice typing are not connected.
@@ -45,12 +45,12 @@ Last updated: 2026-11-05
 
 ## Current milestone status
 - M0: CI foundation and APK artifact complete. Device install/launch acceptance pending user.
-- M1: In progress; basic import/playback foundation only.
+- M1: In progress; versioned project persistence, managed media URI permissions, multi-track timeline UI, clip selection, move, trim, split, delete, undo/redo, and playhead controls have been added to source. Latest CI verification pending.
 - M2–M8: Planned. See roadmap for detailed acceptance criteria.
 - No release tag; no claim of complete app.
 
 ## Next engineering priorities
-1. Inspect current Gradle/source/manifest and build logs at latest HEAD.
+1. Complete CI verification for the new timeline integration and fix any compile/runtime defects.
 2. Implement persistent project model and managed media import.
 3. Implement proper multi-track timeline model and editor actions: select, trim, split, reorder, delete, undo/redo, save/reopen.
 4. Add playback transport/playhead synchronization.
