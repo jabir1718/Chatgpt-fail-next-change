@@ -1,6 +1,7 @@
 package com.creatorstudio.app.audio
 
 import android.content.Context
+import android.media.AudioFormat
 import android.media.MediaCodec
 import android.media.MediaExtractor
 import android.media.MediaFormat
@@ -58,7 +59,7 @@ class WaveformRepository(context: Context) {
             var outputDone = false
             var outputRate = rate
             var channels = format.intValue(MediaFormat.KEY_CHANNEL_COUNT, 1).coerceAtLeast(1)
-            var encoding = MediaFormat.ENCODING_PCM_16BIT
+            var encoding = AudioFormat.ENCODING_PCM_16BIT
             val started = System.currentTimeMillis()
             while (!outputDone) {
                 coroutineContext.ensureActive()
@@ -83,7 +84,7 @@ class WaveformRepository(context: Context) {
                         val out = codec.outputFormat
                         outputRate = out.intValue(MediaFormat.KEY_SAMPLE_RATE, rate)
                         channels = out.intValue(MediaFormat.KEY_CHANNEL_COUNT, channels).coerceAtLeast(1)
-                        encoding = out.intValue(MediaFormat.KEY_PCM_ENCODING, MediaFormat.ENCODING_PCM_16BIT)
+                        encoding = out.intValue(MediaFormat.KEY_PCM_ENCODING, AudioFormat.ENCODING_PCM_16BIT)
                     }
                     MediaCodec.INFO_TRY_AGAIN_LATER -> Unit
                     else -> if (index >= 0) {
@@ -104,7 +105,7 @@ class WaveformRepository(context: Context) {
     }
 
     private fun appendPcm(buffer: java.nio.ByteBuffer, channels: Int, encoding: Int, reducer: WaveformAccumulator) {
-        val bytes = when (encoding) { MediaFormat.ENCODING_PCM_FLOAT -> 4; MediaFormat.ENCODING_PCM_8BIT -> 1; else -> 2 }
+        val bytes = when (encoding) { AudioFormat.ENCODING_PCM_FLOAT -> 4; AudioFormat.ENCODING_PCM_8BIT -> 1; else -> 2 }
         val channelCount = channels.coerceAtLeast(1)
         val frames = buffer.remaining() / (bytes * channelCount)
         val mono = FloatArray(frames)
@@ -112,8 +113,8 @@ class WaveformRepository(context: Context) {
             var peak = 0f
             repeat(channelCount) {
                 val sample = when (encoding) {
-                    MediaFormat.ENCODING_PCM_FLOAT -> buffer.float
-                    MediaFormat.ENCODING_PCM_8BIT -> ((buffer.get().toInt() and 255) - 128) / 128f
+                    AudioFormat.ENCODING_PCM_FLOAT -> buffer.float
+                    AudioFormat.ENCODING_PCM_8BIT -> ((buffer.get().toInt() and 255) - 128) / 128f
                     else -> buffer.short / 32768f
                 }
                 peak = maxOf(peak, kotlin.math.abs(sample))
