@@ -214,6 +214,7 @@ fun CreatorStudioApp() {
                             context = context,
                             project = exportProject,
                             cacheDirectory = File(context.cacheDir, "creator-video-cache"),
+                            videoBitRate = exportProject.videoBitRate,
                             outputFile = temporaryOutput,
                             shouldCancel = { cancelFlag.get() },
                             onProgress = { value -> audioExportProgress = value }
@@ -689,6 +690,7 @@ fun CreatorStudioApp() {
                 3 -> ToolPage("AI Lyrics & Captions", "Transcription integration is not connected yet", listOf("Auto Transcribe", "Language Detection", "Roman Urdu", "Urdu Script", "Roman English", "Word Sync", "Emoji Captions", "Voice Typing"))
                 else -> ExportPage(
                     project = project,
+                    onSettingsChange = { next -> commitProject(next.copy(updatedAtEpochMs = System.currentTimeMillis())) },
                     exporting = audioExporting,
                     progress = audioExportProgress,
                     message = audioExportMessage,
@@ -993,6 +995,7 @@ private fun SectionTitle(title: String, detail: String) {
 @Composable
 private fun ExportPage(
     project: EditorProject,
+    onSettingsChange: (EditorProject) -> Unit,
     exporting: Boolean,
     progress: Float,
     message: String,
@@ -1041,8 +1044,31 @@ private fun ExportPage(
         }
         Divider(color = Color(0xFF30384A))
         Text("VISUALIZER VIDEO", color = Violet, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+        Text("ASPECT / CANVAS", color = Color(0xFFD4D9E5), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+            listOf(Triple("9:16", 1080, 1920), Triple("1:1", 1080, 1080), Triple("4:5", 1080, 1350), Triple("16:9", 1920, 1080)).forEach { preset ->
+                val selected = project.width == preset.second && project.height == preset.third
+                OutlinedButton(onClick = { onSettingsChange(project.copy(width = preset.second, height = preset.third)) }, enabled = !exporting, modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 1.dp, vertical = 3.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = if (selected) Mint else Color.White)) {
+                    Text(preset.first, fontSize = 9.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal)
+                }
+            }
+        }
+        Text("FRAME RATE", color = Color(0xFFD4D9E5), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf(24, 30, 60).forEach { fps ->
+                val selected = project.frameRate == fps
+                OutlinedButton(onClick = { onSettingsChange(project.copy(frameRate = fps)) }, enabled = !exporting, modifier = Modifier.weight(1f), colors = ButtonDefaults.outlinedButtonColors(contentColor = if (selected) Mint else Color.White)) { Text("$fps FPS") }
+            }
+        }
+        Text("VIDEO BITRATE", color = Color(0xFFD4D9E5), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+            listOf(4_000_000 to "4 Mbps", 8_000_000 to "8 Mbps", 12_000_000 to "12 Mbps", 20_000_000 to "20 Mbps").forEach { (rate, label) ->
+                val selected = project.videoBitRate == rate
+                OutlinedButton(onClick = { onSettingsChange(project.copy(videoBitRate = rate)) }, enabled = !exporting, modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 1.dp, vertical = 4.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = if (selected) Mint else Color.White)) { Text(label, fontSize = 9.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal) }
+            }
+        }
         Text(
-            "${project.width} × ${project.height}  •  ${project.frameRate} FPS  •  H.264 + AAC",
+            "${project.width} × ${project.height}  •  ${project.frameRate} FPS  •  ${project.videoBitRate / 1_000_000} Mbps  •  H.264 + AAC",
             color = Color(0xFFD4D9E5),
             fontSize = 12.sp
         )
