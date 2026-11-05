@@ -20,9 +20,10 @@ data class OfflineVisualizerVideoExportResult(
 /**
  * First complete visualizer-video export path:
  * decode timeline audio, mix/encode AAC, analyze that same mix, decode still-image
- * layers, render each visualizer frame, encode H.264, then mux AAC + H.264 into MP4.
- *
- * Source video clips are deliberately rejected until their frame decoder is connected.
+ * layers and source-video frames, render each visualizer frame, encode H.264,
+ * then mux AAC + H.264 into MP4. Decodable audio embedded in source-video
+ * clips is included in the same timeline mix; silent video assets are skipped
+ * as soundtrack sources.
  */
 class OfflineVisualizerVideoExportPipeline(
     private val audioDecoder: MediaCodecPcmDecoder = MediaCodecPcmDecoder(),

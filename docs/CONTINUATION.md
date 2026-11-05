@@ -27,7 +27,7 @@ Build a serious, original Android creator studio for TikTok, YouTube, Instagram 
 - Artifact: `Creator-Studio-debug-apk`, 19,737,358 bytes, SHA-256 `008058bcf48bdbbcfa0f6a0a9bdc0a9ecb1139095b85534d0a95108f9625b9b0`.
 - CI unit tests, debug APK build and artifact upload succeeded.
 - Device installation, launch, real media decode/encode and exported-file playback are NOT yet user-verified.
-- Current source includes Compose editor shell, media pickers, Media3 preview, project persistence, multi-track editing, live visualizer, offline PCM/AAC audio export, offline audio-reactive still-image/source-video visualizer MP4 pipeline, source frame decoding, Canvas compositing, H.264 encoding and AAC/H.264 muxing. Latest integration is CI-verified in Run #171; physical-device acceptance remains open.
+- Current source includes Compose editor shell, media pickers, Media3 preview, project persistence, multi-track editing, live visualizer, offline PCM/AAC audio export, offline audio-reactive still-image/source-video visualizer MP4 pipeline, source frame decoding, Canvas compositing, H.264 encoding, AAC/H.264 muxing and decodable embedded source-video audio mixing. Latest integration is CI-verified in Run #173; physical-device acceptance remains open.
 - Not complete: device acceptance, full synchronized preview compositing, 3D/GPU visualizer, background removal, transcription, voice typing, chroma key, advanced video effects, export presets/recovery and official social integrations.
 - Do not tell user to install this as the final requested app. It is a foundation build only.
 
