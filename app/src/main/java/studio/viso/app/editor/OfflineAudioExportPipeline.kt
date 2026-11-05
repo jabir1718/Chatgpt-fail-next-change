@@ -2,6 +2,7 @@ package com.creatorstudio.app.editor
 
 import android.content.Context
 import android.net.Uri
+import android.os.StatFs
 import java.io.File
 import java.security.MessageDigest
 import java.util.concurrent.CancellationException
@@ -39,6 +40,18 @@ class OfflineAudioExportPipeline(
             .filter { it.kind == MediaKind.AUDIO || it.kind == MediaKind.VIDEO }
         val assetIds = audioClips.map { it.mediaId }.distinct()
         require(assetIds.isNotEmpty()) { "Project contains no audio-capable clips" }
+
+        val estimate = OfflineAudioStorageEstimator.estimate(
+            project = project,
+            assetIds = assetIds,
+            sampleRate = sampleRate,
+            channels = channels,
+            bitRate = bitRate
+        )
+        val availableBytes = StatFs(cacheDirectory.absolutePath).availableBytes
+        if (availableBytes < estimate.requiredFreeBytes) {
+            throw InsufficientAudioExportStorageException(estimate.requiredFreeBytes, availableBytes)
+        }
 
         val sources = linkedMapOf<String, PcmAudioSource>()
         val temporaryFiles = mutableListOf<File>()
