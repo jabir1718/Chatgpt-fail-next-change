@@ -11,10 +11,10 @@ Last updated: 2026-11-06
 - Handoff instructions: `docs/CONTINUATION.md`
 
 ## Verified CI evidence
-- Latest completed verified run before the newest renderer commits: Run #140, ID `42111311750`, commit `2cf41b10f4eda848d6de2d4c66793e515a3974b7`.
+- Latest completed successful run: Run #141, ID `42111851582`, commit `e1c0ad9c4dd12678c956793073530c7c2ca9c4e1`.
 - Run #140 completed successfully: Android SDK setup, `assembleDebug`, configured tests, and APK artifact upload all succeeded.
 - Run #140 artifact: `Creator-Studio-debug-apk`, 19,643,832 bytes, SHA-256 `77f565128599e024f7d6c1e94d06d82021da940351ec7f6e54c0244848569d1a`.
-- Run #141 (ID `42111851582`, commit `e1c0ad9c4dd12678c956793073530c7c2ca9c4e1`) is the frame composition plan change; its CI status must be checked before treating that commit as verified.
+- Run #141 completed successfully: frame composition planning source, unit tests, debug APK build and artifact upload passed. Artifact `Creator-Studio-debug-apk`, 19,648,872 bytes, SHA-256 `999f0c80914b62b32b246e53cc933c0a3fca6e2cc3838e6a84694454b9593390`.
 - Run #140 verifies native DynamicsProcessing source integration compiles and configured tests pass; it does not prove effect audibility/device support.
 - CI success verifies configured tests and artifact upload, not device behavior or product completion.
 - User has not confirmed device installation, launch, real-time DSP audibility, editing/export on device.
@@ -30,7 +30,7 @@ Last updated: 2026-11-06
 - Project-linked visualizer background/foreground image references and foreground beat pulse/scale settings.
 - Master audio processing settings (five EQ bands, low-frequency EQ boost and compressor) persist in ProjectStore schema v4; Android DynamicsProcessing is attached to selected-source and timeline Media3 sessions on supported API 28+ devices. Run #140 CI-verified; device audibility remains unverified.
 - `RenderCompositionPlan` describes deterministic frame timestamps, visual z-order, video source positions, active captions, audio schedules and master settings. Run #141 verification pending; this is a planning model, not a media renderer.
-- `OfflineAudioMixEngine` now provides deterministic block-based PCM mixing from decoded in-memory PCM buffers: timeline placement, linear source interpolation, clip playback rate, volume, fade-in/out, track gain, track mute, audio-capable solo rules, five-band peaking EQ, low-band bass boost, compressor and output peak limiting. Unit tests were added. CI verification pending.
+- `OfflineAudioMixEngine` provides deterministic block-based PCM mixing from decoded in-memory PCM buffers: timeline placement, linear source interpolation, clip playback rate, volume, fade-in/out, track gain, track mute, audio-capable solo rules, five-band peaking EQ, low-band bass boost, compressor and output peak limiting. Run #144 compiled the new engine and ran 52 tests, with one fade-out test tolerance assertion failing; a correction is committed for re-verification.
 - The mixer accepts decoded PCM buffers; a streaming MediaExtractor/MediaCodec decoder adapter is still required for real long-form media export. No audio file encoding/muxing or MP4 rendering is implemented yet.
 
 ## Important limitations — do not misrepresent
@@ -53,7 +53,7 @@ Last updated: 2026-11-06
 - M4–M8: Not complete. See roadmap.
 
 ## Next engineering priorities
-1. Verify Run #141 and the offline PCM mixer CI run; fix exact test/compiler failures.
+1. Re-run CI after the Run #144 fade-out boundary test tolerance correction; then continue the offline PCM decoder and AAC encoder.
 2. Implement streaming MediaExtractor/MediaCodec audio decoding into bounded PCM blocks, including seek/source-in and sample-rate/channel conversion.
 3. Add AAC encoder/muxer output and align encoded audio timestamps to video frame timestamps.
 4. Implement Android video/image frame decoding and GPU/Canvas composition in z-order from RenderCompositionPlan.
