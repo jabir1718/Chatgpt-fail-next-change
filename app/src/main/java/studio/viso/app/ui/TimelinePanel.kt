@@ -27,6 +27,7 @@ import studio.viso.app.editor.EditorProject
 import studio.viso.app.editor.TimelineClip
 import studio.viso.app.editor.TimelineEditor
 import studio.viso.app.editor.TrackKind
+import studio.viso.app.editor.updateClipAudio
 
 private val TimelinePanelBg = Color(0xFF101827)
 private val TimelineAccent = Color(0xFF34D8C5)
@@ -143,6 +144,9 @@ fun TimelinePanel(
             }, onTrimEnd = { end ->
                 onProjectChange(TimelineEditor.trimEnd(project, selected.id, end))
             })
+            ClipAudioControls(selected, onSettingsChange = { settings ->
+                onProjectChange(project.updateClipAudio(selected.id) { settings })
+            })
         } else {
             Text("Tap a clip block to select it. Import media to populate the correct track.",
                 color = Color(0xFF9AA4B8), fontSize = 9.sp)
@@ -173,4 +177,28 @@ private fun ClipTrimControls(clip: TimelineClip, onTrimStart: (Long) -> Unit, on
 private fun formatTimelineTime(valueMs: Long): String {
     val safe = valueMs.coerceAtLeast(0L)
     return "${safe / 60_000L}:${((safe / 1_000L) % 60L).toString().padStart(2, '0')}.${((safe % 1_000L) / 100L)}"
+}
+
+@Composable
+private fun ClipAudioControls(
+    clip: TimelineClip,
+    onSettingsChange: (studio.viso.app.editor.ClipAudioSettings) -> Unit
+) {
+    Column(Modifier.fillMaxWidth().padding(top = 8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("CLIP VOLUME", color = Color(0xFFB7C4D8), fontSize = 9.sp, modifier = Modifier.weight(1f))
+            Text("${(clip.audio.volume * 100).toInt()}%", color = TimelineAccent, fontSize = 9.sp)
+            OutlinedButton(
+                onClick = { onSettingsChange(clip.audio.copy(muted = !clip.audio.muted)) },
+                contentPadding = PaddingValues(horizontal = 9.dp, vertical = 2.dp)
+            ) { Text(if (clip.audio.muted) "UNMUTE" else "MUTE", fontSize = 8.sp) }
+        }
+        Slider(
+            value = clip.audio.volume.coerceIn(0f, 2f),
+            onValueChange = { onSettingsChange(clip.audio.copy(volume = it)) },
+            valueRange = 0f..2f,
+            colors = SliderDefaults.colors(thumbColor = TimelineAccent, activeTrackColor = TimelineAccent)
+        )
+        Text("Saved per clip • mute and gain are stored with this project", color = Color(0xFF8996AC), fontSize = 8.sp)
+    }
 }
