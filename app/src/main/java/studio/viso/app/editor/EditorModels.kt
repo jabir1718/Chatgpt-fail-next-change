@@ -168,6 +168,43 @@ object TimelineEditor {
         return project.copy(updatedAtEpochMs = System.currentTimeMillis(), tracks = project.tracks.map { if (it.id == track.id) updated else it })
     }
 
+    fun moveClipToTrack(
+        project: EditorProject,
+        clipId: String,
+        targetTrackId: String,
+        newStartMs: Long? = null
+    ): EditorProject {
+        val sourceTrack = project.tracks.firstOrNull { track -> track.clips.any { it.id == clipId } }
+            ?: error("Clip not found")
+        require(!sourceTrack.locked) { "Source track is locked" }
+        val targetTrack = project.tracks.firstOrNull { it.id == targetTrackId }
+            ?: error("Target track not found")
+        require(!targetTrack.locked) { "Target track is locked" }
+        val clip = sourceTrack.clips.first { it.id == clipId }
+        val requiredTrackKind = when (clip.kind) {
+            MediaKind.VIDEO -> TrackKind.VIDEO
+            MediaKind.AUDIO -> TrackKind.AUDIO
+            MediaKind.IMAGE -> TrackKind.OVERLAY
+            MediaKind.TEXT -> TrackKind.CAPTION
+        }
+        require(targetTrack.kind == requiredTrackKind) {
+            "This clip type cannot be moved to the selected track"
+        }
+        val moved = clip.copy(timelineStartMs = newStartMs ?: clip.timelineStartMs)
+        require(moved.timelineStartMs >= 0L) { "Clip cannot start before zero" }
+        if (sourceTrack.id == targetTrack.id) {
+            return moveClip(project, clipId, moved.timelineStartMs)
+        }
+        val tracks = project.tracks.map { track ->
+            when (track.id) {
+                sourceTrack.id -> track.copy(clips = track.clips.filterNot { it.id == clipId })
+                targetTrack.id -> track.copy(clips = (track.clips + moved).sortedBy { it.timelineStartMs })
+                else -> track
+            }
+        }
+        return project.copy(updatedAtEpochMs = System.currentTimeMillis(), tracks = tracks)
+    }
+
     fun trimStart(project: EditorProject, clipId: String, newStartMs: Long): EditorProject {
         val track = project.tracks.firstOrNull { t -> t.clips.any { it.id == clipId } } ?: error("Clip not found")
         require(!track.locked) { "Track is locked" }
