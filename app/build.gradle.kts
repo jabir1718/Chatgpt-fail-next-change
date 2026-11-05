@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "studio.viso.app"
+    namespace = "com.creatorstudio.app"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "studio.viso.app"
+        applicationId = "com.creatorstudio.app"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
