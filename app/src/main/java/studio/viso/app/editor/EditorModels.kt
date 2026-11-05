@@ -56,7 +56,7 @@ data class TimelineClip(
         require(sourceEndMs - sourceStartMs == durationMs) {
             "Source range and timeline duration must match"
         }
-        require(audio.volume in 0f..2f) { "Volume must be between 0 and 2" }
+        require(audio.volume in 0f..1f) { "Preview volume must be between 0 and 1" }
         require(audio.playbackRate in 0.25f..4f) { "Playback rate must be between 0.25 and 4" }
     }
 
