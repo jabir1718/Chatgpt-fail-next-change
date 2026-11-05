@@ -15,7 +15,7 @@ A polished, original Android creator studio for TikTok, YouTube Shorts, Instagra
 - [x] Video/audio/image/transparent PNG picker and media URI persistence/copy fallback (source; device acceptance open).
 - [x] Media3 selected-source preview and multi-track timeline editing foundation.
 - [x] Clip select/move/trim/split/delete/ripple-delete, snapping, undo/redo, track lock/mute/gain/solo.
-- [ ] Synchronized multi-video compositing, canvas fit/fill/crop, safe areas and aspect presets.
+- [ ] Synchronized multi-video preview/compositing, canvas fit/fill/crop and safe areas (export presets exist; live multi-video preview remains open).
 **Gate:** Multi-asset edit, save/reopen, synchronized playback, no crash.
 
 ## M2 — Audio engine & sound design
@@ -30,7 +30,8 @@ A polished, original Android creator studio for TikTok, YouTube Shorts, Instagra
 - [x] Export tab audio-mix action with Android SAF save destination (Run #150 CI build/tests/artifact verified).
 - [x] Export progress and cancellation propagation (Run #152 CI build/tests/artifact verified).
 - [x] Conservative disk-space preflight for PCM cache + AAC output + safety reserve (Run #155 CI build/tests/artifact verified).
-- [ ] Preview/export mix parity, retry/recovery, and physical-device audio acceptance.
+- [x] Failed audio/video export retry action (reruns from the beginning and requests a new destination; Run #184 CI-verified).
+- [ ] Resumable partial-export recovery, preview/export mix parity and physical-device audio acceptance.
 **Current note:** OfflineAudioMixEngine consumes disk-backed PCM sources decoded by MediaExtractor/MediaCodec and is connected to AAC-LC M4A export. The visualizer MP4 pipeline includes decodable audio from both audio clips and source-video clips in its timeline soundtrack for AAC output and offline FFT analysis. Video-only files with no audio stream are skipped; an audio-kind clip with missing/unreadable audio produces a clear failure. Run #173 verifies source compilation, configured tests, debug APK build and artifact upload. Physical-device A/V sync and codec behavior remain open.
 **Gate:** Two or more clips with independent settings render to a valid audio file, with no clipping and correct timing.
 
@@ -71,8 +72,9 @@ A polished, original Android creator studio for TikTok, YouTube Shorts, Instagra
 
 ## M7 — Export/sharing/social
 - [x] H.264 + AAC MP4 visualizer export for audio + still images/PNG + source video picture layers and decodable embedded source-video audio (Run #173 CI build/tests/artifact verified; device codec compatibility and A/V sync acceptance open).
-- [x] Visualizer export canvas presets (9:16, 1:1, 4:5, 16:9), 24/30/60 FPS and 4/8/12/20 Mbps H.264 bitrate; project-persisted settings (source committed; CI pending). Codec remains H.264 + AAC and is not user-selectable.
+- [x] Visualizer export canvas presets (9:16, 1:1, 4:5, 16:9), 24/30/60 FPS and 4/8/12/20 Mbps H.264 bitrate; project-persisted settings (Runs #183 and #185 CI-verified, including regression tests). Codec remains H.264 + AAC and is not user-selectable.
 - [x] Export progress/cancel and conservative storage preflight for audio/video visualizer export (Run #173 latest source build; retry/recovery remains open).
+- [x] Failed visualizer/audio export retry action (Run #184 CI-verified; restart only, no partial resume).
 - [ ] Android share-sheet fallback; direct social upload only through permitted official APIs/OAuth.
 **Gate:** Valid portrait/landscape files, share locally, official integrations only.
 
