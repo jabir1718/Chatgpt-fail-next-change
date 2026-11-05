@@ -448,7 +448,15 @@ fun CreatorStudioApp() {
                             val nextTracks = project.tracks.map { track ->
                                 track.copy(clips = track.clips.filterNot { it.mediaId == asset.id })
                             }
-                            commitProject(project.copy(assets = project.assets.filterNot { it.id == asset.id }, tracks = nextTracks))
+                            val nextVisualizer = project.visualizer.copy(
+                                backgroundAssetId = project.visualizer.backgroundAssetId.takeUnless { it == asset.id },
+                                foregroundAssetId = project.visualizer.foregroundAssetId.takeUnless { it == asset.id }
+                            )
+                            commitProject(project.copy(
+                                assets = project.assets.filterNot { it.id == asset.id },
+                                tracks = nextTracks,
+                                visualizer = nextVisualizer
+                            ))
                         }
                         if (index == selectedIndex) { player.stop(); isPlaying = false; selectedIndex = -1; selectedClipId = null }
                         media.removeAt(index)
