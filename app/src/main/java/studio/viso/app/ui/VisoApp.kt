@@ -526,8 +526,9 @@ fun CreatorStudioApp() {
                         if (clip != null) {
                             playheadMs = clip.timelineStartMs
                             player.seekTo(clip.sourceStartMs)
-                            player.volume = if (clip.audio.muted) 0f else clip.audio.volume.coerceIn(0f, 1f)
-                            player.playbackParameters = PlaybackParameters(clip.audio.playbackRate, 1f)
+                            val owningTrack = project.tracks.firstOrNull { track -> track.clips.any { it.id == clip.id } }
+                            player.volume = if (clip.audio.muted || owningTrack?.muted == true) 0f else clip.audio.volume.coerceIn(0f, 1f)
+                            player.playbackParameters = PlaybackParameters(clip.audio.playbackRate, clip.audio.pitchRatio())
                         }
                     },
                     onPlayheadChange = { next ->
@@ -538,7 +539,8 @@ fun CreatorStudioApp() {
                     onProjectChange = { next ->
                         val activeClip = next.tracks.asSequence().flatMap { it.clips.asSequence() }.firstOrNull { it.id == selectedClipId }
                         if (activeClip != null) {
-                            player.volume = if (activeClip.audio.muted) 0f else activeClip.audio.volume.coerceIn(0f, 1f)
+                            val owningTrack = next.tracks.firstOrNull { track -> track.clips.any { it.id == activeClip.id } }
+                            player.volume = if (activeClip.audio.muted || owningTrack?.muted == true) 0f else activeClip.audio.volume.coerceIn(0f, 1f)
                             player.playbackParameters = PlaybackParameters(activeClip.audio.playbackRate, activeClip.audio.pitchRatio())
                         }
                         commitProject(next)
