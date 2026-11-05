@@ -637,7 +637,7 @@ private fun StudioPage(
     ControlSlider("Volume", volume, "0–100%", onVolume)
     ControlSlider("Pitch", pitch, "0.5×–2×", onPitch, 0.5f..2f)
     ControlSlider("Tempo", speed, "0.5×–2×", onSpeed, 0.5f..2f)
-    Text("Pitch/tempo controls currently affect the active playback preview. Per-clip saved automation and export processing are not yet implemented.", color = Color(0xFF9AA4B8), fontSize = 10.sp)
+    Text("Global sliders affect the active preview. Per-clip volume, mute, pitch and tempo are saved from the selected timeline clip. Export DSP is not connected yet.", color = Color(0xFF9AA4B8), fontSize = 10.sp)
 }
 
 @Composable
@@ -702,7 +702,8 @@ private fun AudioPage(volume: Float, onVolume: (Float) -> Unit, pitch: Float, on
     ControlSlider("Volume / Gain", volume, "0–100%", onVolume)
     ControlSlider("Pitch", pitch, "0.5×–2×", onPitch, 0.5f..2f)
     ControlSlider("Tempo", speed, "0.5×–2×", onSpeed, 0.5f..2f)
-    ToolPage("Audio processing (planned)", "These processors need their own DSP implementation and export path", listOf("BPM Detection", "Bass & EQ", "Voice Changer", "Noise Reduction", "Reverb & Echo", "Compressor", "Vocal Isolation", "Audio Recording"))
+    Text("Live beat/BPM estimate is available in Visualizer Studio. Per-clip volume, mute, pitch and tempo are saved in the timeline; these are currently preview settings.", color = Color(0xFF9AA4B8), fontSize = 10.sp)
+    ToolPage("Additional audio processors (planned)", "These processors need a dedicated DSP and offline export path", listOf("Parametric EQ", "Bass & EQ", "Voice Changer", "Noise Reduction", "Reverb & Echo", "Compressor", "Vocal Isolation", "Audio Recording"))
 }
 
 @Composable
