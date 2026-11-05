@@ -26,6 +26,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import com.creatorstudio.app.editor.AudioProcessingSettings
+import com.creatorstudio.app.editor.CanvasContentMode
 import com.creatorstudio.app.editor.EditorProject
 import com.creatorstudio.app.editor.MediaKind
 import com.creatorstudio.app.editor.VisualizerSettings
@@ -925,8 +926,19 @@ private fun PreviewStage(
                             factory = { ctx -> TextureView(ctx).also { layer.player.setVideoTextureView(it) } },
                             update = { layer.player.setVideoTextureView(it) },
                             modifier = Modifier.fillMaxSize().graphicsLayer {
-                                scaleX = layer.transform.scaleX
-                                scaleY = layer.transform.scaleY
+                                val sourceAspect = layer.videoAspectRatio
+                                val fitScaleX = when (layer.contentMode) {
+                                    CanvasContentMode.FIT -> if (sourceAspect > 0f && sourceAspect < aspectRatio) sourceAspect / aspectRatio else 1f
+                                    CanvasContentMode.CROP -> if (sourceAspect > aspectRatio && aspectRatio > 0f) sourceAspect / aspectRatio else 1f
+                                    CanvasContentMode.FILL -> 1f
+                                }
+                                val fitScaleY = when (layer.contentMode) {
+                                    CanvasContentMode.FIT -> if (sourceAspect > aspectRatio && sourceAspect > 0f) aspectRatio / sourceAspect else 1f
+                                    CanvasContentMode.CROP -> if (sourceAspect in 0.0001f..aspectRatio && aspectRatio > 0f) aspectRatio / sourceAspect else 1f
+                                    CanvasContentMode.FILL -> 1f
+                                }
+                                scaleX = layer.transform.scaleX * fitScaleX
+                                scaleY = layer.transform.scaleY * fitScaleY
                                 rotationZ = layer.transform.rotationDegrees
                                 alpha = layer.transform.opacity.coerceIn(0f, 1f)
                                 translationX = layer.transform.x
@@ -962,8 +974,27 @@ private fun PreviewStage(
                 Text("Import video, audio or PNG to begin", color = Color(0xFFB9C2D5), fontSize = 10.sp)
             }
         }
+        androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
+            val guideColor = Color.White.copy(alpha = 0.22f)
+            val outerX = size.width * 0.05f
+            val outerY = size.height * 0.05f
+            val innerX = size.width * 0.10f
+            val innerY = size.height * 0.10f
+            drawRect(
+                color = guideColor,
+                topLeft = androidx.compose.ui.geometry.Offset(outerX, outerY),
+                size = androidx.compose.ui.geometry.Size(size.width - outerX * 2f, size.height - outerY * 2f),
+                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx())
+            )
+            drawRect(
+                color = Color.White.copy(alpha = 0.12f),
+                topLeft = androidx.compose.ui.geometry.Offset(innerX, innerY),
+                size = androidx.compose.ui.geometry.Size(size.width - innerX * 2f, size.height - innerY * 2f),
+                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx())
+            )
+        }
         Surface(Modifier.align(Alignment.TopStart).padding(10.dp), color = Color.Black.copy(alpha = 0.5f), shape = RoundedCornerShape(8.dp)) {
-            Text("PREVIEW", color = Mint, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp))
+            Text("PREVIEW • SAFE GUIDES", color = Mint, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp))
         }
         if (item?.kind == "AUDIO") {
             FilledIconButton(onClick = onPlay, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp), colors = IconButtonDefaults.filledIconButtonColors(containerColor = Violet)) {
