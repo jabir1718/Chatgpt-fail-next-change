@@ -40,10 +40,13 @@ class OfflineVisualizerFrameRenderer {
                 RenderLayerRole.VISUALIZER_BACKGROUND -> Unit
                 RenderLayerRole.VISUALIZER_FOREGROUND -> {
                     decodedFrames[layer.assetId]?.let { bitmap ->
-                        val beatScale = 1f + (framePlan.visualizerFrame?.beatPulse ?: 0f) * 0.16f
+                        val beatScale = foregroundBeatMultiplier(
+                            project.visualizer.beatSensitivity,
+                            framePlan.visualizerFrame?.beatPulse ?: 0f
+                        )
                         drawLayerBitmap(
                             canvas, bitmap, layer.transform, framePlan.width, framePlan.height,
-                            (project.visualizer.foregroundScale * beatScale).coerceIn(0.5f, 2.5f)
+                            (project.visualizer.foregroundScale * beatScale).coerceIn(0.5f, 3f)
                         )
                     }
                 }

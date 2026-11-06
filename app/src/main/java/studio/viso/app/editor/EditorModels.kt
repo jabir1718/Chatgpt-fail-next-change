@@ -128,6 +128,13 @@ data class MediaAsset(
     val importedAtEpochMs: Long = System.currentTimeMillis()
 )
 
+
+/** Shared foreground PNG beat multiplier for live preview and deterministic MP4 rendering. */
+fun foregroundBeatMultiplier(beatSensitivity: Float, pulse: Float): Float {
+    require(beatSensitivity.isFinite() && beatSensitivity in 1f..1.5f) { "Beat sensitivity must be between 1 and 1.5" }
+    return 1f + (beatSensitivity - 1f) * pulse.coerceIn(0f, 1f)
+}
+
 data class VisualizerSettings(
     val backgroundAssetId: String? = null,
     val foregroundAssetId: String? = null,

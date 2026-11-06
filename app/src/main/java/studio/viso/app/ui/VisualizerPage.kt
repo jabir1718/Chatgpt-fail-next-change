@@ -71,7 +71,7 @@ fun VisualizerPage(
     var foregroundScale by remember(settings.foregroundAssetId, settings.foregroundScale) { mutableFloatStateOf(settings.foregroundScale) }
     var beatSensitivity by remember(settings.foregroundAssetId, settings.beatSensitivity) { mutableFloatStateOf(settings.beatSensitivity) }
     val pulseScale by animateFloatAsState(
-        if (beatPulse % 2 == 0) 1f else beatSensitivity,
+        foregroundBeatMultiplier(beatSensitivity, if (beatPulse % 2 == 0) 0f else 1f),
         label = "foreground-beat-pulse"
     )
 

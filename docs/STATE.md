@@ -159,3 +159,7 @@ Latest source verification: Run #218 successfully built and uploaded the APK for
 - Added a deterministic visualizer-mode resolver: when a device does not report OpenGL ES 2.0 support, a requested live 3D Orb preview safely displays the existing Spectrum renderer instead of attempting to create the GPU surface.
 - The preview shows a clear fallback notice; the saved requested mode is not overwritten, so the 3D Orb selection can work again on a capable device.
 - Added JVM regression tests for supported and unsupported capability paths. CI verification is pending; shader/runtime stability and actual device GPU performance still require physical-device acceptance.
+
+## Foreground PNG preview/export parity follow-up (2026-11-06)
+- Updated the live preview and offline visualizer MP4 foreground PNG to use the same configurable beat-sensitivity multiplier. The offline path now honors `VisualizerSettings.beatSensitivity` rather than a hard-coded 16% pulse.
+- Added regression coverage for zero/half/full pulse and pulse clamping. CI verification is pending; real-device preview/export comparison remains open.

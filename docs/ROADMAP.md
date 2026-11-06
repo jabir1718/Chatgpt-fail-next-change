@@ -134,3 +134,8 @@ Cloud sync, templates marketplace, AI beat cuts/auto-edit, advanced tracking/ref
 - Added a deterministic visualizer-mode resolver: when a device does not report OpenGL ES 2.0 support, a requested live 3D Orb preview safely displays the existing Spectrum renderer instead of attempting to create the GPU surface.
 - The preview shows a clear fallback notice; the saved requested mode is not overwritten, so the 3D Orb selection can work again on a capable device.
 - Added JVM regression tests for supported and unsupported capability paths. CI verification is pending; shader/runtime stability and actual device GPU performance still require physical-device acceptance.
+
+## Foreground PNG preview/export parity follow-up (2026-11-06)
+- The live foreground PNG preview and offline MP4 renderer now share the same beat-sensitivity multiplier: zero pulse is 1×, full pulse reaches the configured sensitivity, and intermediate offline pulses interpolate linearly.
+- The previous offline renderer's fixed 16% pulse was inconsistent with the live preview's configurable 1.0×–1.5× sensitivity; this change removes that mismatch in the scale envelope. Device visual comparison remains open.
+- Regression tests cover zero, half, full, and out-of-range pulse values. CI verification is pending.
