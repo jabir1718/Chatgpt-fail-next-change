@@ -61,6 +61,8 @@ private class OrbGlRenderer : GLSurfaceView.Renderer {
     private var bandsLocation = -1
     private var beatLocation = -1
     private var startNs = 0L
+    @Volatile private var viewportWidth = 1
+    @Volatile private var viewportHeight = 1
     private val vertices: FloatBuffer = ByteBuffer.allocateDirect(8 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer().apply {
         put(floatArrayOf(-1f, -1f, 1f, -1f, -1f, 1f, 1f, 1f))
         position(0)
@@ -92,7 +94,9 @@ private class OrbGlRenderer : GLSurfaceView.Renderer {
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
-        GLES20.glViewport(0, 0, width.coerceAtLeast(1), height.coerceAtLeast(1))
+        viewportWidth = width.coerceAtLeast(1)
+        viewportHeight = height.coerceAtLeast(1)
+        GLES20.glViewport(0, 0, viewportWidth, viewportHeight)
     }
 
     override fun onDrawFrame(gl: GL10?) {
@@ -102,7 +106,7 @@ private class OrbGlRenderer : GLSurfaceView.Renderer {
         GLES20.glEnableVertexAttribArray(0)
         vertices.position(0)
         GLES20.glVertexAttribPointer(0, 2, GLES20.GL_FLOAT, false, 0, vertices)
-        GLES20.glUniform2f(resolutionLocation, width.coerceAtLeast(1).toFloat(), height.coerceAtLeast(1).toFloat())
+        GLES20.glUniform2f(resolutionLocation, viewportWidth.toFloat(), viewportHeight.toFloat())
         GLES20.glUniform1f(timeLocation, (System.nanoTime() - startNs) / 1_000_000_000f)
         GLES20.glUniform1fv(bandsLocation, ORB_BANDS, bands, 0)
         GLES20.glUniform1f(beatLocation, beat)
