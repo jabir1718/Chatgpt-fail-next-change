@@ -44,6 +44,9 @@ import kotlin.math.sin
 private val VisualMint = Color(0xFF34D8C5)
 private val VisualViolet = Color(0xFF9B7BFF)
 
+internal fun resolveVisualizerMode(requestedMode: String, supportsGles2: Boolean): String =
+    if (requestedMode == "3D Orb" && !supportsGles2) "Spectrum" else requestedMode
+
 @Composable
 fun VisualizerPage(
     spectrum: List<Float>,
@@ -58,6 +61,9 @@ fun VisualizerPage(
     onStart: () -> Unit,
     onStop: () -> Unit
 ) {
+    val context = LocalContext.current
+    val supportsGpuOrb = remember(context) { supportsOpenGles2(context) }
+    val effectiveMode = resolveVisualizerMode(settings.mode, supportsGpuOrb)
     val backgroundAsset = images.firstOrNull { it.id == settings.backgroundAssetId }
     val foregroundAsset = images.firstOrNull { it.id == settings.foregroundAssetId }
     val backgroundBitmap = rememberProjectBitmap(backgroundAsset?.uri)
@@ -114,13 +120,24 @@ fun VisualizerPage(
                     modifier = Modifier.fillMaxSize()
                 )
             }
-            when (settings.mode) {
+            when (effectiveMode) {
                 "Radial" -> RadialSpectrum(spectrum)
                 "Waveform" -> WaveformDisplay(waveform)
                 "Rings" -> RingsVisualizer(spectrum, beatPulse)
                 "Particles" -> ParticleVisualizer(spectrum, beatPulse)
                 "3D Orb" -> GpuOrbVisualizer(spectrum, beatPulse, Modifier.fillMaxSize())
                 else -> SpectrumDisplay(spectrum)
+            }
+            if (settings.mode == "3D Orb" && !supportsGpuOrb) {
+                Text(
+                    "3D GPU unavailable — Spectrum fallback",
+                    color = Color.White,
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                        .background(Color.Black.copy(alpha = 0.72f), RoundedCornerShape(6.dp))
+                        .padding(horizontal = 8.dp, vertical = 5.dp)
+                )
             }
             if (foregroundBitmap != null) {
                 Image(

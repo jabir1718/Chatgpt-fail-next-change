@@ -103,3 +103,9 @@ Keep future expansion at the END of the roadmap: cloud sync, templates/presets m
 ## Offline Orb wrap-boundary follow-up (2026-11-06)
 - Run #261 completed with failure: 114/115 unit tests passed. The remaining assertion was the exact negative-PI seam, where Float PI representation left the wrapped fraction a few ulps below 1 and selected the final FFT band instead of band zero.
 - Added a narrow seam snap before floor-based band selection. Repair CI #262 must verify the full unit-test suite, Debug APK build, artifact upload and cleanup before continuing.
+
+
+## 3D Orb device capability fallback (2026-11-06)
+- Added a deterministic visualizer-mode resolver: when a device does not report OpenGL ES 2.0 support, a requested live 3D Orb preview safely displays the existing Spectrum renderer instead of attempting to create the GPU surface.
+- The preview shows a clear fallback notice; the saved requested mode is not overwritten, so the 3D Orb selection can work again on a capable device.
+- Added JVM regression tests for supported and unsupported capability paths. CI verification is pending; shader/runtime stability and actual device GPU performance still require physical-device acceptance.
