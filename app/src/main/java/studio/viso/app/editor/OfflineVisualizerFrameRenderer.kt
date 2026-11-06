@@ -202,7 +202,7 @@ class OfflineVisualizerFrameRenderer {
         if (captions.isEmpty()) return
         val lineHeights = captions.map { height * 0.035f * (it.fontSizeSp.coerceIn(10f, 48f) / 16f) * 1.25f }
         val totalHeight = lineHeights.sum()
-        var baseline = height * 0.84f - totalHeight * 0.5f
+        var baseline = height * ((captions.firstOrNull()?.verticalPositionPercent ?: 84f).coerceIn(10f, 90f) / 100f) - totalHeight * 0.5f
         captions.forEachIndexed { index, caption ->
             val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = caption.textColorArgb

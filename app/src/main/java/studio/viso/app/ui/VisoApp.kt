@@ -994,25 +994,23 @@ private fun TimelinePreviewLayerContent(layer: TimelineVideoPreviewLayer, aspect
                     translationY = layer.transform.y
                 })
         }
-        if (layer.activeCaptions.isNotEmpty()) {
-            Column(modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                layer.activeCaptions.forEach { caption ->
-                    val captionText = buildAnnotatedString {
-                        var cursor = 0
-                        val activeIndex = caption.wordTimings.indexOfFirst { layer.clipLocalTimeMs >= it.startMs && layer.clipLocalTimeMs < it.endMs }
-                        caption.wordTimings.forEachIndexed { wordIndex, timing ->
-                            val wordStart = caption.text.indexOf(timing.word, cursor)
-                            if (wordStart >= cursor) {
-                                append(caption.text.substring(cursor, wordStart))
-                                if (wordIndex == activeIndex) withStyle(SpanStyle(color = Ink, background = Mint)) { append(timing.word) } else append(timing.word)
-                                cursor = wordStart + timing.word.length
-                            }
+        layer.activeCaptions.forEach { caption ->
+            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                val captionText = buildAnnotatedString {
+                    var cursor = 0
+                    val activeIndex = caption.wordTimings.indexOfFirst { layer.clipLocalTimeMs >= it.startMs && layer.clipLocalTimeMs < it.endMs }
+                    caption.wordTimings.forEachIndexed { wordIndex, timing ->
+                        val wordStart = caption.text.indexOf(timing.word, cursor)
+                        if (wordStart >= cursor) {
+                            append(caption.text.substring(cursor, wordStart))
+                            if (wordIndex == activeIndex) withStyle(SpanStyle(color = Ink, background = Mint)) { append(timing.word) } else append(timing.word)
+                            cursor = wordStart + timing.word.length
                         }
-                        if (cursor < caption.text.length) append(caption.text.substring(cursor))
                     }
-                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = when (caption.alignment) { CaptionAlignment.LEFT -> Alignment.CenterStart; CaptionAlignment.CENTER -> Alignment.Center; CaptionAlignment.RIGHT -> Alignment.CenterEnd }) {
-                        Text(text = captionText, color = Color(caption.textColorArgb), fontSize = caption.fontSizeSp.coerceIn(10f, 48f).sp, fontWeight = FontWeight.Bold, textAlign = when (caption.alignment) { CaptionAlignment.LEFT -> TextAlign.Start; CaptionAlignment.CENTER -> TextAlign.Center; CaptionAlignment.RIGHT -> TextAlign.End }, modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Color(caption.backgroundColorArgb)).padding(horizontal = 12.dp, vertical = 8.dp))
-                    }
+                    if (cursor < caption.text.length) append(caption.text.substring(cursor))
+                }
+                Box(modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter).offset(y = maxHeight * (caption.verticalPositionPercent.coerceIn(10f, 90f) / 100f)).padding(horizontal = 16.dp), contentAlignment = when (caption.alignment) { CaptionAlignment.LEFT -> Alignment.CenterStart; CaptionAlignment.CENTER -> Alignment.Center; CaptionAlignment.RIGHT -> Alignment.CenterEnd }) {
+                    Text(text = captionText, color = Color(caption.textColorArgb), fontSize = caption.fontSizeSp.coerceIn(10f, 48f).sp, fontWeight = FontWeight.Bold, textAlign = when (caption.alignment) { CaptionAlignment.LEFT -> TextAlign.Start; CaptionAlignment.CENTER -> TextAlign.Center; CaptionAlignment.RIGHT -> TextAlign.End }, modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Color(caption.backgroundColorArgb)).padding(horizontal = 12.dp, vertical = 8.dp))
                 }
             }
         }
@@ -1851,6 +1849,8 @@ private fun CaptionSegmentEditor(
                     }
                 }
             }
+            Text("VERTICAL POSITION  " + caption.verticalPositionPercent.toInt() + "%", color = Color(0xFF9AA4B8), fontSize = 9.sp)
+            Slider(value = caption.verticalPositionPercent, onValueChange = { onStyleChange(caption.copy(verticalPositionPercent = it.coerceIn(10f, 90f))) }, valueRange = 10f..90f)
             Text("KARAOKE WORD TIMINGS", color = Mint, fontSize = 10.sp, fontWeight = FontWeight.Bold)
             caption.wordTimings.forEachIndexed { index, timing ->
                 CaptionWordTimingEditor(

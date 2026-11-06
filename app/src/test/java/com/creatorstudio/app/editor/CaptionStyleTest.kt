@@ -12,6 +12,7 @@ class CaptionStyleTest {
         assertEquals(0xB3000000.toInt(), caption.backgroundColorArgb)
         assertEquals(16f, caption.fontSizeSp)
         assertEquals(CaptionAlignment.CENTER, caption.alignment)
+        assertEquals(84f, caption.verticalPositionPercent)
     }
 
     @Test

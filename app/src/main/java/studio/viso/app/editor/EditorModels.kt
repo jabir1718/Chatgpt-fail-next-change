@@ -55,13 +55,15 @@ data class CaptionSegment(
     val textColorArgb: Int = -1,
     val backgroundColorArgb: Int = 0xB3000000.toInt(),
     val fontSizeSp: Float = 16f,
-    val alignment: CaptionAlignment = CaptionAlignment.CENTER
+    val alignment: CaptionAlignment = CaptionAlignment.CENTER,
+    val verticalPositionPercent: Float = 84f
 ) {
     init {
         require(startMs >= 0L) { "Caption start must not be negative" }
         require(endMs > startMs) { "Caption end must be after start" }
         require(wordTimings.all { it.startMs >= startMs && it.endMs <= endMs }) { "Word timings must stay inside caption range" }
         require(fontSizeSp.isFinite() && fontSizeSp in 10f..48f) { "Caption font size must be between 10 and 48sp" }
+        require(verticalPositionPercent.isFinite() && verticalPositionPercent in 10f..90f) { "Caption vertical position must be between 10 and 90 percent" }
     }
 }
 
