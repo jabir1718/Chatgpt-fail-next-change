@@ -1408,6 +1408,20 @@ private fun LyricsCaptionsPage(
                 Text("EXPORT WEBVTT")
             }
             OutlinedTextField(value = draftText, onValueChange = { draftText=it }, label = { Text("Caption text") }, modifier = Modifier.fillMaxWidth(), minLines = 2)
+            Text("QUICK EMOJI", color = Mint, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                listOf("🎵", "🎤", "🔥", "❤️", "✨", "😂", "😎", "💯", "👏", "🌟", "🎧").forEach { emoji ->
+                    TextButton(
+                        onClick = { draftText = if (draftText.isBlank()) emoji else "$draftText $emoji" },
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                    ) {
+                        Text(emoji, fontSize = 20.sp)
+                    }
+                }
+            }
             VoiceTypingControl(currentText = draftText, onTextChange = { draftText = it })
             OfflineTranscriptionControl(project = project, targetClip = selectedClip, onProjectChange = onProjectChange)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

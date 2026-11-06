@@ -68,6 +68,18 @@ Short WebVTT timestamp"""
     }
 
     @Test
+    fun preservesEmojiAndUrduTextInSubtitleRoundTrip() {
+        val source = listOf(
+            CaptionSegment(text = "🎵 سلام! ✨", startMs = 250L, endMs = 1_250L)
+        )
+        val encoded = CaptionSubtitleCodec.format(source, CaptionSubtitleCodec.Format.WEBVTT)
+        val decoded = CaptionSubtitleCodec.parse(encoded)
+        assertEquals("🎵 سلام! ✨", decoded.single().text)
+        assertEquals(250L, decoded.single().startMs)
+        assertEquals(1_250L, decoded.single().endMs)
+    }
+
+    @Test
     fun roundTripsPhraseCuesWithoutChangingTheirTiming() {
         val source = listOf(
             CaptionSegment(text = "One", startMs = 125L, endMs = 900L),
