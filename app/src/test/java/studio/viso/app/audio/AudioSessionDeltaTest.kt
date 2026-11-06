@@ -1,4 +1,4 @@
-package studio.viso.app.audio
+package com.creatorstudio.app.audio
 
 import org.junit.Assert.assertEquals
 import org.junit.Test

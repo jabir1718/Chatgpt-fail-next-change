@@ -1,4 +1,4 @@
-package studio.viso.app.audio
+package com.creatorstudio.app.audio
 
 import android.media.audiofx.Visualizer
 import android.os.SystemClock
