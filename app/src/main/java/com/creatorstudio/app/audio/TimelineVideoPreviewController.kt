@@ -199,7 +199,7 @@ class TimelineVideoPreviewController(context: Context) {
     }
 
     private fun orderedLayers(): List<TimelineVideoPreviewLayer> =
-        activeVideos.map { (clipId, active) ->
+        (activeVideos.map { (clipId, active) ->
             TimelineVideoPreviewLayer(
                 clipId = clipId,
                 trackId = active.trackId,
@@ -216,6 +216,5 @@ class TimelineVideoPreviewController(context: Context) {
                 player = active.player,
                 imageBitmap = null
             )
-        } + activeImages.values.toList()
-            .sortedBy { it.zOrder }
+        } + activeImages.values.toList()).sortedBy { it.zOrder }
 }
