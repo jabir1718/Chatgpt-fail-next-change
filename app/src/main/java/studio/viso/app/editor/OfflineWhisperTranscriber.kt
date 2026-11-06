@@ -9,7 +9,8 @@ data class OfflineTranscriptionChunk(
     val text: String,
     val startMs: Long,
     val endMs: Long,
-    val languageTag: String?
+    val languageTag: String?,
+    val wordTimings: List<CaptionWordTiming> = emptyList()
 )
 
 data class OfflineTranscriptionResult(
@@ -127,38 +128,62 @@ internal fun buildTokenTimedCaptionChunks(
         else listOf(OfflineTranscriptionChunk(fallbackText.trim(), chunkStartMs, chunkEndMs, languageTag))
 
     if (tokens.isEmpty() || tokens.size != timestampsSeconds.size) return fallback()
-    data class TimedToken(val text: String, val startMs: Long)
+    data class TimedToken(val text: String, val startMs: Long, val startsWord: Boolean)
+    data class TimedWord(val text: String, val startMs: Long)
     val duration = chunkEndMs - chunkStartMs
     val clean = tokens.indices.mapNotNull { index ->
         val raw = tokens[index]
         if (raw.startsWith("<|") && raw.endsWith("|>")) return@mapNotNull null
+        val startsWord = raw.startsWith("▁") || raw.startsWith("Ġ") ||
+            raw.firstOrNull()?.isWhitespace() == true
         val value = raw.replace("▁", " ").replace("Ġ", " ").trim()
         if (value.isBlank()) return@mapNotNull null
         val seconds = timestampsSeconds[index]
         if (!seconds.isFinite() || seconds < 0f) return@mapNotNull null
-        TimedToken(value, (seconds * 1_000f).toLong().coerceIn(0L, (duration - 1L).coerceAtLeast(0L)))
+        TimedToken(value, (seconds * 1_000f).toLong().coerceIn(0L, (duration - 1L).coerceAtLeast(0L)), startsWord)
     }.sortedBy { it.startMs }
     if (clean.isEmpty()) return fallback()
 
-    fun join(parts: List<String>): String {
+    fun join(parts: List<TimedToken>): String {
         val out = StringBuilder()
-        parts.forEach { part ->
-            val punctuation = part.firstOrNull()?.let { it in ".,!?;:%)]}»”’" } ?: false
-            if (out.isNotEmpty() && !punctuation) out.append(' ')
-            out.append(part)
+        parts.forEach { token ->
+            val punctuation = token.text.firstOrNull()?.let { it in ".,!?;:%)]}»”’" } ?: false
+            if (out.isNotEmpty() && token.startsWord && !punctuation) out.append(' ')
+            out.append(token.text)
         }
         return out.toString().trim()
+    }
+
+    fun wordsFor(group: List<TimedToken>, captionStart: Long, captionEnd: Long): List<CaptionWordTiming> {
+        val words = mutableListOf<TimedWord>()
+        group.forEach { token ->
+            val punctuation = token.text.firstOrNull()?.let { it in ".,!?;:%)]}»”’" } ?: false
+            if (words.isEmpty() || (token.startsWord && !punctuation)) {
+                words += TimedWord(token.text, chunkStartMs + token.startMs)
+            } else {
+                val previous = words.removeAt(words.lastIndex)
+                words += previous.copy(text = previous.text + token.text)
+            }
+        }
+        return words.mapIndexedNotNull { index, word ->
+            val nextStart = words.getOrNull(index + 1)?.startMs
+            val rawEnd = nextStart ?: (word.startMs + 400L)
+            val wordStart = word.startMs.coerceIn(captionStart, (captionEnd - 1L).coerceAtLeast(captionStart))
+            val wordEnd = rawEnd.coerceIn(wordStart + 1L, captionEnd)
+            if (wordEnd <= wordStart || word.text.isBlank()) null
+            else CaptionWordTiming(word.text, wordStart, wordEnd)
+        }
     }
 
     val groups = mutableListOf<MutableList<TimedToken>>()
     var current = mutableListOf<TimedToken>()
     for (token in clean) {
         if (current.isNotEmpty()) {
-            val currentText = join(current.map { it.text })
+            val currentText = join(current)
             val gap = token.startMs - current.last().startMs
             val elapsed = token.startMs - current.first().startMs
             val endsSentence = current.last().text.lastOrNull()?.let { it in ".!?;:" } ?: false
-            val wouldOverflow = join(current.map { it.text } + token.text).length > maxCaptionChars
+            val wouldOverflow = join(current + token).length > maxCaptionChars
             if (endsSentence || gap > 800L || elapsed >= maxCaptionMs || wouldOverflow) {
                 groups += current
                 current = mutableListOf()
@@ -169,21 +194,21 @@ internal fun buildTokenTimedCaptionChunks(
     if (current.isNotEmpty()) groups += current
 
     return groups.mapIndexedNotNull { index, group ->
-        val start = (chunkStartMs + group.first().startMs).coerceIn(chunkStartMs, chunkEndMs)
+        val startMs = (chunkStartMs + group.first().startMs).coerceIn(chunkStartMs, chunkEndMs)
         val nextStart = groups.getOrNull(index + 1)?.first()?.startMs
         val lastToken = group.last().startMs
         val estimatedEnd = if (nextStart != null) chunkStartMs + nextStart
             else chunkStartMs + lastToken + 400L
-        val end = min(chunkEndMs, max(start + 1L, estimatedEnd))
-        if (end <= start) null else OfflineTranscriptionChunk(
-            text = join(group.map { it.text }),
-            startMs = start,
-            endMs = end,
-            languageTag = languageTag
+        val endMs = min(chunkEndMs, max(startMs + 1L, estimatedEnd))
+        if (endMs <= startMs) null else OfflineTranscriptionChunk(
+            text = join(group),
+            startMs = startMs,
+            endMs = endMs,
+            languageTag = languageTag,
+            wordTimings = wordsFor(group, startMs, endMs)
         )
     }.ifEmpty { fallback() }
 }
-
 
 /**
  * Best-effort Urdu-script to Roman Urdu transliteration.
@@ -262,7 +287,22 @@ fun alignTranscriptionChunks(
             text = chunk.text,
             startMs = start,
             endMs = end,
-            languageTag = chunk.languageTag
+            languageTag = chunk.languageTag,
+            wordTimings = chunk.wordTimings.mapNotNull { word ->
+                val wordStart = offsetMs + (word.startMs / sourcePlaybackRate).toLong()
+                val wordEnd = offsetMs + (word.endMs / sourcePlaybackRate).toLong()
+                val clippedStart = wordStart.coerceIn(start, end)
+                val clippedEnd = wordEnd.coerceIn(start, end)
+                if (clippedEnd > clippedStart) word.copy(startMs = clippedStart, endMs = clippedEnd) else null
+            }
         )
     }
+}
+
+
+/** Returns the active word index for a clip-local timeline position, or null in gaps/fallback captions. */
+fun activeCaptionWordIndex(caption: CaptionSegment, clipLocalTimeMs: Long): Int? {
+    if (caption.wordTimings.isEmpty()) return null
+    return caption.wordTimings.indexOfFirst { clipLocalTimeMs >= it.startMs && clipLocalTimeMs < it.endMs }
+        .takeIf { it >= 0 }
 }
