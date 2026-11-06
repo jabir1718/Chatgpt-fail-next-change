@@ -136,7 +136,7 @@ internal fun buildTokenTimedCaptionChunks(
         if (value.isBlank()) return@mapNotNull null
         val seconds = timestampsSeconds[index]
         if (!seconds.isFinite() || seconds < 0f) return@mapNotNull null
-        TimedToken(value, (seconds * 1_000f).toLong().coerceIn(0L, duration))
+        TimedToken(value, (seconds * 1_000f).toLong().coerceIn(0L, (duration - 1L).coerceAtLeast(0L)))
     }.sortedBy { it.startMs }
     if (clean.isEmpty()) return fallback()
 
