@@ -161,6 +161,7 @@ class ProjectStore(context: Context) {
             put(JSONObject().apply {
                 put("id", caption.id); put("text", caption.text); put("startMs", caption.startMs)
                 put("endMs", caption.endMs); put("languageTag", caption.languageTag ?: JSONObject.NULL)
+                put("wordTimings", JSONArray().apply { caption.wordTimings.forEach { word -> put(JSONObject().apply { put("word", word.word); put("startMs", word.startMs); put("endMs", word.endMs) }) } })
             })
         } })
     }
@@ -242,7 +243,8 @@ class ProjectStore(context: Context) {
                 CaptionSegment(
                     id = caption.getString("id"), text = caption.getString("text"),
                     startMs = caption.getLong("startMs"), endMs = caption.getLong("endMs"),
-                    languageTag = caption.stringOrNull("languageTag")
+                    languageTag = caption.stringOrNull("languageTag"),
+                    wordTimings = (caption.optJSONArray("wordTimings") ?: JSONArray()).mapObjects { word -> CaptionWordTiming(word.getString("word"), word.getLong("startMs"), word.getLong("endMs")) }
                 )
             }
         )
@@ -257,7 +259,7 @@ class ProjectStore(context: Context) {
     private fun JSONObject.stringOrNull(key: String): String? =
         if (isNull(key) || !has(key)) null else optString(key)
 
-    companion object { const val SCHEMA_VERSION = 7 }
+    companion object { const val SCHEMA_VERSION = 8 }
 }
 
 data class ProjectSummary(val id: String, val name: String, val updatedAtEpochMs: Long)

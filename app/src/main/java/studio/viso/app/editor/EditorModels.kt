@@ -40,16 +40,22 @@ data class ClipAudioSettings(
     val fadeOutMs: Long = 0L
 )
 
+data class CaptionWordTiming(val word: String, val startMs: Long, val endMs: Long) {
+    init { require(word.isNotBlank()); require(startMs >= 0L && endMs > startMs) }
+}
+
 data class CaptionSegment(
     val id: String = UUID.randomUUID().toString(),
     val text: String,
     val startMs: Long,
     val endMs: Long,
-    val languageTag: String? = null
+    val languageTag: String? = null,
+    val wordTimings: List<CaptionWordTiming> = emptyList()
 ) {
     init {
         require(startMs >= 0L) { "Caption start must not be negative" }
         require(endMs > startMs) { "Caption end must be after start" }
+        require(wordTimings.all { it.startMs >= startMs && it.endMs <= endMs }) { "Word timings must stay inside caption range" }
     }
 }
 
