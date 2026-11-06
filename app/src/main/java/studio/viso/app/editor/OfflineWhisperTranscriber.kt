@@ -207,12 +207,23 @@ internal fun transliterateUrduToRoman(text: String): String {
         'ہ' to "h", 'ھ' to "h", 'ء' to "", 'ی' to "i", 'ے' to "e",
         'ؤ' to "o", 'ئ' to "i", 'ۃ' to "a"
     )
-    return Regex("\\S+|\\s+").findAll(text).joinToString("") { match ->
+    val wordPattern = Regex("^([^\\\\p{L}\\\\p{M}]*)([\\\\p{L}\\\\p{M}]+)([^\\\\p{L}\\\\p{M}]*)$")
+    return Regex("\\\\S+|\\\\s+").findAll(text).joinToString("") { match ->
         val token = match.value
         if (token.isBlank()) token
-        else commonWords[token] ?: buildString {
-            token.forEach { ch ->
-                append(letters[ch] ?: if (ch.code in 0x064B..0x065F || ch.code == 0x0670) "" else ch.toString())
+        else {
+            val parts = wordPattern.matchEntire(token)
+            if (parts == null) token
+            else {
+                val prefix = parts.groupValues[1]
+                val word = parts.groupValues[2]
+                val suffix = parts.groupValues[3]
+                val roman = commonWords[word] ?: buildString {
+                    word.forEach { ch ->
+                        append(letters[ch] ?: if (ch.code in 0x064B..0x065F || ch.code == 0x0670) "" else ch.toString())
+                    }
+                }
+                prefix + roman + suffix
             }
         }
     }
