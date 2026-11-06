@@ -212,7 +212,7 @@ internal fun transliterateUrduToRoman(text: String): String {
         if (token.isBlank()) token
         else commonWords[token] ?: buildString {
             token.forEach { ch ->
-                append(letters[ch] ?: if (ch in '\\u064B'..'\\u065F' || ch == '\\u0670') "" else ch.toString())
+                append(letters[ch] ?: if (ch.code in 0x064B..0x065F || ch.code == 0x0670) "" else ch.toString())
             }
         }
     }
