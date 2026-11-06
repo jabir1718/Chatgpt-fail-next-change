@@ -29,6 +29,7 @@ import com.creatorstudio.app.editor.AudioProcessingSettings
 import com.creatorstudio.app.editor.scaleForPulse
 import com.creatorstudio.app.editor.CanvasContentMode
 import com.creatorstudio.app.editor.CaptionSegment
+import com.creatorstudio.app.editor.CaptionWordTiming
 import com.creatorstudio.app.editor.EditorProject
 import com.creatorstudio.app.editor.MediaKind
 import com.creatorstudio.app.editor.VisualizerSettings
@@ -1388,6 +1389,10 @@ private fun LyricsCaptionsPage(
                         onProjectChange(TimelineEditor.setClipCaptions(project,selectedClip.id,selectedClip.captions.map { if(it.id==caption.id) it.copy(startMs=start,endMs=end) else it }))
                         message="Caption timing updated."
                     }.onFailure { message=it.message ?: "Invalid caption timing." } },
+                    onWordTimingsChange = { timings -> runCatching {
+                        onProjectChange(TimelineEditor.setClipCaptions(project,selectedClip.id,selectedClip.captions.map { if(it.id==caption.id) it.copy(wordTimings=timings) else it }))
+                        message="Karaoke word timings updated."
+                    }.onFailure { message=it.message ?: "Invalid word timing." } },
                     onDelete = { onProjectChange(TimelineEditor.setClipCaptions(project,selectedClip.id,selectedClip.captions.filterNot { it.id==caption.id })) }
                 )
             }
@@ -1740,25 +1745,83 @@ private fun VoiceTypingControl(currentText: String, onTextChange: (String) -> Un
 }
 
 @Composable
-private fun CaptionSegmentEditor(caption: CaptionSegment, durationMs: Long, onTextChange: (String)->Unit, onTimingChange: (Long,Long)->Unit, onDelete: ()->Unit) {
-    var startText by remember(caption.id,caption.startMs) { mutableStateOf((caption.startMs/1000f).toString()) }
-    var endText by remember(caption.id,caption.endMs) { mutableStateOf((caption.endMs/1000f).toString()) }
-    Card(colors=CardDefaults.cardColors(containerColor=Panel),shape=RoundedCornerShape(14.dp)) {
-        Column(Modifier.fillMaxWidth().padding(12.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
-            OutlinedTextField(value=caption.text,onValueChange=onTextChange,label={Text("Caption")},modifier=Modifier.fillMaxWidth(),minLines=2)
-            Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(value=startText,onValueChange={startText=it},label={Text("Start s")},modifier=Modifier.weight(1f),singleLine=true)
-                OutlinedTextField(value=endText,onValueChange={endText=it},label={Text("End s")},modifier=Modifier.weight(1f),singleLine=true)
+private fun CaptionSegmentEditor(
+    caption: CaptionSegment,
+    durationMs: Long,
+    onTextChange: (String) -> Unit,
+    onTimingChange: (Long, Long) -> Unit,
+    onWordTimingsChange: (List<CaptionWordTiming>) -> Unit,
+    onDelete: () -> Unit
+) {
+    var startText by remember(caption.id, caption.startMs) { mutableStateOf((caption.startMs / 1000f).toString()) }
+    var endText by remember(caption.id, caption.endMs) { mutableStateOf((caption.endMs / 1000f).toString()) }
+    var newWord by remember(caption.id) { mutableStateOf("") }
+    var newWordStart by remember(caption.id, caption.startMs) { mutableStateOf((caption.startMs / 1000f).toString()) }
+    var newWordEnd by remember(caption.id, caption.endMs) { mutableStateOf((caption.endMs / 1000f).toString()) }
+    Card(colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(14.dp)) {
+        Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(value = caption.text, onValueChange = onTextChange, label = { Text("Caption") }, modifier = Modifier.fillMaxWidth(), minLines = 2)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(value = startText, onValueChange = { startText = it }, label = { Text("Start s") }, modifier = Modifier.weight(1f), singleLine = true)
+                OutlinedTextField(value = endText, onValueChange = { endText = it }, label = { Text("End s") }, modifier = Modifier.weight(1f), singleLine = true)
             }
-            Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                TextButton(onClick={
-                    val start=((startText.toDoubleOrNull() ?: -1.0)*1000.0).toLong()
-                    val end=((endText.toDoubleOrNull() ?: -1.0)*1000.0).toLong()
-                    onTimingChange(start,end)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick = {
+                    val start = ((startText.toDoubleOrNull() ?: -1.0) * 1000.0).toLong()
+                    val end = ((endText.toDoubleOrNull() ?: -1.0) * 1000.0).toLong()
+                    onTimingChange(start, end)
                 }) { Text("SAVE TIMING") }
-                TextButton(onClick=onDelete) { Text("DELETE",color=Pink) }
+                TextButton(onClick = onDelete) { Text("DELETE", color = Pink) }
             }
-            Text("Clip-relative • max ${durationMs/1000f}s",color=Color(0xFF9AA4B8),fontSize=9.sp)
+            Text("KARAOKE WORD TIMINGS", color = Mint, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            caption.wordTimings.forEachIndexed { index, timing ->
+                CaptionWordTimingEditor(
+                    timing = timing,
+                    onSave = { changed -> onWordTimingsChange(caption.wordTimings.mapIndexed { i, old -> if (i == index) changed else old }) },
+                    onDelete = { onWordTimingsChange(caption.wordTimings.filterIndexed { i, _ -> i != index }) }
+                )
+            }
+            OutlinedTextField(value = newWord, onValueChange = { newWord = it }, label = { Text("New word") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(value = newWordStart, onValueChange = { newWordStart = it }, label = { Text("Word start s") }, modifier = Modifier.weight(1f), singleLine = true)
+                OutlinedTextField(value = newWordEnd, onValueChange = { newWordEnd = it }, label = { Text("Word end s") }, modifier = Modifier.weight(1f), singleLine = true)
+            }
+            OutlinedButton(onClick = {
+                runCatching {
+                    val start = ((newWordStart.toDoubleOrNull() ?: -1.0) * 1000.0).toLong()
+                    val end = ((newWordEnd.toDoubleOrNull() ?: -1.0) * 1000.0).toLong()
+                    val timing = CaptionWordTiming(newWord.trim(), start, end)
+                    onWordTimingsChange((caption.wordTimings + timing).sortedBy { it.startMs })
+                    newWord = ""
+                }
+            }, enabled = newWord.isNotBlank(), modifier = Modifier.fillMaxWidth()) { Text("ADD WORD TIMING") }
+            Text("Clip-relative • max ${durationMs / 1000f}s. SRT does not carry word-level karaoke timing.", color = Color(0xFF9AA4B8), fontSize = 9.sp)
+        }
+    }
+}
+
+@Composable
+private fun CaptionWordTimingEditor(
+    timing: CaptionWordTiming,
+    onSave: (CaptionWordTiming) -> Unit,
+    onDelete: () -> Unit
+) {
+    var word by remember(timing.word, timing.startMs, timing.endMs) { mutableStateOf(timing.word) }
+    var start by remember(timing.startMs) { mutableStateOf((timing.startMs / 1000f).toString()) }
+    var end by remember(timing.endMs) { mutableStateOf((timing.endMs / 1000f).toString()) }
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        OutlinedTextField(value = word, onValueChange = { word = it }, label = { Text("Word") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(value = start, onValueChange = { start = it }, label = { Text("Start s") }, modifier = Modifier.weight(1f), singleLine = true)
+            OutlinedTextField(value = end, onValueChange = { end = it }, label = { Text("End s") }, modifier = Modifier.weight(1f), singleLine = true)
+        }
+        Row {
+            TextButton(onClick = {
+                val startMs = ((start.toDoubleOrNull() ?: -1.0) * 1000.0).toLong()
+                val endMs = ((end.toDoubleOrNull() ?: -1.0) * 1000.0).toLong()
+                runCatching { onSave(CaptionWordTiming(word.trim(), startMs, endMs)) }
+            }) { Text("SAVE WORD") }
+            TextButton(onClick = onDelete) { Text("REMOVE", color = Pink) }
         }
     }
 }
