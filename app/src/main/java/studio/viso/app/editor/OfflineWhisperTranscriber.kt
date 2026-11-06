@@ -207,17 +207,25 @@ internal fun transliterateUrduToRoman(text: String): String {
         'ہ' to "h", 'ھ' to "h", 'ء' to "", 'ی' to "i", 'ے' to "e",
         'ؤ' to "o", 'ئ' to "i", 'ۃ' to "a"
     )
-    val wordPattern = Regex("^([^\\\\p{L}\\\\p{M}]*)([\\\\p{L}\\\\p{M}]+)([^\\\\p{L}\\\\p{M}]*)$")
-    return Regex("\\\\S+|\\\\s+").findAll(text).joinToString("") { match ->
+    fun isWordCharacter(ch: Char): Boolean {
+        val type = Character.getType(ch)
+        return ch.isLetter() || type == Character.NON_SPACING_MARK.toInt() ||
+            type == Character.COMBINING_SPACING_MARK.toInt() ||
+            type == Character.ENCLOSING_MARK.toInt()
+    }
+    return Regex("\\S+|\\s+").findAll(text).joinToString("") { match ->
         val token = match.value
         if (token.isBlank()) token
         else {
-            val parts = wordPattern.matchEntire(token)
-            if (parts == null) token
+            var wordStart = 0
+            while (wordStart < token.length && !isWordCharacter(token[wordStart])) wordStart++
+            var wordEnd = token.length
+            while (wordEnd > wordStart && !isWordCharacter(token[wordEnd - 1])) wordEnd--
+            if (wordStart == wordEnd) token
             else {
-                val prefix = parts.groupValues[1]
-                val word = parts.groupValues[2]
-                val suffix = parts.groupValues[3]
+                val prefix = token.substring(0, wordStart)
+                val word = token.substring(wordStart, wordEnd)
+                val suffix = token.substring(wordEnd)
                 val roman = commonWords[word] ?: buildString {
                     word.forEach { ch ->
                         append(letters[ch] ?: if (ch.code in 0x064B..0x065F || ch.code == 0x0670) "" else ch.toString())
