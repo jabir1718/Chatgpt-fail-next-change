@@ -192,7 +192,7 @@ internal fun buildTokenTimedCaptionChunks(
  */
 internal fun transliterateUrduToRoman(text: String): String {
     val commonWords = mapOf(
-        "پاکستان" to "Pakistan", "سلام" to "salaam", "آپ" to "aap",
+        "پاکستان" to "Pakistan", "سلام" to "salaam", "آپ" to "aap", "کیسے" to "kaise",
         "میں" to "mein", "ہے" to "hai", "ہیں" to "hain", "اور" to "aur",
         "کیا" to "kya", "نہیں" to "nahin", "بہت" to "bohat", "شکریہ" to "shukriya"
     )
