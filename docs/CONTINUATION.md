@@ -86,3 +86,10 @@ Keep future expansion at the END of the roadmap: cloud sync, templates/presets m
 ## Next implementation slice — GPU visualizer
 - Run #256 completed successfully: all workflow steps passed, including tests, Debug APK build and artifact upload.
 - Begin a true live OpenGL ES 2.0 3D Orb preview with capability fallback and regression tests. Track offline render parity and physical-device performance separately; do not claim them complete from CI alone.
+
+
+## Latest continuation — offline 3D Orb
+
+- Run #259 completed successfully: configured `testDebugUnitTest`, `assembleDebug` and Debug APK artifact upload all passed.
+- Offline MP4 now renders a shaded 3D-style Orb using deterministic per-frame FFT and beat snapshots. This is a software Canvas renderer; it is not pixel-identical to the live OpenGL shader and device export playback remains unverified.
+- Current source tree has 70 tracked files. Next slice: align offline Orb rotation rate and angular FFT lookup with the live shader, improve audio-reactive sphere surface detail, and add regression tests. Keep GPU/offline pixel parity and device acceptance open.

@@ -31,6 +31,18 @@ class OfflineOrbFrameMathTest {
         val later = OfflineOrbFrameMath.geometry(frame(timestampMs = 6_000L), 1080, 1920)
         assertEquals(first.rotationRadians, repeated.rotationRadians, 0f)
         assertTrue(later.rotationRadians > first.rotationRadians)
+        assertEquals(0.66f, first.rotationRadians, 0.0001f)
+        assertEquals(1.32f, later.rotationRadians, 0.0001f)
+    }
+
+    @Test
+    fun angularBandLookupMatchesShaderWrapAndClampsInvalidSamples() {
+        val samples = List(32) { it / 31f }
+        val source = frame(bands = samples)
+        assertEquals(samples[16], OfflineOrbFrameMath.bandAtAngle(source, 0f), 0.0001f)
+        assertEquals(samples[0], OfflineOrbFrameMath.bandAtAngle(source, -Math.PI.toFloat()), 0.0001f)
+        assertEquals(samples[31], OfflineOrbFrameMath.bandAtAngle(source, Math.PI.toFloat() - 0.0001f), 0.0001f)
+        assertEquals(0f, OfflineOrbFrameMath.bandAtAngle(frame(bands = listOf(Float.NaN)), 0f), 0f)
     }
 
     @Test

@@ -2,6 +2,9 @@
 
 Last updated: 2026-11-06
 
+## Latest verified run
+- Run #259, ID `42204406487`, commit `81106bde29fd9baa8a9ebe2c49de872072096921` — offline 3D Orb mode added to the MP4 Canvas renderer; deterministic FFT/beat/timestamp frame math and regression tests added; `testDebugUnitTest`, `assembleDebug`, and Debug APK artifact upload all succeeded. This confirms source/CI only; live/offline pixel parity and Android device export playback remain open.
+
 ## Repository identity
 - Repository: `jabir1718/Chatgpt-fail-next-change`
 - Branch: `main`

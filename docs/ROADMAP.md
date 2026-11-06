@@ -39,7 +39,7 @@ A polished, original Android creator studio for TikTok, YouTube Shorts, Instagra
 ## M3 — Visualizer Studio (signature priority)
 - [x] Live FFT/spectrum, waveform, onset/beat pulse and rough BPM analysis.
 - [x] Spectrum, radial, waveform, rings and particle previews (rings/particles are 2D Canvas).
-- [ ] Complete true 3D/GPU renderer, quality settings and fallback. (First live OpenGL ES 2.0 3D Orb slice implemented; offline parity and device performance remain open.)
+- [ ] Complete true 3D/GPU renderer, quality settings and fallback. Live OpenGL ES 2.0 Orb preview and deterministic software-rendered offline Orb are implemented (Runs #257–#259); pixel parity, quality controls, unsupported-device fallback wiring and device performance remain open.
 - [x] Offline audio analysis produces per-frame RMS/FFT/waveform/beat snapshots from timeline PCM (Run #157 CI build/tests/artifact verified).
 - [x] Android Bitmap/Canvas renderer for Spectrum, Radial, Waveform, Rings and Particles with supplied image/video-frame layers and captions (Run #159 CI build/artifact verified).
 - [x] Bounded H.264 video-only encoder using flexible YUV input and deterministic frame timestamps (Run #161 CI build/tests/artifact verified).
@@ -54,6 +54,7 @@ A polished, original Android creator studio for TikTok, YouTube Shorts, Instagra
 - [ ] Lyrics overlay, masks, blend modes, keyframes, presets and transitions.
 - [x] Deterministic frame composition planning contract (Run #141 CI build/tests/artifact verified).
 - [x] Android still-image and source-video frame decoding, Canvas pixel compositing and H.264 video frame encoding are connected in the offline visualizer export pipeline (Run #171 CI build/tests/artifact verified; physical-device validation open).
+- [x] Offline MP4 3D Orb mode renders a shaded sphere, FFT-driven outer bands and beat pulse from per-frame analyzer snapshots (Run #259 CI verified; software Canvas renderer is intentionally not pixel-identical to the live GLSL shader).
 - [ ] True 3D/GPU composition, accelerated multi-layer rendering and preview/export parity.
 **Gate:** Imported song drives animation; foreground reacts independently; export matches preview.
 

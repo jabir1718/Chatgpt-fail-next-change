@@ -274,6 +274,36 @@ class OfflineVisualizerFrameRenderer {
         }
         canvas.drawCircle(centerX, centerY, radius, spherePaint)
 
+        // Audio-driven surface filaments approximate the rotating shader pattern
+        // while remaining deterministic in the software export renderer.
+        val clipPath = Path().apply {
+            addCircle(centerX, centerY, radius * 0.995f, Path.Direction.CW)
+        }
+        val surfaceSave = canvas.save()
+        canvas.clipPath(clipPath)
+        for (ring in 0 until 3) {
+            val wave = Path()
+            val samples = 64
+            for (sample in 0..samples) {
+                val angle = (2.0 * PI * sample / samples).toFloat()
+                val audio = OfflineOrbFrameMath.bandAtAngle(frame, angle + geometry.rotationRadians)
+                val ripple = kotlin.math.sin(angle * 8f + geometry.rotationRadians * 3f + audio * 4f).toFloat()
+                val ringRadius = radius * (0.27f + ring * 0.22f + audio * 0.045f + ripple * 0.009f)
+                val x = centerX + cos(angle) * ringRadius
+                val y = centerY + sin(angle) * ringRadius
+                if (sample == 0) wave.moveTo(x, y) else wave.lineTo(x, y)
+            }
+            val surfacePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                val alpha = (28f + geometry.averageBandEnergy * 92f + pulse * 30f).toInt().coerceIn(0, 150)
+                color = if (ring == 1) Color.argb(alpha, 175, 151, 255) else Color.argb(alpha, 120, 250, 238)
+                style = Paint.Style.STROKE
+                strokeWidth = minDimension * (0.0022f + geometry.averageBandEnergy * 0.0012f)
+                strokeCap = Paint.Cap.ROUND
+            }
+            canvas.drawPath(wave, surfacePaint)
+        }
+        canvas.restoreToCount(surfaceSave)
+
         val highlightPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             shader = RadialGradient(
                 centerX - radius * 0.34f,
