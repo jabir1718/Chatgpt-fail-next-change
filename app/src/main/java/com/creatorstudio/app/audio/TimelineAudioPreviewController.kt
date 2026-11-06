@@ -40,6 +40,9 @@ class TimelineAudioPreviewController(context: Context) {
     var isPlaying: Boolean = false
         private set
 
+    val activeAudioSessionIds: Set<Int>
+        get() = activePlayers.values.mapNotNull { source -> source.audioSessionId.takeIf { it > 0 } }.toSet()
+
     fun play(project: EditorProject, fromTimelineMs: Long) {
         anchorTimelineMs = fromTimelineMs.coerceIn(0L, project.durationMs)
         anchorRealtimeMs = SystemClock.elapsedRealtime()

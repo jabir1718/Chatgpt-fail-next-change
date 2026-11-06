@@ -444,6 +444,7 @@ fun CreatorStudioApp() {
             val nextPosition = timelineAudioPreview.update(project)
             val videoSnapshot = timelineVideoPreview.update(project)
             timelineVideoLayers = videoSnapshot.layers
+            if (visualizerRunning) audioReactiveEngine.updateSessions(timelineAudioPreview.activeAudioSessionIds)
             playheadMs = nextPosition
             if (!timelineAudioPreview.isPlaying) {
                 timelineVideoPreview.stop()
@@ -451,6 +452,11 @@ fun CreatorStudioApp() {
                 timelineMixing = false
                 isPlaying = false
                 player.volume = volume
+                if (visualizerRunning) {
+                    audioReactiveEngine.stop()
+                    visualizerRunning = false
+                    visualizerMessage = "Timeline playback ended; live analysis stopped."
+                }
                 status = "Timeline playback finished"
             }
             delay(60)
@@ -494,13 +500,24 @@ fun CreatorStudioApp() {
     }
 
     fun startLiveVisualizer() {
+        if (timelineMixing) {
+            val sessions = timelineAudioPreview.activeAudioSessionIds
+            if (sessions.isEmpty()) {
+                visualizerMessage = "No active timeline audio sessions are ready for analysis."
+                return
+            }
+            val started = audioReactiveEngine.start(sessions)
+            visualizerRunning = started
+            if (started) visualizerMessage = "Live FFT, waveform and beat analysis active across " + sessions.size + " timeline audio source(s)."
+            return
+        }
         val active = media.getOrNull(selectedIndex)
         if (active == null || active.kind == "IMAGE") {
             visualizerMessage = "Import and select an audio or video source first."
             return
         }
         if (!player.isPlaying) {
-            visualizerMessage = "Press Play on the selected source, then start live analysis."
+            visualizerMessage = "Press Play on the selected source, or start timeline playback, then start live analysis."
             return
         }
         val started = audioReactiveEngine.start(player.audioSessionId)
@@ -696,10 +713,10 @@ fun CreatorStudioApp() {
                     },
                     onStart = {
                         val active = media.getOrNull(selectedIndex)
-                        if (active == null || active.kind == "IMAGE") {
-                            visualizerMessage = "Import and select an audio or video source first."
-                        } else if (!player.isPlaying) {
-                            visualizerMessage = "Press Play on the selected source before starting live analysis."
+                        val timelineReady = timelineMixing && timelineAudioPreview.activeAudioSessionIds.isNotEmpty()
+                        val selectedReady = active != null && active.kind != "IMAGE" && player.isPlaying
+                        if (!timelineReady && !selectedReady) {
+                            visualizerMessage = "Start timeline playback or play a selected audio/video source first."
                         } else if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
                             startLiveVisualizer()
                         } else {

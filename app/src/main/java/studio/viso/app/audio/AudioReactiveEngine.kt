@@ -16,73 +16,92 @@ class AudioReactiveEngine(
     private val onBpm: (Int?) -> Unit,
     private val onError: (String) -> Unit
 ) {
-    private var visualizer: Visualizer? = null
+    private val visualizers = linkedMapOf<Int, Visualizer>()
+    private val sessionBands = linkedMapOf<Int, List<Float>>()
+    private val sessionWaveforms = linkedMapOf<Int, List<Float>>()
     private val previousBands = FloatArray(32)
     private val fluxHistory = ArrayDeque<Float>()
     private val beatIntervals = ArrayDeque<Long>()
     private var lastBeatAtMs = 0L
 
     @Synchronized
-    fun start(audioSessionId: Int): Boolean {
+    fun start(audioSessionId: Int): Boolean = start(setOf(audioSessionId))
+
+    /** Captures all active timeline sessions and combines their live analysis. */
+    @Synchronized
+    fun start(audioSessionIds: Set<Int>): Boolean {
         stop()
-        if (audioSessionId <= 0) {
-            onError("Audio session is not ready. Start playback and try again.")
+        val ids = audioSessionIds.filter { it > 0 }.distinct()
+        if (ids.isEmpty()) {
+            onError("No active timeline audio sessions are available. Start timeline playback first.")
             return false
         }
-        var candidate: Visualizer? = null
+        val created = linkedMapOf<Int, Visualizer>()
         try {
-            val effect = Visualizer(audioSessionId)
-            candidate = effect
-            val range = Visualizer.getCaptureSizeRange()
-            if (effect.setCaptureSize(range[1]) != Visualizer.SUCCESS) {
-                throw IllegalStateException("Audio analyser capture size is unavailable.")
+            ids.forEach { sessionId ->
+                val effect = Visualizer(sessionId)
+                val range = Visualizer.getCaptureSizeRange()
+                if (effect.setCaptureSize(range[1]) != Visualizer.SUCCESS) {
+                    effect.release()
+                    throw IllegalStateException("Audio analyser capture size is unavailable.")
+                }
+                effect.setDataCaptureListener(
+                    object : Visualizer.OnDataCaptureListener {
+                        override fun onWaveFormDataCapture(visualizer: Visualizer?, waveform: ByteArray?, samplingRate: Int) {
+                            if (waveform == null) return
+                            synchronized(this@AudioReactiveEngine) {
+                                sessionWaveforms[sessionId] = waveform.map { ((it.toInt() and 0xFF) - 128) / 128f }
+                                emitCombinedWaveform()
+                            }
+                        }
+                        override fun onFftDataCapture(visualizer: Visualizer?, fft: ByteArray?, samplingRate: Int) {
+                            if (fft == null || fft.size < 4) return
+                            synchronized(this@AudioReactiveEngine) {
+                                sessionBands[sessionId] = toBands(fft, 32)
+                                val combined = combineBands(sessionBands.values.toList())
+                                onSpectrum(combined)
+                                detectBeat(combined)
+                            }
+                        }
+                    },
+                    (Visualizer.getMaxCaptureRate() / 2).coerceAtLeast(1),
+                    true,
+                    true
+                )
+                if (effect.setEnabled(true) != Visualizer.SUCCESS) {
+                    effect.release()
+                    throw IllegalStateException("Android audio analyser could not be enabled for a timeline source.")
+                }
+                created[sessionId] = effect
             }
-            effect.setDataCaptureListener(
-                object : Visualizer.OnDataCaptureListener {
-                    override fun onWaveFormDataCapture(
-                        visualizer: Visualizer?,
-                        waveform: ByteArray?,
-                        samplingRate: Int
-                    ) {
-                        if (waveform == null) return
-                        val samples = waveform.map { ((it.toInt() and 0xFF) - 128) / 128f }
-                        onWaveform(samples)
-                    }
-
-                    override fun onFftDataCapture(
-                        visualizer: Visualizer?,
-                        fft: ByteArray?,
-                        samplingRate: Int
-                    ) {
-                        if (fft == null || fft.size < 4) return
-                        val bands = toBands(fft, 32)
-                        onSpectrum(bands)
-                        detectBeat(bands)
-                    }
-                },
-                (Visualizer.getMaxCaptureRate() / 2).coerceAtLeast(1),
-                true,
-                true
-            )
-            if (effect.setEnabled(true) != Visualizer.SUCCESS) {
-                throw IllegalStateException("Android audio analyser could not be enabled.")
-            }
-            visualizer = effect
+            visualizers.putAll(created)
             return true
         } catch (error: Exception) {
-            runCatching { candidate?.release() }
+            created.values.forEach { runCatching { it.enabled = false; it.release() } }
+            visualizers.values.forEach { runCatching { it.enabled = false; it.release() } }
+            visualizers.clear()
+            sessionBands.clear()
+            sessionWaveforms.clear()
             onError(error.message ?: "Live audio analysis could not start.")
             return false
         }
     }
 
+    /** Rebinds capture when clips enter or leave the active timeline mix. */
+    @Synchronized
+    fun updateSessions(audioSessionIds: Set<Int>) {
+        val next = audioSessionIds.filter { it > 0 }.toSet()
+        if (next != visualizers.keys) start(next)
+    }
+
     @Synchronized
     fun stop() {
-        runCatching {
-            visualizer?.enabled = false
-            visualizer?.release()
+        visualizers.values.forEach { effect ->
+            runCatching { effect.enabled = false; effect.release() }
         }
-        visualizer = null
+        visualizers.clear()
+        sessionBands.clear()
+        sessionWaveforms.clear()
         onSpectrum(List(32) { 0f })
         onWaveform(emptyList())
         previousBands.fill(0f)
@@ -90,6 +109,25 @@ class AudioReactiveEngine(
         beatIntervals.clear()
         lastBeatAtMs = 0L
         onBpm(null)
+    }
+
+    private fun emitCombinedWaveform() {
+        val snapshots = sessionWaveforms.values
+        if (snapshots.isEmpty()) {
+            onWaveform(emptyList())
+            return
+        }
+        val size = snapshots.minOf { it.size }
+        onWaveform(List(size) { index ->
+            snapshots.sumOf { it[index].toDouble() }.toFloat() / snapshots.size
+        })
+    }
+
+    private fun combineBands(snapshots: List<List<Float>>): List<Float> {
+        if (snapshots.isEmpty()) return List(32) { 0f }
+        return List(32) { index ->
+            snapshots.mapNotNull { it.getOrNull(index) }.average().toFloat().coerceIn(0f, 1f)
+        }
     }
 
     private fun detectBeat(bands: List<Float>) {
