@@ -11,7 +11,7 @@ object CaptionSubtitleCodec {
         val normalized = content.removePrefix("\uFEFF").replace("\r\n", "\n").replace('\r', '\n')
         val blocks = normalized.split(Regex("\\n[ \\t]*\\n+"))
         val captions = mutableListOf<CaptionSegment>()
-        val timingLine = Regex("^(\\d{2,}:\\d{2}:\\d{2}[,.]\\d{3})\\s*-->\\s*(\\d{2,}:\\d{2}:\\d{2}[,.]\\d{3})(?:\\s+.*)?$")
+        val timingLine = Regex("^((?:\\d{2,}:)?\\d{2}:\\d{2}[,.]\\d{3})\\s*-->\\s*((?:\\d{2,}:)?\\d{2}:\\d{2}[,.]\\d{3})(?:\\s+.*)?$")
         blocks.forEach { block ->
             val lines = block.lines()
             val timingIndex = lines.indexOfFirst { timingLine.matches(it.trim()) }
@@ -43,14 +43,16 @@ object CaptionSubtitleCodec {
     private fun parseTimestamp(value: String): Long {
         val normalized = value.replace(',', '.')
         val parts = normalized.split(':')
-        require(parts.size == 3) { "Invalid subtitle timestamp: $value" }
-        val seconds = parts[2].split('.')
+        require(parts.size in 2..3) { "Invalid subtitle timestamp: $value" }
+        val seconds = parts.last().split('.')
         require(seconds.size == 2) { "Invalid subtitle timestamp: $value" }
-        val hours = parts[0].toLong()
-        val minutes = parts[1].toLong()
+        val hours = if (parts.size == 3) parts[0].toLong() else 0L
+        val minutes = if (parts.size == 3) parts[1].toLong() else parts[0].toLong()
         val wholeSeconds = seconds[0].toLong()
         val millis = seconds[1].padEnd(3, '0').take(3).toLong()
-        require(minutes in 0..59 && wholeSeconds in 0..59) { "Invalid subtitle timestamp: $value" }
+        require(minutes >= 0L && (parts.size == 2 || minutes in 0..59) && wholeSeconds in 0..59) {
+            "Invalid subtitle timestamp: $value"
+        }
         return (((hours * 60 + minutes) * 60 + wholeSeconds) * 1000) + millis
     }
 
@@ -60,6 +62,6 @@ object CaptionSubtitleCodec {
         val minutes = (safe / 60_000) % 60
         val seconds = (safe / 1_000) % 60
         val millis = safe % 1_000
-        return "%02d:%02d:%02d%s%03d".format(hours, minutes, seconds, separator, millis)
+        return "%02d:%02d:%02d%s%03d".format(java.util.Locale.US, hours, minutes, seconds, separator, millis)
     }
 }

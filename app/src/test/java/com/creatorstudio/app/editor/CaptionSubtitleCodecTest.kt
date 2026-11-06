@@ -41,6 +41,19 @@ intro
     }
 
     @Test
+    fun parsesWebVttShortMinuteSecondTimestamp() {
+        val parsed = CaptionSubtitleCodec.parse(
+            """WEBVTT
+
+00:12.345 --> 00:14.500
+Short WebVTT timestamp"""
+        )
+        assertEquals(1, parsed.size)
+        assertEquals(12_345L, parsed.single().startMs)
+        assertEquals(14_500L, parsed.single().endMs)
+    }
+
+    @Test
     fun exportsSortedSrtAndWebVttWithCorrectTimestampSeparators() {
         val captions = listOf(
             CaptionSegment(id = "later", text = "Later", startMs = 65_250L, endMs = 66_500L),

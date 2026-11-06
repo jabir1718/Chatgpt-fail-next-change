@@ -29,6 +29,7 @@ import com.creatorstudio.app.editor.AudioProcessingSettings
 import com.creatorstudio.app.editor.scaleForPulse
 import com.creatorstudio.app.editor.CanvasContentMode
 import com.creatorstudio.app.editor.CaptionSegment
+import com.creatorstudio.app.editor.CaptionSubtitleCodec
 import com.creatorstudio.app.editor.CaptionWordTiming
 import com.creatorstudio.app.editor.EditorProject
 import com.creatorstudio.app.editor.MediaKind
@@ -1356,6 +1357,38 @@ private fun LyricsCaptionsPage(
     var draftStart by remember(selectedClip?.id) { mutableStateOf(selectedClip?.let { ((playheadMs-it.timelineStartMs).coerceIn(0L,(it.durationMs-1L).coerceAtLeast(0L))/1000f).toString() } ?: "0") }
     var draftEnd by remember(selectedClip?.id) { mutableStateOf(selectedClip?.let { (minOf(it.durationMs,3000L)/1000f).toString() } ?: "3") }
     var message by remember(selectedClip?.id) { mutableStateOf("Captions save with the project and appear in preview/export at clip-relative times.") }
+    val context = LocalContext.current
+    val subtitleImportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null && selectedClip != null) {
+            runCatching {
+                val source = context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+                    ?: error("Could not read the selected subtitle file.")
+                val imported = CaptionSubtitleCodec.parse(source)
+                require(imported.isNotEmpty()) { "No valid SRT/WebVTT caption cues were found." }
+                require(imported.all { it.endMs <= selectedClip.durationMs }) {
+                    "Subtitle cues extend beyond the selected clip. Trim the subtitle file or select a longer clip."
+                }
+                onProjectChange(TimelineEditor.setClipCaptions(project, selectedClip.id, imported))
+                message = "Imported ${imported.size} subtitle cues."
+            }.onFailure { message = it.message ?: "Subtitle import failed." }
+        }
+    }
+    val srtExportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/x-subrip")) { uri ->
+        if (uri != null && selectedClip != null) runCatching {
+            val data = CaptionSubtitleCodec.format(selectedClip.captions, CaptionSubtitleCodec.Format.SRT)
+            context.contentResolver.openOutputStream(uri)?.bufferedWriter()?.use { it.write(data) }
+                ?: error("Could not write the SRT file.")
+            message = "SRT subtitle file exported."
+        }.onFailure { message = it.message ?: "SRT export failed." }
+    }
+    val vttExportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/vtt")) { uri ->
+        if (uri != null && selectedClip != null) runCatching {
+            val data = CaptionSubtitleCodec.format(selectedClip.captions, CaptionSubtitleCodec.Format.WEBVTT)
+            context.contentResolver.openOutputStream(uri)?.bufferedWriter()?.use { it.write(data) }
+                ?: error("Could not write the WebVTT file.")
+            message = "WebVTT subtitle file exported."
+        }.onFailure { message = it.message ?: "WebVTT export failed." }
+    }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("LYRICS & CAPTIONS", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 22.sp)
         Text("Create and edit timed captions for the selected image/video clip.", color = Color(0xFF9AA4B8), fontSize = 12.sp)
@@ -1363,6 +1396,17 @@ private fun LyricsCaptionsPage(
             Text("Select a video or image clip on the timeline to add captions.", color = Color(0xFFFFC45C), fontSize = 13.sp)
         } else {
             Text("Selected clip • ${selectedClip.durationMs / 1000f}s", color = Mint, fontSize = 11.sp)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = { subtitleImportLauncher.launch(arrayOf("application/x-subrip", "text/vtt", "text/plain")) }, modifier = Modifier.weight(1f)) {
+                    Text("IMPORT SRT/VTT")
+                }
+                OutlinedButton(onClick = { srtExportLauncher.launch("captions.srt") }, enabled = selectedClip.captions.isNotEmpty(), modifier = Modifier.weight(1f)) {
+                    Text("EXPORT SRT")
+                }
+            }
+            OutlinedButton(onClick = { vttExportLauncher.launch("captions.vtt") }, enabled = selectedClip.captions.isNotEmpty(), modifier = Modifier.fillMaxWidth()) {
+                Text("EXPORT WEBVTT")
+            }
             OutlinedTextField(value = draftText, onValueChange = { draftText=it }, label = { Text("Caption text") }, modifier = Modifier.fillMaxWidth(), minLines = 2)
             VoiceTypingControl(currentText = draftText, onTextChange = { draftText = it })
             OfflineTranscriptionControl(project = project, targetClip = selectedClip, onProjectChange = onProjectChange)
@@ -1398,7 +1442,7 @@ private fun LyricsCaptionsPage(
             }
             if(selectedClip.captions.isEmpty()) Text("No captions on this clip yet.", color=Color(0xFF9AA4B8), fontSize=11.sp)
         }
-        Text("Imported-media transcription above creates editable 25-second draft blocks on-device. Microphone voice typing is separate; word-synced karaoke and Roman Urdu transliteration are still pending.", color = Color(0xFFFFC45C), fontSize = 10.sp)
+        Text("Imported-media transcription creates editable draft captions. Word-timed karaoke highlighting is available when token timings exist; SRT/VTT exchange keeps phrase timing, while word timings remain in the project.", color = Color(0xFFFFC45C), fontSize = 10.sp)
     }
 }
 
@@ -1791,6 +1835,7 @@ private fun CaptionSegmentEditor(
                     val start = ((newWordStart.toDoubleOrNull() ?: -1.0) * 1000.0).toLong()
                     val end = ((newWordEnd.toDoubleOrNull() ?: -1.0) * 1000.0).toLong()
                     val timing = CaptionWordTiming(newWord.trim(), start, end)
+                    require(caption.text.contains(timing.word)) { "The word must appear in the caption text." }
                     onWordTimingsChange((caption.wordTimings + timing).sortedBy { it.startMs })
                     newWord = ""
                 }
@@ -1819,7 +1864,11 @@ private fun CaptionWordTimingEditor(
             TextButton(onClick = {
                 val startMs = ((start.toDoubleOrNull() ?: -1.0) * 1000.0).toLong()
                 val endMs = ((end.toDoubleOrNull() ?: -1.0) * 1000.0).toLong()
-                runCatching { onSave(CaptionWordTiming(word.trim(), startMs, endMs)) }
+                runCatching {
+                    val changed = CaptionWordTiming(word.trim(), startMs, endMs)
+                    require(changed.word.isNotBlank())
+                    onSave(changed)
+                }
             }) { Text("SAVE WORD") }
             TextButton(onClick = onDelete) { Text("REMOVE", color = Pink) }
         }
