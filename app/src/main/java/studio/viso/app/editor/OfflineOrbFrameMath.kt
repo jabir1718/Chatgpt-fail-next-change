@@ -2,6 +2,7 @@ package com.creatorstudio.app.editor
 
 import kotlin.math.PI
 import kotlin.math.min
+import kotlin.math.floor
 
 data class OfflineOrbGeometry(
     val radiusPx: Float,
@@ -29,9 +30,12 @@ object OfflineOrbFrameMath {
     fun bandAtAngle(frame: OfflineVisualizerFrameData, angleRadians: Float): Float {
         val bands = frame.spectrumBands
         if (bands.isEmpty() || !angleRadians.isFinite()) return 0f
-        val fullTurn = 2f * PI.toFloat()
-        val wrapped = ((angleRadians + PI.toFloat()) % fullTurn + fullTurn) % fullTurn
-        val index = (wrapped / fullTurn * bands.size).toInt().coerceIn(0, bands.lastIndex)
+        // Use Double precision and floor-based wrapping to avoid Float rounding
+        // turning an exact half-turn (angle 0) into band 15 instead of band 16.
+        val fullTurn = 2.0 * PI
+        val normalized = angleRadians.toDouble() / fullTurn + 0.5
+        val wrapped = ((normalized % 1.0) + 1.0) % 1.0
+        val index = floor(wrapped * bands.size).toInt().coerceIn(0, bands.lastIndex)
         return bands[index].takeIf { it.isFinite() }?.coerceIn(0f, 1f) ?: 0f
     }
 }

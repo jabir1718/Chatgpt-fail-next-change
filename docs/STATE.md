@@ -143,3 +143,8 @@ Latest source verification: Run #218 successfully built and uploaded the APK for
 - Added a persisted `3D Orb` visualizer mode selection and a live OpenGL ES 2.0 preview renderer with a ray-marched lit sphere, frequency-band deformation, beat pulse and animated background.
 - Unsupported GLES 2.0 devices must use the existing 2D Spectrum fallback. Offline MP4 rendering intentionally remains on established 2D modes until deterministic GPU/offline parity is implemented and tested.
 - CI and physical-device performance verification pending.
+
+
+## Offline Orb follow-up — 2026-11-06
+- Run #260 (workflow ID 42204787839) completed with failure. Android SDK setup and APK assembly passed; unit tests reported 114 passed and one failed at OfflineOrbFrameMathTest.kt:42, caused by the angular FFT lookup boundary calculation. Artifact upload was skipped.
+- A precision-safe Double/floor-based angular wrap and regression cases for exact zero angle, positive-pi wrap and repeated turns have been committed for repair verification. Do not mark Run #260 successful; wait for the repair workflow.

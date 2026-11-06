@@ -93,3 +93,8 @@ Keep future expansion at the END of the roadmap: cloud sync, templates/presets m
 - Run #259 completed successfully: configured `testDebugUnitTest`, `assembleDebug` and Debug APK artifact upload all passed.
 - Offline MP4 now renders a shaded 3D-style Orb using deterministic per-frame FFT and beat snapshots. This is a software Canvas renderer; it is not pixel-identical to the live OpenGL shader and device export playback remains unverified.
 - Current source tree has 70 tracked files. Next slice: align offline Orb rotation rate and angular FFT lookup with the live shader, improve audio-reactive sphere surface detail, and add regression tests. Keep GPU/offline pixel parity and device acceptance open.
+
+
+## Latest continuation — Offline Orb test repair (2026-11-06)
+- Run #260 (ID 42204787839) completed and failed at unit tests: 114/115 passed; APK assembly itself passed, but artifact upload was skipped. Failure was the angular band lookup test at OfflineOrbFrameMathTest.kt:42 due to Float precision at the half-turn boundary.
+- Next commit uses Double-precision normalized angle wrapping with floor-based FFT-band selection and adds positive-pi/repeated-turn regression cases. Repair CI must pass tests, Debug APK build, artifact upload and cleanup before continuing to the next feature.

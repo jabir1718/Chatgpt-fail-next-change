@@ -118,3 +118,8 @@ Cloud sync, templates marketplace, AI beat cuts/auto-edit, advanced tracking/ref
 ## Caption typography
 - [x] Per-caption font family selector (Sans, Serif, Monospace, Cursive) with project persistence and live/offline renderer mapping; Run #254 CI verified.
 - [x] Per-caption bold and italic toggles with project persistence and live/offline renderer parity; Run #255 CI verified.
+
+
+## Offline Orb angular lookup regression follow-up (2026-11-06)
+- Run #260 compiled and assembled the Debug APK, but its configured unit-test task failed: 114/115 tests passed; OfflineOrbFrameMathTest.angularBandLookupMatchesShaderWrapAndClampsInvalidSamples exposed a Float precision boundary at the zero-angle band index. APK artifact upload was skipped because tests failed.
+- Corrected the wrapped-angle calculation to use Double precision and floor-based indexing; expanded regression coverage for the positive-pi wrap and multiple full rotations. This is a targeted test correction, not a new feature-completion claim. Repair CI result pending.

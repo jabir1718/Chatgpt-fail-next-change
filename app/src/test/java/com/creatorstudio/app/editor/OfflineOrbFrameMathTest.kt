@@ -42,6 +42,8 @@ class OfflineOrbFrameMathTest {
         assertEquals(samples[16], OfflineOrbFrameMath.bandAtAngle(source, 0f), 0.0001f)
         assertEquals(samples[0], OfflineOrbFrameMath.bandAtAngle(source, -Math.PI.toFloat()), 0.0001f)
         assertEquals(samples[31], OfflineOrbFrameMath.bandAtAngle(source, Math.PI.toFloat() - 0.0001f), 0.0001f)
+        assertEquals(samples[0], OfflineOrbFrameMath.bandAtAngle(source, Math.PI.toFloat()), 0.0001f)
+        assertEquals(samples[16], OfflineOrbFrameMath.bandAtAngle(source, 8f * Math.PI.toFloat()), 0.0001f)
         assertEquals(0f, OfflineOrbFrameMath.bandAtAngle(frame(bands = listOf(Float.NaN)), 0f), 0f)
     }
 
