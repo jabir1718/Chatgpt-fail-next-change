@@ -39,6 +39,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.ui.platform.LocalDensity
 import kotlin.math.roundToLong
+import com.creatorstudio.app.editor.BeatResponseSettings
 import com.creatorstudio.app.editor.CanvasContentMode
 import com.creatorstudio.app.editor.EditorProject
 import com.creatorstudio.app.editor.TimelineClip
@@ -309,6 +310,9 @@ fun TimelinePanel(
                 onProjectChange(TimelineEditor.trimEnd(project, selected.id, end))
             })
             if (selected.kind == com.creatorstudio.app.editor.MediaKind.VIDEO || selected.kind == com.creatorstudio.app.editor.MediaKind.IMAGE) {
+                ClipBeatResponseControls(selected.beatResponse) { settings ->
+                    onProjectChange(TimelineEditor.setClipBeatResponse(project, selected.id, settings))
+                }
                 ClipCanvasContentControls(selected.contentMode) { mode ->
                     onProjectChange(TimelineEditor.setClipContentMode(project, selected.id, mode))
                 }
@@ -323,6 +327,27 @@ fun TimelinePanel(
     }
 }
 
+
+@Composable
+private fun ClipBeatResponseControls(settings: BeatResponseSettings, onSettingsChange: (BeatResponseSettings) -> Unit) {
+    var amount by remember(settings.scaleAmount) { mutableFloatStateOf(settings.scaleAmount) }
+    var sensitivity by remember(settings.sensitivity) { mutableFloatStateOf(settings.sensitivity) }
+    Column(Modifier.fillMaxWidth().padding(top = 8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("MUSIC BEAT RESPONSE", color = Color(0xFFB7C4D8), fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+            TextButton(onClick = { onSettingsChange(settings.copy(enabled = !settings.enabled)) }, contentPadding = PaddingValues(horizontal = 7.dp, vertical = 1.dp)) {
+                Text(if (settings.enabled) "ON" else "OFF", color = if (settings.enabled) TimelineAccent else Color(0xFF8996AC), fontSize = 9.sp)
+            }
+        }
+        Text("PULSE SCALE  ${(amount * 100).toInt()}%", color = Color(0xFFB7C4D8), fontSize = 8.sp)
+        Slider(value = amount, onValueChange = { amount = it }, onValueChangeFinished = { onSettingsChange(settings.copy(scaleAmount = amount)) }, valueRange = 0f..0.5f,
+            colors = SliderDefaults.colors(thumbColor = TimelineAccent, activeTrackColor = TimelineAccent))
+        Text("SENSITIVITY  ${"%.2f".format(sensitivity)}×", color = Color(0xFFB7C4D8), fontSize = 8.sp)
+        Slider(value = sensitivity, onValueChange = { sensitivity = it }, onValueChangeFinished = { onSettingsChange(settings.copy(sensitivity = sensitivity)) }, valueRange = 0.25f..2f,
+            colors = SliderDefaults.colors(thumbColor = Color(0xFF9278FF), activeTrackColor = Color(0xFF9278FF)))
+        Text("Saved per layer • offline export reacts to analyzed beat pulses.", color = Color(0xFF8996AC), fontSize = 8.sp)
+    }
+}
 
 @Composable
 private fun ClipCanvasContentControls(

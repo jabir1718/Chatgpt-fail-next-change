@@ -47,7 +47,7 @@ class OfflineVisualizerFrameRenderer {
                 }
                 RenderLayerRole.IMAGE -> {
                     decodedFrames[layer.assetId]?.let { bitmap ->
-                        drawLayerBitmap(canvas, bitmap, layer.transform, framePlan.width, framePlan.height, 1f, layer.contentMode)
+                        drawLayerBitmap(canvas, bitmap, layer.transform, framePlan.width, framePlan.height, layerBeatScale(layer, framePlan), layer.contentMode)
                     }
                     drawCaptions(canvas, layer.activeCaptions.map { it.text }, framePlan.width, framePlan.height)
                 }
@@ -76,6 +76,13 @@ class OfflineVisualizerFrameRenderer {
         canvas.clipRect(0f, 0f, width.toFloat(), height.toFloat())
         canvas.drawBitmap(bitmap, null, RectF(left, top, left + drawWidth, top + drawHeight), paint)
         canvas.restore()
+    }
+
+    private fun layerBeatScale(layer: RenderLayerPlan, framePlan: RenderFramePlan): Float {
+        val response = layer.beatResponse
+        if (!response.enabled) return 1f
+        val pulse = (framePlan.visualizerFrame?.beatPulse ?: 0f).coerceIn(0f, 1f)
+        return (1f + pulse * response.scaleAmount * response.sensitivity).coerceIn(1f, 2f)
     }
 
     private fun drawLayerBitmap(

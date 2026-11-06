@@ -87,6 +87,21 @@ class RenderCompositionPlanTest {
     }
 
     @Test
+    fun framePlanCarriesIndependentBeatResponseSettingsForEachOverlayLayer() {
+        val source = project()
+        val changed = source.copy(tracks = source.tracks.map { track ->
+            track.copy(clips = track.clips.map { clip -> when (clip.id) {
+                "video-clip" -> clip.copy(beatResponse = BeatResponseSettings(true, 0.22f, 1.5f))
+                "image-clip" -> clip.copy(beatResponse = BeatResponseSettings(true, 0.08f, 0.75f))
+                else -> clip
+            } })
+        })
+        val frame = RenderCompositionPlan.frameAt(changed, 15L)
+        assertEquals(BeatResponseSettings(true, 0.22f, 1.5f), frame.layers.first { it.clipId == "video-clip" }.beatResponse)
+        assertEquals(BeatResponseSettings(true, 0.08f, 0.75f), frame.layers.first { it.clipId == "image-clip" }.beatResponse)
+    }
+
+    @Test
     fun captionsAreSelectedAtFrameTimeUsingClipLocalTimestamps() {
         val frame = RenderCompositionPlan.frameAt(project(), 15L)
         val video = frame.layers.first { it.role == RenderLayerRole.VIDEO }

@@ -267,6 +267,17 @@ class TimelineEditorTest {
     }
 
     @Test
+    fun clipBeatResponseCanBeChangedIndependentlyAndPreservesOtherClipSettings() {
+        val (base, original) = fixture()
+        val updated = TimelineEditor.setClipBeatResponse(base, original.id, BeatResponseSettings(true, 0.3f, 1.7f))
+        val changed = updated.tracks.first().clips.single()
+        assertEquals(BeatResponseSettings(true, 0.3f, 1.7f), changed.beatResponse)
+        assertEquals(original.timelineStartMs, changed.timelineStartMs)
+        assertEquals(original.contentMode, changed.contentMode)
+        assertEquals(original.audio, changed.audio)
+    }
+
+    @Test
     fun duplicateProjectRemapsAssetTrackAndClipIds() {
         val (baseProject, clip, _) = fixture()
         val image = MediaAsset(

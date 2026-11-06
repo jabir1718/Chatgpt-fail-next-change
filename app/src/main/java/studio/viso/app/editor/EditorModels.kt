@@ -15,6 +15,17 @@ data class Transform(
     val opacity: Float = 1f
 )
 
+data class BeatResponseSettings(
+    val enabled: Boolean = false,
+    val scaleAmount: Float = 0.16f,
+    val sensitivity: Float = 1f
+) {
+    init {
+        require(scaleAmount in 0f..0.5f) { "Beat scale amount must be between 0 and 0.5" }
+        require(sensitivity in 0.25f..2f) { "Beat sensitivity must be between 0.25 and 2" }
+    }
+}
+
 data class ClipAudioSettings(
     val volume: Float = 1f,
     val muted: Boolean = false,
@@ -47,6 +58,7 @@ data class TimelineClip(
     val sourceEndMs: Long = sourceStartMs + durationMs,
     val transform: Transform = Transform(),
     val contentMode: CanvasContentMode = CanvasContentMode.FIT,
+    val beatResponse: BeatResponseSettings = BeatResponseSettings(),
     val audio: ClipAudioSettings = ClipAudioSettings(),
     val captions: List<CaptionSegment> = emptyList()
 ) {
@@ -354,6 +366,13 @@ object TimelineEditor {
         val track = project.tracks.firstOrNull { it.id == trackId } ?: error("Track not found")
         return project.copy(updatedAtEpochMs = System.currentTimeMillis(),
             tracks = project.tracks.map { if (it.id == trackId) track.copy(muted = muted) else it })
+    }
+
+    fun setClipBeatResponse(project: EditorProject, clipId: String, settings: BeatResponseSettings): EditorProject {
+        require(project.tracks.any { track -> track.clips.any { it.id == clipId } }) { "Clip not found" }
+        return project.copy(updatedAtEpochMs = System.currentTimeMillis(), tracks = project.tracks.map { track ->
+            track.copy(clips = track.clips.map { clip -> if (clip.id == clipId) clip.copy(beatResponse = settings) else clip })
+        })
     }
 
     fun setClipContentMode(project: EditorProject, clipId: String, mode: CanvasContentMode): EditorProject {
