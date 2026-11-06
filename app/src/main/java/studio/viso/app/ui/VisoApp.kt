@@ -926,29 +926,50 @@ private fun PreviewStage(
             if (timelineVideoLayers.isNotEmpty()) {
                 timelineVideoLayers.forEach { layer ->
                     androidx.compose.runtime.key(layer.clipId) {
-                        AndroidView(
-                            factory = { ctx -> TextureView(ctx).also { layer.player.setVideoTextureView(it) } },
-                            update = { layer.player.setVideoTextureView(it) },
-                            modifier = Modifier.fillMaxSize().graphicsLayer {
-                                val sourceAspect = layer.videoAspectRatio
-                                val fitScaleX = when (layer.contentMode) {
-                                    CanvasContentMode.FIT -> if (sourceAspect > 0f && sourceAspect < aspectRatio) sourceAspect / aspectRatio else 1f
-                                    CanvasContentMode.CROP -> if (sourceAspect > aspectRatio && aspectRatio > 0f) sourceAspect / aspectRatio else 1f
-                                    CanvasContentMode.FILL -> 1f
+                        if (layer.player != null) {
+                            val videoPlayer = layer.player
+                            AndroidView(
+                                factory = { ctx -> TextureView(ctx).also { videoPlayer.setVideoTextureView(it) } },
+                                update = { videoPlayer.setVideoTextureView(it) },
+                                modifier = Modifier.fillMaxSize().graphicsLayer {
+                                    val sourceAspect = layer.videoAspectRatio
+                                    val fitScaleX = when (layer.contentMode) {
+                                        CanvasContentMode.FIT -> if (sourceAspect > 0f && sourceAspect < aspectRatio) sourceAspect / aspectRatio else 1f
+                                        CanvasContentMode.CROP -> if (sourceAspect > aspectRatio && aspectRatio > 0f) sourceAspect / aspectRatio else 1f
+                                        CanvasContentMode.FILL -> 1f
+                                    }
+                                    val fitScaleY = when (layer.contentMode) {
+                                        CanvasContentMode.FIT -> if (sourceAspect > aspectRatio && sourceAspect > 0f) aspectRatio / sourceAspect else 1f
+                                        CanvasContentMode.CROP -> if (sourceAspect in 0.0001f..aspectRatio && aspectRatio > 0f) aspectRatio / sourceAspect else 1f
+                                        CanvasContentMode.FILL -> 1f
+                                    }
+                                    scaleX = layer.transform.scaleX * fitScaleX
+                                    scaleY = layer.transform.scaleY * fitScaleY
+                                    rotationZ = layer.transform.rotationDegrees
+                                    alpha = layer.transform.opacity.coerceIn(0f, 1f)
+                                    translationX = layer.transform.x
+                                    translationY = layer.transform.y
                                 }
-                                val fitScaleY = when (layer.contentMode) {
-                                    CanvasContentMode.FIT -> if (sourceAspect > aspectRatio && sourceAspect > 0f) aspectRatio / sourceAspect else 1f
-                                    CanvasContentMode.CROP -> if (sourceAspect in 0.0001f..aspectRatio && aspectRatio > 0f) aspectRatio / sourceAspect else 1f
-                                    CanvasContentMode.FILL -> 1f
+                            )
+                        } else if (layer.imageBitmap != null) {
+                            Image(
+                                bitmap = layer.imageBitmap.asImageBitmap(),
+                                contentDescription = "Timeline image layer",
+                                contentScale = when (layer.contentMode) {
+                                    CanvasContentMode.FIT -> ContentScale.Fit
+                                    CanvasContentMode.FILL -> ContentScale.FillBounds
+                                    CanvasContentMode.CROP -> ContentScale.Crop
+                                },
+                                modifier = Modifier.fillMaxSize().graphicsLayer {
+                                    scaleX = layer.transform.scaleX
+                                    scaleY = layer.transform.scaleY
+                                    rotationZ = layer.transform.rotationDegrees
+                                    alpha = layer.transform.opacity.coerceIn(0f, 1f)
+                                    translationX = layer.transform.x
+                                    translationY = layer.transform.y
                                 }
-                                scaleX = layer.transform.scaleX * fitScaleX
-                                scaleY = layer.transform.scaleY * fitScaleY
-                                rotationZ = layer.transform.rotationDegrees
-                                alpha = layer.transform.opacity.coerceIn(0f, 1f)
-                                translationX = layer.transform.x
-                                translationY = layer.transform.y
-                            }
-                        )
+                            )
+                        }
                     }
                 }
             } else {

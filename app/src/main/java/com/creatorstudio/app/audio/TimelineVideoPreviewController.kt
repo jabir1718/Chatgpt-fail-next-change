@@ -1,6 +1,8 @@
 package com.creatorstudio.app.audio
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.SystemClock
 import androidx.media3.common.MediaItem
@@ -26,7 +28,8 @@ data class TimelineVideoPreviewLayer(
     val transform: Transform,
     val contentMode: CanvasContentMode,
     val videoAspectRatio: Float,
-    val player: ExoPlayer
+    val player: ExoPlayer?,
+    val imageBitmap: Bitmap?
 )
 
 data class TimelineVideoPreviewSnapshot(
@@ -47,6 +50,7 @@ class TimelineVideoPreviewController(context: Context) {
 
     private val appContext = context.applicationContext
     private val activeVideos = linkedMapOf<String, ActiveVideo>()
+    private val activeImages = linkedMapOf<String, TimelineVideoPreviewLayer>()
     private var anchorTimelineMs = 0L
     private var anchorRealtimeMs = 0L
 
@@ -100,6 +104,8 @@ class TimelineVideoPreviewController(context: Context) {
             active.player.release()
         }
         activeVideos.clear()
+        activeImages.values.forEach { it.imageBitmap?.recycle() }
+        activeImages.clear()
         anchorRealtimeMs = 0L
     }
 
@@ -112,7 +118,8 @@ class TimelineVideoPreviewController(context: Context) {
 
     private fun reconcile(project: EditorProject, timelineMs: Long, forceSeek: Boolean) {
         val trackOrder = project.tracks.mapIndexed { index, track -> track.id to index }.toMap()
-        val desired = TimelinePlaybackPlan.at(project, timelineMs).videoClips
+        val activePlan = TimelinePlaybackPlan.at(project, timelineMs).activeClips
+        val desired = activePlan.filter { it.clip.kind == MediaKind.VIDEO }
             .filter { scheduled -> project.assets.any { it.id == scheduled.clip.mediaId && it.kind == MediaKind.VIDEO } }
             .sortedWith(
                 compareBy<com.creatorstudio.app.editor.ScheduledClip> { trackOrder[it.trackId] ?: Int.MAX_VALUE }
@@ -129,6 +136,28 @@ class TimelineVideoPreviewController(context: Context) {
             }
         }
 
+        val desiredImages = activePlan.filter { it.clip.kind == MediaKind.IMAGE }
+        val desiredImageIds = desiredImages.mapTo(hashSetOf()) { it.clip.id }
+        (activeImages.keys - desiredImageIds).forEach { id -> activeImages.remove(id)?.imageBitmap?.recycle() }
+        desiredImages.forEach { scheduled ->
+            val clip = scheduled.clip
+            val asset = project.assets.first { it.id == clip.mediaId }
+            val zOrder = (trackOrder[scheduled.trackId] ?: Int.MAX_VALUE) * 100_000 +
+                (project.tracks.firstOrNull { it.id == scheduled.trackId }?.clips?.indexOfFirst { it.id == clip.id } ?: 0)
+            val previous = activeImages[clip.id]
+            val bitmap = previous?.imageBitmap ?: runCatching {
+                val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                appContext.contentResolver.openInputStream(Uri.parse(asset.uri))?.use { BitmapFactory.decodeStream(it, null, bounds) }
+                val largest = maxOf(bounds.outWidth, bounds.outHeight).coerceAtLeast(1)
+                val options = BitmapFactory.Options().apply { inSampleSize = (largest / 1600).coerceAtLeast(1) }
+                appContext.contentResolver.openInputStream(Uri.parse(asset.uri))?.use { BitmapFactory.decodeStream(it, null, options) }
+            }.getOrNull()
+            activeImages[clip.id] = TimelineVideoPreviewLayer(
+                clipId = clip.id, trackId = scheduled.trackId, zOrder = zOrder,
+                transform = clip.transform, contentMode = clip.contentMode,
+                videoAspectRatio = 0f, player = null, imageBitmap = bitmap
+            )
+        }
         desired.forEach { scheduled ->
             val clip = scheduled.clip
             val asset = project.assets.first { it.id == clip.mediaId }
@@ -184,7 +213,9 @@ class TimelineVideoPreviewController(context: Context) {
                             (if (rotated) size.width else size.height).toFloat()
                     } else 0f
                 },
-                player = active.player
+                player = active.player,
+                imageBitmap = null
             )
-        }.sortedBy { it.zOrder }
+        } + activeImages.values.toList()
+            .sortedBy { it.zOrder }
 }
