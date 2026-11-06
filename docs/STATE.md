@@ -129,3 +129,8 @@ Latest source verification: Run #218 successfully built and uploaded the APK for
 ## Caption typography verification (2026-11-06)
 - Run #254, commit `da46de7a15727f6d1299dcdb83c6110cd88d2b9b`: caption font-family selector import fix; all workflow steps completed successfully, including configured tests, Debug APK build and artifact upload. Device font fallback and preview/export parity remain open.
 - Next typography increment adds per-caption bold/italic fields with backwards-compatible defaults (bold on, italic off), ProjectStore schema v9 persistence, and matching Compose preview/offline MP4 Typeface styling. CI verification is pending.
+
+
+## Export sharing update (2026-11-06)
+- Run #255 verified caption bold/italic controls: configured unit tests, Debug APK build and artifact upload all passed. Device font rendering remains unverified.
+- Added Android ACTION_SEND share-sheet wiring for the last successfully saved MP4 or M4A document URI, including MIME type, ClipData and temporary read permission grant. The export screen only enables sharing after a successful save. CI verification pending; recipient-app behavior needs device testing.

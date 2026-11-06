@@ -54,6 +54,7 @@ import com.creatorstudio.app.editor.MediaAsset
 import com.creatorstudio.app.editor.TimelineClip
 import com.creatorstudio.app.editor.MediaCodecPcmDecoder
 import android.content.Intent
+import android.content.ClipData
 import android.os.Bundle
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
@@ -183,6 +184,8 @@ fun CreatorStudioApp() {
     var audioExportProgress by remember { mutableFloatStateOf(0f) }
     var audioExportMessage by remember { mutableStateOf("Choose a destination to export the timeline audio mix.") }
     var exportRetryKind by remember { mutableStateOf<String?>(null) }
+    var lastExportUri by remember { mutableStateOf<Uri?>(null) }
+    var lastExportMimeType by remember { mutableStateOf<String?>(null) }
 
     val audioMixExportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("audio/mp4")
@@ -213,6 +216,8 @@ fun CreatorStudioApp() {
                         }
                     }
                     exportRetryKind = null
+                    lastExportUri = destinationUri
+                    lastExportMimeType = "audio/mp4"
                     audioExportMessage = "Audio mix saved successfully."
                 } catch (error: Exception) {
                     if (error is CancellationException) {
@@ -260,6 +265,8 @@ fun CreatorStudioApp() {
                         }
                     }
                     exportRetryKind = null
+                    lastExportUri = destinationUri
+                    lastExportMimeType = "video/mp4"
                     audioExportMessage = "Visualizer MP4 saved successfully."
                 } catch (error: Exception) {
                     if (error is CancellationException) {
@@ -765,6 +772,23 @@ fun CreatorStudioApp() {
                     exporting = audioExporting,
                     progress = audioExportProgress,
                     message = audioExportMessage,
+                    canShare = lastExportUri != null,
+                    onShare = {
+                        val uri = lastExportUri
+                        if (uri != null) {
+                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                type = lastExportMimeType ?: "application/octet-stream"
+                                putExtra(Intent.EXTRA_STREAM, uri)
+                                clipData = ClipData.newUri(context.contentResolver, "Creator Studio export", uri)
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }
+                            runCatching {
+                                context.startActivity(Intent.createChooser(shareIntent, "Share Creator Studio export"))
+                            }.onFailure { error ->
+                                audioExportMessage = "Could not open Android share sheet: ${error.message ?: "No compatible app"}"
+                            }
+                        }
+                    },
                     onCancel = { audioExportCancel?.set(true); audioExportMessage = "Cancelling export..." },
                     onRetry = {
                         when (exportRetryKind) {
@@ -1242,6 +1266,8 @@ private fun ExportPage(
     exporting: Boolean,
     progress: Float,
     message: String,
+    canShare: Boolean,
+    onShare: () -> Unit,
     onCancel: () -> Unit,
     onRetry: () -> Unit,
     onExportAudio: () -> Unit,
@@ -1346,6 +1372,11 @@ private fun ExportPage(
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text("${(progress * 100).toInt()}%", color = Mint, fontSize = 12.sp, modifier = Modifier.weight(1f))
                 OutlinedButton(onClick = onCancel) { Text("CANCEL EXPORT") }
+            }
+        }
+        if (canShare) {
+            OutlinedButton(onClick = onShare, enabled = !exporting, modifier = Modifier.fillMaxWidth()) {
+                Text("SHARE LAST SAVED EXPORT")
             }
         }
         Text(

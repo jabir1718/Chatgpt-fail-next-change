@@ -76,3 +76,8 @@ Keep future expansion at the END of the roadmap: cloud sync, templates/presets m
 ## Latest continuation — caption typography
 - Run #254 succeeded after the caption font-family UI import fix; configured tests, Debug APK build and artifact upload all completed successfully. Device font rendering remains unverified.
 - Next implementation batch: add independent per-caption bold/italic toggles, persist them with backwards-compatible defaults, and match live preview with offline MP4 typography. Run CI before advancing.
+
+
+## Latest continuation — export sharing
+- Run #255 completed successfully: caption bold/italic style persistence and preview/offline renderer mapping passed configured unit tests, Debug APK build and artifact upload.
+- Next source change adds Android share-sheet fallback for the last successfully saved MP4/M4A using its SAF URI, MIME type, ClipData and read grant. Share action is exposed only after successful export. CI/device verification pending.
