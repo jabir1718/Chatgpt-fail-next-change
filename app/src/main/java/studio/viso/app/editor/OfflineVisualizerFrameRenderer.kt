@@ -82,7 +82,7 @@ class OfflineVisualizerFrameRenderer {
         val response = layer.beatResponse
         if (!response.enabled) return 1f
         val pulse = (framePlan.visualizerFrame?.beatPulse ?: 0f).coerceIn(0f, 1f)
-        return (1f + pulse * response.scaleAmount * response.sensitivity).coerceIn(1f, 2f)
+        return response.scaleForPulse(pulse)
     }
 
     private fun drawLayerBitmap(

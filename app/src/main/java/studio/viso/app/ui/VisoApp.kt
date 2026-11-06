@@ -26,6 +26,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import com.creatorstudio.app.editor.AudioProcessingSettings
+import com.creatorstudio.app.editor.scaleForPulse
 import com.creatorstudio.app.editor.CanvasContentMode
 import com.creatorstudio.app.editor.EditorProject
 import com.creatorstudio.app.editor.MediaKind
@@ -68,6 +69,8 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Subtitles
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.*
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -625,7 +628,7 @@ fun CreatorStudioApp() {
             when (selectedTab) {
                 0 -> StudioPage(
                     media = media, selectedIndex = selectedIndex, player = player,
-                    timelineVideoLayers = timelineVideoLayers, timelineMixing = timelineMixing,
+                    timelineVideoLayers = timelineVideoLayers, timelineMixing = timelineMixing, beatPulseCount = beatPulseCount,
                     selectedClipContentMode = project.tracks.asSequence().flatMap { it.clips.asSequence() }.firstOrNull { it.id == selectedClipId }?.contentMode ?: CanvasContentMode.FIT,
                     projectName = project.name,
                     canvasWidth = project.width, canvasHeight = project.height,
@@ -840,7 +843,7 @@ private fun Header() {
 @Composable
 private fun StudioPage(
     media: List<StudioMedia>, selectedIndex: Int, player: ExoPlayer, isPlaying: Boolean, status: String,
-    timelineVideoLayers: List<TimelineVideoPreviewLayer>, timelineMixing: Boolean,
+    timelineVideoLayers: List<TimelineVideoPreviewLayer>, timelineMixing: Boolean, beatPulseCount: Int,
     selectedClipContentMode: CanvasContentMode,
     projectName: String, canvasWidth: Int, canvasHeight: Int, onCanvasChange: (Int, Int) -> Unit,
     onAddVideo: () -> Unit, onAddAudio: () -> Unit, onAddImage: () -> Unit,
@@ -868,7 +871,7 @@ private fun StudioPage(
         }
     }
     Spacer(Modifier.height(12.dp))
-    PreviewStage(player, media.getOrNull(selectedIndex), isPlaying, onPlay, canvasWidth.toFloat() / canvasHeight.toFloat(), timelineVideoLayers, timelineMixing, selectedClipContentMode)
+    PreviewStage(player, media.getOrNull(selectedIndex), isPlaying, onPlay, canvasWidth.toFloat() / canvasHeight.toFloat(), timelineVideoLayers, timelineMixing, beatPulseCount, selectedClipContentMode)
     Text(status, color = Mint, fontSize = 10.sp, modifier = Modifier.padding(vertical = 7.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(7.dp), modifier = Modifier.fillMaxWidth()) {
         Button(onClick = onAddVideo, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Violet), contentPadding = PaddingValues(horizontal = 8.dp, vertical = 11.dp)) {
@@ -914,6 +917,69 @@ private fun StudioPage(
     Text("Global sliders affect the active preview. Per-clip volume, mute, pitch and tempo are saved from the selected timeline clip. Export DSP is not connected yet.", color = Color(0xFF9AA4B8), fontSize = 10.sp)
 }
 
+@Composable
+private fun TimelinePreviewLayerContent(
+    layer: TimelineVideoPreviewLayer,
+    aspectRatio: Float,
+    beatPulseCount: Int
+) {
+    val pulse = remember(layer.clipId) { Animatable(0f) }
+    LaunchedEffect(beatPulseCount, layer.beatResponse) {
+        if (beatPulseCount > 0 && layer.beatResponse.enabled) {
+            pulse.snapTo(0f)
+            pulse.animateTo(1f, animationSpec = tween(durationMillis = 70))
+            pulse.animateTo(0f, animationSpec = tween(durationMillis = 220))
+        } else {
+            pulse.snapTo(0f)
+        }
+    }
+    val beatScale = layer.beatResponse.scaleForPulse(pulse.value)
+    val videoPlayer = layer.player
+    if (videoPlayer != null) {
+        AndroidView(
+            factory = { ctx -> TextureView(ctx).also { videoPlayer.setVideoTextureView(it) } },
+            update = { videoPlayer.setVideoTextureView(it) },
+            modifier = Modifier.fillMaxSize().graphicsLayer {
+                val sourceAspect = layer.videoAspectRatio
+                val fitScaleX = when (layer.contentMode) {
+                    CanvasContentMode.FIT -> if (sourceAspect > 0f && sourceAspect < aspectRatio) sourceAspect / aspectRatio else 1f
+                    CanvasContentMode.CROP -> if (sourceAspect > aspectRatio && aspectRatio > 0f) sourceAspect / aspectRatio else 1f
+                    CanvasContentMode.FILL -> 1f
+                }
+                val fitScaleY = when (layer.contentMode) {
+                    CanvasContentMode.FIT -> if (sourceAspect > aspectRatio && sourceAspect > 0f) aspectRatio / sourceAspect else 1f
+                    CanvasContentMode.CROP -> if (sourceAspect in 0.0001f..aspectRatio && aspectRatio > 0f) aspectRatio / sourceAspect else 1f
+                    CanvasContentMode.FILL -> 1f
+                }
+                scaleX = layer.transform.scaleX * fitScaleX * beatScale
+                scaleY = layer.transform.scaleY * fitScaleY * beatScale
+                rotationZ = layer.transform.rotationDegrees
+                alpha = layer.transform.opacity.coerceIn(0f, 1f)
+                translationX = layer.transform.x
+                translationY = layer.transform.y
+            }
+        )
+    } else if (layer.imageBitmap != null) {
+        Image(
+            bitmap = layer.imageBitmap.asImageBitmap(),
+            contentDescription = "Timeline image layer",
+            contentScale = when (layer.contentMode) {
+                CanvasContentMode.FIT -> ContentScale.Fit
+                CanvasContentMode.FILL -> ContentScale.FillBounds
+                CanvasContentMode.CROP -> ContentScale.Crop
+            },
+            modifier = Modifier.fillMaxSize().graphicsLayer {
+                scaleX = layer.transform.scaleX * beatScale
+                scaleY = layer.transform.scaleY * beatScale
+                rotationZ = layer.transform.rotationDegrees
+                alpha = layer.transform.opacity.coerceIn(0f, 1f)
+                translationX = layer.transform.x
+                translationY = layer.transform.y
+            }
+        )
+    }
+}
+
 @OptIn(UnstableApi::class)
 @Composable
 private fun PreviewStage(
@@ -943,50 +1009,7 @@ private fun PreviewStage(
             if (timelineVideoLayers.isNotEmpty()) {
                 timelineVideoLayers.forEach { layer ->
                     androidx.compose.runtime.key(layer.clipId) {
-                        if (layer.player != null) {
-                            val videoPlayer = layer.player
-                            AndroidView(
-                                factory = { ctx -> TextureView(ctx).also { videoPlayer.setVideoTextureView(it) } },
-                                update = { videoPlayer.setVideoTextureView(it) },
-                                modifier = Modifier.fillMaxSize().graphicsLayer {
-                                    val sourceAspect = layer.videoAspectRatio
-                                    val fitScaleX = when (layer.contentMode) {
-                                        CanvasContentMode.FIT -> if (sourceAspect > 0f && sourceAspect < aspectRatio) sourceAspect / aspectRatio else 1f
-                                        CanvasContentMode.CROP -> if (sourceAspect > aspectRatio && aspectRatio > 0f) sourceAspect / aspectRatio else 1f
-                                        CanvasContentMode.FILL -> 1f
-                                    }
-                                    val fitScaleY = when (layer.contentMode) {
-                                        CanvasContentMode.FIT -> if (sourceAspect > aspectRatio && sourceAspect > 0f) aspectRatio / sourceAspect else 1f
-                                        CanvasContentMode.CROP -> if (sourceAspect in 0.0001f..aspectRatio && aspectRatio > 0f) aspectRatio / sourceAspect else 1f
-                                        CanvasContentMode.FILL -> 1f
-                                    }
-                                    scaleX = layer.transform.scaleX * fitScaleX
-                                    scaleY = layer.transform.scaleY * fitScaleY
-                                    rotationZ = layer.transform.rotationDegrees
-                                    alpha = layer.transform.opacity.coerceIn(0f, 1f)
-                                    translationX = layer.transform.x
-                                    translationY = layer.transform.y
-                                }
-                            )
-                        } else if (layer.imageBitmap != null) {
-                            Image(
-                                bitmap = layer.imageBitmap.asImageBitmap(),
-                                contentDescription = "Timeline image layer",
-                                contentScale = when (layer.contentMode) {
-                                    CanvasContentMode.FIT -> ContentScale.Fit
-                                    CanvasContentMode.FILL -> ContentScale.FillBounds
-                                    CanvasContentMode.CROP -> ContentScale.Crop
-                                },
-                                modifier = Modifier.fillMaxSize().graphicsLayer {
-                                    scaleX = layer.transform.scaleX
-                                    scaleY = layer.transform.scaleY
-                                    rotationZ = layer.transform.rotationDegrees
-                                    alpha = layer.transform.opacity.coerceIn(0f, 1f)
-                                    translationX = layer.transform.x
-                                    translationY = layer.transform.y
-                                }
-                            )
-                        }
+                        TimelinePreviewLayerContent(layer, aspectRatio, beatPulseCount)
                     }
                 }
             } else {

@@ -10,6 +10,7 @@ import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import com.creatorstudio.app.editor.BeatResponseSettings
 import com.creatorstudio.app.editor.CanvasContentMode
 import com.creatorstudio.app.editor.EditorProject
 import com.creatorstudio.app.editor.MediaKind
@@ -29,7 +30,8 @@ data class TimelineVideoPreviewLayer(
     val contentMode: CanvasContentMode,
     val videoAspectRatio: Float,
     val player: ExoPlayer?,
-    val imageBitmap: Bitmap?
+    val imageBitmap: Bitmap?,
+    val beatResponse: BeatResponseSettings = BeatResponseSettings()
 )
 
 data class TimelineVideoPreviewSnapshot(
@@ -45,7 +47,8 @@ class TimelineVideoPreviewController(context: Context) {
         var trackId: String,
         var zOrder: Int,
         var transform: Transform,
-        var contentMode: CanvasContentMode
+        var contentMode: CanvasContentMode,
+        var beatResponse: BeatResponseSettings
     )
 
     private val appContext = context.applicationContext
@@ -155,7 +158,8 @@ class TimelineVideoPreviewController(context: Context) {
             activeImages[clip.id] = TimelineVideoPreviewLayer(
                 clipId = clip.id, trackId = scheduled.trackId, zOrder = zOrder,
                 transform = clip.transform, contentMode = clip.contentMode,
-                videoAspectRatio = 0f, player = null, imageBitmap = bitmap
+                videoAspectRatio = 0f, player = null, imageBitmap = bitmap,
+                beatResponse = clip.beatResponse
             )
         }
         desired.forEach { scheduled ->
@@ -179,7 +183,7 @@ class TimelineVideoPreviewController(context: Context) {
                 )
                 player.prepare()
                 player.seekTo(scheduled.sourcePositionMs)
-                active = ActiveVideo(player, asset.uri, scheduled.trackId, zOrder, clip.transform, clip.contentMode)
+                active = ActiveVideo(player, asset.uri, scheduled.trackId, zOrder, clip.transform, clip.contentMode, clip.beatResponse)
                 activeVideos[clip.id] = active
             } else {
                 val drift = kotlin.math.abs(active.player.currentPosition - scheduled.sourcePositionMs)
@@ -190,6 +194,7 @@ class TimelineVideoPreviewController(context: Context) {
                 active.zOrder = zOrder
                 active.transform = clip.transform
                 active.contentMode = clip.contentMode
+                active.beatResponse = clip.beatResponse
             }
 
             active.player.volume = 0f
@@ -214,7 +219,8 @@ class TimelineVideoPreviewController(context: Context) {
                     } else 0f
                 },
                 player = active.player,
-                imageBitmap = null
+                imageBitmap = null,
+                beatResponse = active.beatResponse
             )
         } + activeImages.values.toList()).sortedBy { it.zOrder }
 }

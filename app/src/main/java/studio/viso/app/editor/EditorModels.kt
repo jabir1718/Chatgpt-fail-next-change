@@ -26,6 +26,11 @@ data class BeatResponseSettings(
     }
 }
 
+fun BeatResponseSettings.scaleForPulse(pulse: Float): Float {
+    if (!enabled) return 1f
+    return (1f + pulse.coerceIn(0f, 1f) * scaleAmount * sensitivity).coerceIn(1f, 2f)
+}
+
 data class ClipAudioSettings(
     val volume: Float = 1f,
     val muted: Boolean = false,
