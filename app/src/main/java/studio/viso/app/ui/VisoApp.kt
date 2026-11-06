@@ -42,14 +42,11 @@ import com.creatorstudio.app.editor.createStarterProject
 import com.creatorstudio.app.editor.importAsset
 import com.creatorstudio.app.editor.OfflineAudioExportPipeline
 import com.creatorstudio.app.editor.OfflineVisualizerVideoExportPipeline
-import android.Manifest
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.os.Bundle
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
-import androidx.core.content.ContextCompat
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
