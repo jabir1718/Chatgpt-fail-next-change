@@ -71,3 +71,8 @@ Keep future expansion at the END of the roadmap: cloud sync, templates/presets m
 
 ## Latest continuation — caption font family
 - Added per-caption Sans, Serif, Monospace and Cursive font-family choices, persisted with a backwards-compatible Sans default and mapped in both live preview and offline MP4 rendering. Regression coverage added; await the new CI run before marking it verified. Check font fallback/visual parity on a physical Android device.
+
+
+## Latest continuation — caption typography
+- Run #254 succeeded after the caption font-family UI import fix; configured tests, Debug APK build and artifact upload all completed successfully. Device font rendering remains unverified.
+- Next implementation batch: add independent per-caption bold/italic toggles, persist them with backwards-compatible defaults, and match live preview with offline MP4 typography. Run CI before advancing.

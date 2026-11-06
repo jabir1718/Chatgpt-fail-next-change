@@ -161,7 +161,7 @@ class ProjectStore(context: Context) {
             put(JSONObject().apply {
                 put("id", caption.id); put("text", caption.text); put("startMs", caption.startMs)
                 put("endMs", caption.endMs); put("languageTag", caption.languageTag ?: JSONObject.NULL)
-                put("textColorArgb", caption.textColorArgb); put("backgroundColorArgb", caption.backgroundColorArgb); put("fontSizeSp", caption.fontSizeSp.toDouble()); put("fontFamily", caption.fontFamily.name); put("alignment", caption.alignment.name); put("verticalPositionPercent", caption.verticalPositionPercent.toDouble()); put("outlineColorArgb", caption.outlineColorArgb); put("outlineWidthSp", caption.outlineWidthSp.toDouble()); put("shadowStrength", caption.shadowStrength.toDouble())
+                put("textColorArgb", caption.textColorArgb); put("backgroundColorArgb", caption.backgroundColorArgb); put("fontSizeSp", caption.fontSizeSp.toDouble()); put("fontFamily", caption.fontFamily.name); put("isBold", caption.isBold); put("isItalic", caption.isItalic); put("alignment", caption.alignment.name); put("verticalPositionPercent", caption.verticalPositionPercent.toDouble()); put("outlineColorArgb", caption.outlineColorArgb); put("outlineWidthSp", caption.outlineWidthSp.toDouble()); put("shadowStrength", caption.shadowStrength.toDouble())
                 put("wordTimings", JSONArray().apply { caption.wordTimings.forEach { word -> put(JSONObject().apply { put("word", word.word); put("startMs", word.startMs); put("endMs", word.endMs) }) } })
             })
         } })
@@ -250,6 +250,8 @@ class ProjectStore(context: Context) {
                     backgroundColorArgb = caption.optInt("backgroundColorArgb", 0xB3000000.toInt()),
                     fontSizeSp = caption.optDouble("fontSizeSp", 16.0).toFloat().coerceIn(10f, 48f),
                     fontFamily = runCatching { CaptionFontFamily.valueOf(caption.optString("fontFamily", "SANS")) }.getOrDefault(CaptionFontFamily.SANS),
+                    isBold = caption.optBoolean("isBold", true),
+                    isItalic = caption.optBoolean("isItalic", false),
                     alignment = runCatching { CaptionAlignment.valueOf(caption.optString("alignment", "CENTER")) }.getOrDefault(CaptionAlignment.CENTER),
                     verticalPositionPercent = caption.optDouble("verticalPositionPercent", 84.0).toFloat().coerceIn(10f, 90f),
                     outlineColorArgb = caption.optInt("outlineColorArgb", 0xFF000000.toInt()),
@@ -269,7 +271,7 @@ class ProjectStore(context: Context) {
     private fun JSONObject.stringOrNull(key: String): String? =
         if (isNull(key) || !has(key)) null else optString(key)
 
-    companion object { const val SCHEMA_VERSION = 8 }
+    companion object { const val SCHEMA_VERSION = 9 }
 }
 
 data class ProjectSummary(val id: String, val name: String, val updatedAtEpochMs: Long)

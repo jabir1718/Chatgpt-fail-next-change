@@ -124,3 +124,8 @@ Latest source verification: Run #218 successfully built and uploaded the APK for
 
 ## Latest caption typography source change
 - Added per-caption Sans/Serif/Monospace/Cursive selection; old projects default to Sans. The selection is wired to live Compose preview and offline MP4 text rendering and is persisted. Latest CI result pending; device typography parity remains unverified.
+
+
+## Caption typography verification (2026-11-06)
+- Run #254, commit `da46de7a15727f6d1299dcdb83c6110cd88d2b9b`: caption font-family selector import fix; all workflow steps completed successfully, including configured tests, Debug APK build and artifact upload. Device font fallback and preview/export parity remain open.
+- Next typography increment adds per-caption bold/italic fields with backwards-compatible defaults (bold on, italic off), ProjectStore schema v9 persistence, and matching Compose preview/offline MP4 Typeface styling. CI verification is pending.

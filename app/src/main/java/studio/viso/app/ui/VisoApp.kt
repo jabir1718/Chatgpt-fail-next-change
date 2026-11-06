@@ -1025,7 +1025,7 @@ private fun TimelinePreviewLayerContent(layer: TimelineVideoPreviewLayer, aspect
                                     CaptionFontFamily.SERIF -> androidx.compose.ui.text.font.FontFamily.Serif
                                     CaptionFontFamily.MONOSPACE -> androidx.compose.ui.text.font.FontFamily.Monospace
                                     CaptionFontFamily.CURSIVE -> androidx.compose.ui.text.font.FontFamily.Cursive
-                                }, fontWeight = FontWeight.Bold, textAlign = when (caption.alignment) { CaptionAlignment.LEFT -> TextAlign.Start; CaptionAlignment.CENTER -> TextAlign.Center; CaptionAlignment.RIGHT -> TextAlign.End }, modifier = Modifier.offset(x = outlineOffset * direction.x, y = outlineOffset * direction.y))
+                                }, fontWeight = if (caption.isBold) FontWeight.Bold else FontWeight.Normal, fontStyle = if (caption.isItalic) androidx.compose.ui.text.font.FontStyle.Italic else androidx.compose.ui.text.font.FontStyle.Normal, textAlign = when (caption.alignment) { CaptionAlignment.LEFT -> TextAlign.Start; CaptionAlignment.CENTER -> TextAlign.Center; CaptionAlignment.RIGHT -> TextAlign.End }, modifier = Modifier.offset(x = outlineOffset * direction.x, y = outlineOffset * direction.y))
                             }
                         }
                         Text(text = captionText, color = Color(caption.textColorArgb), fontSize = caption.fontSizeSp.coerceIn(10f, 48f).sp, fontFamily = when (caption.fontFamily) {
@@ -1033,7 +1033,7 @@ private fun TimelinePreviewLayerContent(layer: TimelineVideoPreviewLayer, aspect
                                     CaptionFontFamily.SERIF -> androidx.compose.ui.text.font.FontFamily.Serif
                                     CaptionFontFamily.MONOSPACE -> androidx.compose.ui.text.font.FontFamily.Monospace
                                     CaptionFontFamily.CURSIVE -> androidx.compose.ui.text.font.FontFamily.Cursive
-                                }, fontWeight = FontWeight.Bold, textAlign = when (caption.alignment) { CaptionAlignment.LEFT -> TextAlign.Start; CaptionAlignment.CENTER -> TextAlign.Center; CaptionAlignment.RIGHT -> TextAlign.End }, style = androidx.compose.ui.text.TextStyle(shadow = if (caption.shadowStrength > 0f) androidx.compose.ui.graphics.Shadow(color = Color.Black.copy(alpha = caption.shadowStrength.coerceIn(0f, 1f)), offset = androidx.compose.ui.geometry.Offset(0f, 2f), blurRadius = caption.shadowStrength * 8f) else null))
+                                }, fontWeight = if (caption.isBold) FontWeight.Bold else FontWeight.Normal, fontStyle = if (caption.isItalic) androidx.compose.ui.text.font.FontStyle.Italic else androidx.compose.ui.text.font.FontStyle.Normal, textAlign = when (caption.alignment) { CaptionAlignment.LEFT -> TextAlign.Start; CaptionAlignment.CENTER -> TextAlign.Center; CaptionAlignment.RIGHT -> TextAlign.End }, style = androidx.compose.ui.text.TextStyle(shadow = if (caption.shadowStrength > 0f) androidx.compose.ui.graphics.Shadow(color = Color.Black.copy(alpha = caption.shadowStrength.coerceIn(0f, 1f)), offset = androidx.compose.ui.geometry.Offset(0f, 2f), blurRadius = caption.shadowStrength * 8f) else null))
                     }
                 }
             }
@@ -1871,6 +1871,15 @@ private fun CaptionSegmentEditor(
                     TextButton(onClick = { onStyleChange(caption.copy(fontFamily = family)) }) {
                         Text(family.name, color = if (caption.fontFamily == family) Mint else Color(0xFF9AA4B8), fontSize = 9.sp)
                     }
+                }
+            }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("STYLE", color = Color(0xFF9AA4B8), fontSize = 9.sp)
+                TextButton(onClick = { onStyleChange(caption.copy(isBold = !caption.isBold)) }) {
+                    Text(if (caption.isBold) "BOLD ON" else "BOLD OFF", color = if (caption.isBold) Mint else Color(0xFF9AA4B8), fontSize = 9.sp)
+                }
+                TextButton(onClick = { onStyleChange(caption.copy(isItalic = !caption.isItalic)) }) {
+                    Text(if (caption.isItalic) "ITALIC ON" else "ITALIC OFF", color = if (caption.isItalic) Mint else Color(0xFF9AA4B8), fontSize = 9.sp)
                 }
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {

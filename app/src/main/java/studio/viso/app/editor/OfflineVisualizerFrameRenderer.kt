@@ -208,12 +208,14 @@ class OfflineVisualizerFrameRenderer {
                 color = caption.textColorArgb
                 textAlign = Paint.Align.LEFT
                 textSize = height * 0.035f * (caption.fontSizeSp.coerceIn(10f, 48f) / 16f)
+                val typefaceStyle = (if (caption.isBold) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL) or
+                    (if (caption.isItalic) android.graphics.Typeface.ITALIC else android.graphics.Typeface.NORMAL)
                 typeface = android.graphics.Typeface.create(when (caption.fontFamily) {
-                    CaptionFontFamily.SANS -> "sans-serif-medium"
+                    CaptionFontFamily.SANS -> "sans-serif"
                     CaptionFontFamily.SERIF -> "serif"
                     CaptionFontFamily.MONOSPACE -> "monospace"
                     CaptionFontFamily.CURSIVE -> "cursive"
-                }, android.graphics.Typeface.BOLD)
+                }, typefaceStyle)
                 if (caption.shadowStrength > 0f) {
                     val strength = caption.shadowStrength.coerceIn(0f, 1f)
                     setShadowLayer(height * 0.006f * strength, 0f, height * 0.002f * strength,

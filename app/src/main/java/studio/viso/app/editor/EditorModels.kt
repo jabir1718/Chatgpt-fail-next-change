@@ -57,6 +57,8 @@ data class CaptionSegment(
     val backgroundColorArgb: Int = 0xB3000000.toInt(),
     val fontSizeSp: Float = 16f,
     val fontFamily: CaptionFontFamily = CaptionFontFamily.SANS,
+    val isBold: Boolean = true,
+    val isItalic: Boolean = false,
     val alignment: CaptionAlignment = CaptionAlignment.CENTER,
     val verticalPositionPercent: Float = 84f,
     val outlineColorArgb: Int = 0xFF000000.toInt(),

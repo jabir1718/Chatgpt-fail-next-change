@@ -67,7 +67,9 @@ A polished, original Android creator studio for TikTok, YouTube Shorts, Instagra
 - [x] SRT and WebVTT phrase-cue import/export with timestamp parsing, cue ordering and clip-duration validation (Runs #243–#244 CI verified). Word-level karaoke timings remain project metadata and are not encoded in SRT/VTT.
 - [x] Quick emoji insertion into the timed-caption draft and Unicode/emoji SRT/WebVTT round-trip test (Run #246 CI verified).
 - [x] Per-caption text color, background visibility and font-size controls shared by preview/offline render (Run #248 CI build/tests/artifact verified; device preview/export parity open).
-- [ ] Per-caption left/center/right alignment shared by live preview and offline MP4 renderer (current implementation; CI verification pending).
+- [x] Per-caption left/center/right alignment shared by live preview and offline MP4 renderer (Runs #249–#250 CI verified).
+- [x] Per-caption Sans/Serif/Monospace/Cursive font family, persisted with legacy Sans fallback and mapped in live preview/offline MP4 (Run #254 CI verified).
+- [ ] Per-caption bold/italic typography toggles persisted and matched in live preview/offline MP4 (current implementation; CI verification pending).
 - [ ] Device acceptance of transcription, script output, timing and export.
 **Gate:** Transcribe, correct, select script, edit word timing, exchange SRT/VTT and retain sync through preview/export. CI verifies source/build only; real model and language acceptance requires Android device testing.
 
@@ -113,4 +115,5 @@ Cloud sync, templates marketplace, AI beat cuts/auto-edit, advanced tracking/ref
 
 
 ## Caption typography
-- [x] Per-caption font family selector (Sans, Serif, Monospace, Cursive) with project persistence and live/offline renderer mapping; CI verification pending for the latest source change.
+- [x] Per-caption font family selector (Sans, Serif, Monospace, Cursive) with project persistence and live/offline renderer mapping; Run #254 CI verified.
+- [ ] Per-caption bold and italic toggles with project persistence and live/offline renderer parity; implementation now queued for CI verification.
