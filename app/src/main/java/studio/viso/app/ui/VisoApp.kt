@@ -29,6 +29,7 @@ import com.creatorstudio.app.editor.AudioProcessingSettings
 import com.creatorstudio.app.editor.scaleForPulse
 import com.creatorstudio.app.editor.CanvasContentMode
 import com.creatorstudio.app.editor.CaptionSegment
+import com.creatorstudio.app.editor.CaptionAlignment
 import com.creatorstudio.app.editor.CaptionSubtitleCodec
 import com.creatorstudio.app.editor.CaptionWordTiming
 import com.creatorstudio.app.editor.EditorProject
@@ -99,6 +100,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.layout.ContentScale
@@ -1008,7 +1010,7 @@ private fun TimelinePreviewLayerContent(layer: TimelineVideoPreviewLayer, aspect
                         }
                         if (cursor < caption.text.length) append(caption.text.substring(cursor))
                     }
-                    Text(text = captionText, color = Color(caption.textColorArgb), fontSize = caption.fontSizeSp.coerceIn(10f, 48f).sp, fontWeight = FontWeight.Bold, modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Color(caption.backgroundColorArgb)).padding(horizontal = 12.dp, vertical = 8.dp))
+                    Text(text = captionText, color = Color(caption.textColorArgb), fontSize = caption.fontSizeSp.coerceIn(10f, 48f).sp, fontWeight = FontWeight.Bold, textAlign = when (caption.alignment) { CaptionAlignment.LEFT -> TextAlign.Start; CaptionAlignment.CENTER -> TextAlign.Center; CaptionAlignment.RIGHT -> TextAlign.End }, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(Color(caption.backgroundColorArgb)).padding(horizontal = 12.dp, vertical = 8.dp))
                 }
             }
         }
@@ -1838,6 +1840,14 @@ private fun CaptionSegmentEditor(
                 TextButton(onClick = { onStyleChange(caption.copy(fontSizeSp = (caption.fontSizeSp - 2f).coerceIn(10f, 48f))) }) { Text("A−") }
                 Text("SIZE " + caption.fontSizeSp.toInt() + "sp", color = Color(0xFF9AA4B8), fontSize = 9.sp)
                 TextButton(onClick = { onStyleChange(caption.copy(fontSizeSp = (caption.fontSizeSp + 2f).coerceIn(10f, 48f))) }) { Text("A+") }
+            }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("ALIGN", color = Color(0xFF9AA4B8), fontSize = 9.sp)
+                listOf(CaptionAlignment.LEFT, CaptionAlignment.CENTER, CaptionAlignment.RIGHT).forEach { alignment ->
+                    TextButton(onClick = { onStyleChange(caption.copy(alignment = alignment)) }) {
+                        Text(alignment.name, color = if (caption.alignment == alignment) Mint else Color(0xFF9AA4B8), fontSize = 9.sp)
+                    }
+                }
             }
             Text("KARAOKE WORD TIMINGS", color = Mint, fontSize = 10.sp, fontWeight = FontWeight.Bold)
             caption.wordTimings.forEachIndexed { index, timing ->

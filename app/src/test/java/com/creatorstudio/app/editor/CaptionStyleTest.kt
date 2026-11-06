@@ -11,6 +11,7 @@ class CaptionStyleTest {
         assertEquals(-1, caption.textColorArgb)
         assertEquals(0xB3000000.toInt(), caption.backgroundColorArgb)
         assertEquals(16f, caption.fontSizeSp)
+        assertEquals(CaptionAlignment.CENTER, caption.alignment)
     }
 
     @Test
@@ -24,6 +25,17 @@ class CaptionStyleTest {
         assertEquals(0xFFFFD54F.toInt(), styled.textColorArgb)
         assertEquals(0, styled.backgroundColorArgb)
         assertEquals(24f, styled.fontSizeSp)
+        assertEquals(CaptionAlignment.CENTER, styled.alignment)
+    }
+
+    @Test
+    fun alignmentCanBeChangedIndependentlyOfCaptionContent() {
+        val caption = CaptionSegment(text = "Align me", startMs = 0L, endMs = 1_000L)
+        val aligned = caption.copy(alignment = CaptionAlignment.RIGHT)
+        assertEquals(CaptionAlignment.RIGHT, aligned.alignment)
+        assertEquals(caption.text, aligned.text)
+        assertEquals(caption.startMs, aligned.startMs)
+        assertEquals(caption.endMs, aligned.endMs)
     }
 
     @Test

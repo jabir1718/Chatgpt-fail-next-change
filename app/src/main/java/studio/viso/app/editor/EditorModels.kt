@@ -5,6 +5,7 @@ import java.util.UUID
 enum class MediaKind { VIDEO, AUDIO, IMAGE, TEXT }
 enum class CanvasContentMode { FIT, FILL, CROP }
 enum class TrackKind { VIDEO, AUDIO, OVERLAY, CAPTION, EFFECT }
+enum class CaptionAlignment { LEFT, CENTER, RIGHT }
 
 data class Transform(
     val x: Float = 0f,
@@ -53,7 +54,8 @@ data class CaptionSegment(
     val wordTimings: List<CaptionWordTiming> = emptyList(),
     val textColorArgb: Int = -1,
     val backgroundColorArgb: Int = 0xB3000000.toInt(),
-    val fontSizeSp: Float = 16f
+    val fontSizeSp: Float = 16f,
+    val alignment: CaptionAlignment = CaptionAlignment.CENTER
 ) {
     init {
         require(startMs >= 0L) { "Caption start must not be negative" }

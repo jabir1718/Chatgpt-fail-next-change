@@ -214,7 +214,12 @@ class OfflineVisualizerFrameRenderer {
             val activePaint = Paint(paint).apply { color = Color.rgb(8, 10, 18); clearShadowLayer() }
             val highlightPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(52, 216, 197) }
             val textWidth = paint.measureText(caption.text)
-            val x = (width - textWidth) * 0.5f
+            val margin = width * 0.08f
+            val x = when (caption.alignment) {
+                CaptionAlignment.LEFT -> margin
+                CaptionAlignment.CENTER -> (width - textWidth) * 0.5f
+                CaptionAlignment.RIGHT -> width - margin - textWidth
+            }
             if (caption.backgroundColorArgb != 0) {
                 val padX = paint.textSize * 0.38f
                 val padY = paint.textSize * 0.24f

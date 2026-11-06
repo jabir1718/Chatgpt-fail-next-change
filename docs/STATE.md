@@ -19,6 +19,7 @@ Last updated: 2026-11-06
 - Run #243 — editable karaoke word timing controls and SRT/WebVTT codec tests; configured tests, debug APK build and artifact upload succeeded.
 - Run #244, ID `42195434454`, commit `9fb8f1be7bc018cb28e5ec718410e9ee6a74f3ee` — Lyrics UI SRT/WebVTT import/export wiring and clip-duration validation; configured tests, Debug APK build and artifact upload succeeded.
 - Run #246, ID `42196065481`, commit `9d63e81d0ec1ea9d163c736403b8370fdb08debc` — quick emoji insertion in caption drafts and Unicode/emoji subtitle round-trip regression test; configured workflow, Debug APK build and artifact upload succeeded.
+- Run #248, ID `42197091881`, commit `55e11d8cb696c6d1c404065d088651e3b4375b0b` — fixed missing CaptionSegment style model fields; `testDebugUnitTest` and `assembleDebug` completed with `BUILD SUCCESSFUL`, and debug APK artifact upload succeeded. Per-caption color/background/font-size styling is CI-verified; device preview/export parity remains open.
 - Run #230 — initial imported audio/video offline Whisper transcription integration, model download flow, and decoder fix; configured tests, debug APK build and artifact upload succeeded.
 - Run #228 — sherpa-onnx Whisper model store/dependency and on-demand model download implementation; CI build/artifact succeeded.
 - Run #227 — Lyrics stale voice-typing disclaimer corrected; CI build/artifact succeeded.
@@ -117,5 +118,5 @@ Latest source verification: Run #218 successfully built and uploaded the APK for
 ## Latest transcription implementation
 - Imported audio/video transcription uses the on-device sherpa-onnx multilingual Whisper model after its first model download; no cloud transcription is used by this path.
 - Run #231 optimized PCM window reads with contiguous disk reads and stereo-to-mono conversion. Run #230 verified the initial decode/recognize/caption insertion path in CI.
-- Latest Lyrics milestones: SRT/WebVTT import/export UI passed Run #244; quick emoji insertion and Unicode subtitle round-trip passed Run #246. Per-caption styling controls are in the current unverified change; accessibility/readability refinements remain open.
+- Latest Lyrics milestones: SRT/WebVTT import/export UI passed Run #244; quick emoji insertion and Unicode subtitle round-trip passed Run #246; per-caption color/background/font-size styling passed Run #248. Per-caption alignment is the next source change and awaits CI.
 - Model download size/network behavior, native model load, actual transcription accuracy/language detection, Urdu/Roman Urdu script behavior, speed/memory and caption sync are not device-verified. Roman Urdu transliteration and karaoke highlighting are source-implemented and CI-verified; device language accuracy and timing parity remain pending.

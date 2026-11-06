@@ -66,7 +66,8 @@ A polished, original Android creator studio for TikTok, YouTube Shorts, Instagra
 - [x] Whisper token-timed phrase captions with safe window fallback, editable word-level timing, synchronized active-word highlight in live preview and offline MP4 rendering (Runs #239–#242 CI verified; token timing is estimated from Whisper token timestamps, not phoneme-accurate).
 - [x] SRT and WebVTT phrase-cue import/export with timestamp parsing, cue ordering and clip-duration validation (Runs #243–#244 CI verified). Word-level karaoke timings remain project metadata and are not encoded in SRT/VTT.
 - [x] Quick emoji insertion into the timed-caption draft and Unicode/emoji SRT/WebVTT round-trip test (Run #246 CI verified).
-- [ ] Per-caption text color, background visibility and font-size controls shared by preview/offline render (current implementation; CI verification pending).
+- [x] Per-caption text color, background visibility and font-size controls shared by preview/offline render (Run #248 CI build/tests/artifact verified; device preview/export parity open).
+- [ ] Per-caption left/center/right alignment shared by live preview and offline MP4 renderer (current implementation; CI verification pending).
 - [ ] Device acceptance of transcription, script output, timing and export.
 **Gate:** Transcribe, correct, select script, edit word timing, exchange SRT/VTT and retain sync through preview/export. CI verifies source/build only; real model and language acceptance requires Android device testing.
 
