@@ -47,7 +47,8 @@ A polished, original Android creator studio for TikTok, YouTube Shorts, Instagra
 - [x] Still-image visualizer MP4 pipeline connects audio decode/mix/AAC, offline FFT analysis, PNG/image layers, Canvas frames, H.264 and AAC/H.264 muxing; Export Studio SAF action, progress and cancellation are wired (Run #168 CI build/artifact; Run #171 reverified latest integration).
 - [x] Add source video frame decoding and connect video clips to the offline visualizer MP4 compositor (Run #171 CI build/tests/artifact verified; device decoding/rotation/performance acceptance open).
 - [x] Include decodable embedded audio from source-video clips in the visualizer MP4 soundtrack; safely skip video-only sources with no audio stream and fail clearly for missing audio on audio-kind clips (Run #173 CI build/tests/artifact verified; device A/V sync acceptance open).
-- [ ] Background image/video, multiple independent foreground PNG/video layers and beat response.
+- [ ] Full live background image/video and multiple independently composited foreground PNG/video layers with preview/export parity.
+- [x] Per-video/image timeline clips have independent persisted beat-response enable, pulse-scale and sensitivity settings; RenderCompositionPlan carries each layer's settings and offline MP4 renderer applies beat-pulse scaling independently (Run #210 CI verified). Live timeline beat-signal routing and image-overlay preview are still open.
 - [x] Shared per-clip canvas content mode flows through render plans; offline image/video layers support FIT, FILL and CROP while live video preview uses the same mode; safe guides stay out of exports (Run #208 CI verified).
 - [ ] Lyrics overlay, masks, blend modes, keyframes, presets and transitions.
 - [x] Deterministic frame composition planning contract (Run #141 CI build/tests/artifact verified).
