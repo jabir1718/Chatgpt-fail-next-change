@@ -50,7 +50,10 @@ data class CaptionSegment(
     val startMs: Long,
     val endMs: Long,
     val languageTag: String? = null,
-    val wordTimings: List<CaptionWordTiming> = emptyList()
+    val wordTimings: List<CaptionWordTiming> = emptyList(),
+    val textColorArgb: Int = -1,
+    val backgroundColorArgb: Int = 0xB3000000.toInt(),
+    val fontSizeSp: Float = 16f
 ) {
     init {
         require(startMs >= 0L) { "Caption start must not be negative" }
