@@ -58,13 +58,15 @@ A polished, original Android creator studio for TikTok, YouTube Shorts, Instagra
 **Gate:** Imported song drives animation; foreground reacts independently; export matches preview.
 
 ## M4 — Lyrics/captions/voice input
-- [x] Imported audio/video offline Whisper transcription path with on-demand model download, media PCM decode, chunked recognition and caption insertion (Runs #228–#231 CI build/artifact verified; device/model download/recognition acceptance open).
+- [x] Imported audio/video offline Whisper transcription path with on-demand model download, media PCM decode, chunked recognition and caption insertion (Runs #228–#231 CI verified; device/model download/recognition acceptance open).
 - [x] Whisper automatic language detection is configured for multilingual recognition; actual language accuracy/device validation open.
-- [ ] Urdu-script/Roman Urdu/Roman English script selection and Roman Urdu transliteration.
+- [x] Caption script choice: keep detected Urdu/English output or transliterate Urdu-script words to editable best-effort Roman Urdu; English text and punctuation are preserved (Runs #236–#239 CI verified; device language accuracy open).
 - [x] Manual editable timed captions and live timeline preview (Run #220 CI-verified; device timing/parity open).
 - [x] Microphone voice typing with explicit Start/Stop and runtime RECORD_AUDIO permission; partial/final SpeechRecognizer results insert into caption draft (Run #223 CI build/artifact verified; device speech provider/accuracy unverified; offline preference is not a guarantee).
-- [ ] Token-timed phrase captions (next implementation step); editable word timing, karaoke highlight, emoji captions, SRT/VTT.
-**Gate:** Transcribe, correct, select script, retain sync through edits. CI verifies source/build only; real model and language acceptance requires Android device testing.
+- [x] Whisper token-timed phrase captions with safe window fallback, editable word-level timing, synchronized active-word highlight in live preview and offline MP4 rendering (Runs #239–#242 CI verified; token timing is estimated from Whisper token timestamps, not phoneme-accurate).
+- [x] SRT and WebVTT phrase-cue import/export with timestamp parsing, cue ordering and clip-duration validation (Runs #243–#244 CI verified). Word-level karaoke timings remain project metadata and are not encoded in SRT/VTT.
+- [ ] Emoji captions, richer caption styling and device acceptance of transcription, script output, timing and export.
+**Gate:** Transcribe, correct, select script, edit word timing, exchange SRT/VTT and retain sync through preview/export. CI verifies source/build only; real model and language acceptance requires Android device testing.
 
 ## M5 — Cutout/chroma/compositing
 - [ ] Validated on-device/online subject segmentation and transparent PNG output.
