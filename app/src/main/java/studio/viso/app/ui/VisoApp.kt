@@ -1010,7 +1010,9 @@ private fun TimelinePreviewLayerContent(layer: TimelineVideoPreviewLayer, aspect
                         }
                         if (cursor < caption.text.length) append(caption.text.substring(cursor))
                     }
-                    Text(text = captionText, color = Color(caption.textColorArgb), fontSize = caption.fontSizeSp.coerceIn(10f, 48f).sp, fontWeight = FontWeight.Bold, textAlign = when (caption.alignment) { CaptionAlignment.LEFT -> TextAlign.Start; CaptionAlignment.CENTER -> TextAlign.Center; CaptionAlignment.RIGHT -> TextAlign.End }, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(Color(caption.backgroundColorArgb)).padding(horizontal = 12.dp, vertical = 8.dp))
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = when (caption.alignment) { CaptionAlignment.LEFT -> Alignment.CenterStart; CaptionAlignment.CENTER -> Alignment.Center; CaptionAlignment.RIGHT -> Alignment.CenterEnd }) {
+                        Text(text = captionText, color = Color(caption.textColorArgb), fontSize = caption.fontSizeSp.coerceIn(10f, 48f).sp, fontWeight = FontWeight.Bold, textAlign = when (caption.alignment) { CaptionAlignment.LEFT -> TextAlign.Start; CaptionAlignment.CENTER -> TextAlign.Center; CaptionAlignment.RIGHT -> TextAlign.End }, modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Color(caption.backgroundColorArgb)).padding(horizontal = 12.dp, vertical = 8.dp))
+                    }
                 }
             }
         }
