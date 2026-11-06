@@ -148,3 +148,8 @@ Latest source verification: Run #218 successfully built and uploaded the APK for
 ## Offline Orb follow-up — 2026-11-06
 - Run #260 (workflow ID 42204787839) completed with failure. Android SDK setup and APK assembly passed; unit tests reported 114 passed and one failed at OfflineOrbFrameMathTest.kt:42, caused by the angular FFT lookup boundary calculation. Artifact upload was skipped.
 - A precision-safe Double/floor-based angular wrap and regression cases for exact zero angle, positive-pi wrap and repeated turns have been committed for repair verification. Do not mark Run #260 successful; wait for the repair workflow.
+
+
+## Offline Orb wrap-boundary follow-up (2026-11-06)
+- Run #261 completed with failure: 114/115 unit tests passed. The remaining assertion was the exact negative-PI seam, where Float PI representation left the wrapped fraction a few ulps below 1 and selected the final FFT band instead of band zero.
+- Added a narrow seam snap before floor-based band selection. Repair CI #262 must verify the full unit-test suite, Debug APK build, artifact upload and cleanup before continuing.

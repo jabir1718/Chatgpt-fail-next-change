@@ -98,3 +98,8 @@ Keep future expansion at the END of the roadmap: cloud sync, templates/presets m
 ## Latest continuation — Offline Orb test repair (2026-11-06)
 - Run #260 (ID 42204787839) completed and failed at unit tests: 114/115 passed; APK assembly itself passed, but artifact upload was skipped. Failure was the angular band lookup test at OfflineOrbFrameMathTest.kt:42 due to Float precision at the half-turn boundary.
 - Next commit uses Double-precision normalized angle wrapping with floor-based FFT-band selection and adds positive-pi/repeated-turn regression cases. Repair CI must pass tests, Debug APK build, artifact upload and cleanup before continuing to the next feature.
+
+
+## Offline Orb wrap-boundary follow-up (2026-11-06)
+- Run #261 completed with failure: 114/115 unit tests passed. The remaining assertion was the exact negative-PI seam, where Float PI representation left the wrapped fraction a few ulps below 1 and selected the final FFT band instead of band zero.
+- Added a narrow seam snap before floor-based band selection. Repair CI #262 must verify the full unit-test suite, Debug APK build, artifact upload and cleanup before continuing.

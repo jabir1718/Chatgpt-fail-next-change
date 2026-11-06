@@ -123,3 +123,8 @@ Cloud sync, templates marketplace, AI beat cuts/auto-edit, advanced tracking/ref
 ## Offline Orb angular lookup regression follow-up (2026-11-06)
 - Run #260 compiled and assembled the Debug APK, but its configured unit-test task failed: 114/115 tests passed; OfflineOrbFrameMathTest.angularBandLookupMatchesShaderWrapAndClampsInvalidSamples exposed a Float precision boundary at the zero-angle band index. APK artifact upload was skipped because tests failed.
 - Corrected the wrapped-angle calculation to use Double precision and floor-based indexing; expanded regression coverage for the positive-pi wrap and multiple full rotations. This is a targeted test correction, not a new feature-completion claim. Repair CI result pending.
+
+
+## Offline Orb wrap-boundary follow-up (2026-11-06)
+- Run #261 completed with failure: 114/115 unit tests passed. The remaining assertion was the exact negative-PI seam, where Float PI representation left the wrapped fraction a few ulps below 1 and selected the final FFT band instead of band zero.
+- Added a narrow seam snap before floor-based band selection. Repair CI #262 must verify the full unit-test suite, Debug APK build, artifact upload and cleanup before continuing.

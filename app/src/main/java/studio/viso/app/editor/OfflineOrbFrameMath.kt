@@ -34,7 +34,9 @@ object OfflineOrbFrameMath {
         // turning an exact half-turn (angle 0) into band 15 instead of band 16.
         val fullTurn = 2.0 * PI
         val normalized = angleRadians.toDouble() / fullTurn + 0.5
-        val wrapped = ((normalized % 1.0) + 1.0) % 1.0
+        val rawWrapped = ((normalized % 1.0) + 1.0) % 1.0
+        // Float PI inputs can land a few ulps below the -PI seam; snap that seam to band 0.
+        val wrapped = if (rawWrapped > 1.0 - 1e-6) 0.0 else rawWrapped
         val index = floor(wrapped * bands.size).toInt().coerceIn(0, bands.lastIndex)
         return bands[index].takeIf { it.isFinite() }?.coerceIn(0f, 1f) ?: 0f
     }
