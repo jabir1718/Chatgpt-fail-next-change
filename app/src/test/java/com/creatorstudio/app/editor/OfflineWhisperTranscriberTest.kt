@@ -6,6 +6,13 @@ import org.junit.Test
 
 class OfflineWhisperTranscriberTest {
     @Test
+    fun romanUrduTransliterationPreservesEnglishAndPunctuation() {
+        assertEquals("salaam! Pakistan", transliterateUrduToRoman("سلام! پاکستان"))
+        assertEquals("Hello, friend!", transliterateUrduToRoman("Hello, friend!"))
+        assertEquals("aap kaise hain?", transliterateUrduToRoman("آپ کیسے ہیں?"))
+    }
+
+    @Test
     fun alignsSourceClipOffsetAndPreservesLanguage() {
         val chunks = listOf(
             OfflineTranscriptionChunk("Hello there", 1_000L, 4_000L, "en")

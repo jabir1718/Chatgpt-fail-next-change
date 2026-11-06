@@ -184,6 +184,40 @@ internal fun buildTokenTimedCaptionChunks(
     }.ifEmpty { fallback() }
 }
 
+
+/**
+ * Best-effort Urdu-script to Roman Urdu transliteration.
+ * Roman Urdu has no single standard spelling; output remains editable and
+ * should be reviewed. Non-Urdu text and punctuation are preserved.
+ */
+internal fun transliterateUrduToRoman(text: String): String {
+    val commonWords = mapOf(
+        "پاکستان" to "Pakistan", "سلام" to "salaam", "آپ" to "aap",
+        "میں" to "mein", "ہے" to "hai", "ہیں" to "hain", "اور" to "aur",
+        "کیا" to "kya", "نہیں" to "nahin", "بہت" to "bohat", "شکریہ" to "shukriya"
+    )
+    val letters = mapOf(
+        'ا' to "a", 'آ' to "aa", 'ب' to "b", 'پ' to "p", 'ت' to "t",
+        'ٹ' to "t", 'ث' to "s", 'ج' to "j", 'چ' to "ch", 'ح' to "h",
+        'خ' to "kh", 'د' to "d", 'ڈ' to "d", 'ذ' to "z", 'ر' to "r",
+        'ڑ' to "r", 'ز' to "z", 'ژ' to "zh", 'س' to "s", 'ش' to "sh",
+        'ص' to "s", 'ض' to "z", 'ط' to "t", 'ظ' to "z", 'ع' to "",
+        'غ' to "gh", 'ف' to "f", 'ق' to "q", 'ک' to "k", 'گ' to "g",
+        'ل' to "l", 'م' to "m", 'ن' to "n", 'ں' to "n", 'و' to "o",
+        'ہ' to "h", 'ھ' to "h", 'ء' to "", 'ی' to "i", 'ے' to "e",
+        'ؤ' to "o", 'ئ' to "i", 'ۃ' to "a"
+    )
+    return Regex("\\S+|\\s+").findAll(text).joinToString("") { match ->
+        val token = match.value
+        if (token.isBlank()) token
+        else commonWords[token] ?: buildString {
+            token.forEach { ch ->
+                append(letters[ch] ?: if (ch in '\\u064B'..'\\u065F' || ch == '\\u0670') "" else ch.toString())
+            }
+        }
+    }
+}
+
 /**
  * Maps source-clip-relative transcription windows onto the selected visual clip.
  * The source clip's timeline offset and playback rate are respected, then captions

@@ -1398,6 +1398,7 @@ private fun OfflineTranscriptionControl(
                     ?.let { TranscriptionSourceOption(clip, it, track.name) }
             }
     }
+    var romanUrduOutput by remember(project.id) { mutableStateOf(false) }
     var selectedSourceClipId by remember(project.id) { mutableStateOf<String?>(null) }
     val selectedSource = sourceOptions.firstOrNull { it.clip.id == selectedSourceClipId }
         ?: sourceOptions.firstOrNull()
@@ -1508,8 +1509,11 @@ private fun OfflineTranscriptionControl(
                     .flatMap { it.clips.asSequence() }
                     .firstOrNull { it.id == source.clip.id }
                     ?: error("The selected audio source clip no longer exists.")
+                val captionChunks = if (romanUrduOutput) result.chunks.map { chunk ->
+                    chunk.copy(text = transliterateUrduToRoman(chunk.text))
+                } else result.chunks
                 val captions = alignTranscriptionChunks(
-                    chunks = result.chunks,
+                    chunks = captionChunks,
                     sourceTimelineStartMs = currentSource.timelineStartMs,
                     targetTimelineStartMs = currentTarget.timelineStartMs,
                     targetDurationMs = currentTarget.durationMs,
@@ -1550,6 +1554,13 @@ private fun OfflineTranscriptionControl(
             color = Color(0xFF9AA4B8),
             fontSize = 10.sp
         )
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("CAPTION SCRIPT", color = Color(0xFFD4D9E5), fontSize = 10.sp, modifier = Modifier.weight(1f))
+            OutlinedButton(onClick = { romanUrduOutput = !romanUrduOutput }, contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)) {
+                Text(if (romanUrduOutput) "ROMAN URDU · ON" else "DETECTED SCRIPT", fontSize = 9.sp)
+            }
+        }
+        Text(if (romanUrduOutput) "Urdu-script words are converted to editable best-effort Roman Urdu. English and other scripts stay unchanged; review spelling." else "Keep Whisper detected script. English speech stays English; Urdu speech normally appears in Urdu script.", color = Color(0xFF9AA4B8), fontSize = 10.sp)
         if (sourceOptions.isEmpty()) {
             Text("Add an audio or video clip to the timeline first.", color = Color(0xFFFFC45C), fontSize = 11.sp)
         } else {
