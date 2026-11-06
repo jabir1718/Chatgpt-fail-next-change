@@ -984,7 +984,7 @@ private fun TimelinePreviewLayerContent(
 @Composable
 private fun PreviewStage(
     player: ExoPlayer, item: StudioMedia?, isPlaying: Boolean, onPlay: () -> Unit, aspectRatio: Float,
-    timelineVideoLayers: List<TimelineVideoPreviewLayer>, timelineMixing: Boolean,
+    timelineVideoLayers: List<TimelineVideoPreviewLayer>, timelineMixing: Boolean, beatPulseCount: Int,
     selectedClipContentMode: CanvasContentMode
 ) {
     val context = LocalContext.current
