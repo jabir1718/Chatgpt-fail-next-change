@@ -28,6 +28,7 @@ import kotlinx.coroutines.sync.withLock
 import com.creatorstudio.app.editor.AudioProcessingSettings
 import com.creatorstudio.app.editor.scaleForPulse
 import com.creatorstudio.app.editor.CanvasContentMode
+import com.creatorstudio.app.editor.CaptionSegment
 import com.creatorstudio.app.editor.EditorProject
 import com.creatorstudio.app.editor.MediaKind
 import com.creatorstudio.app.editor.VisualizerSettings
@@ -732,7 +733,12 @@ fun CreatorStudioApp() {
                         visualizerMessage = "Live analysis stopped."
                     }
                 )
-                3 -> ToolPage("AI Lyrics & Captions", "Transcription integration is not connected yet", listOf("Auto Transcribe", "Language Detection", "Roman Urdu", "Urdu Script", "Roman English", "Word Sync", "Emoji Captions", "Voice Typing"))
+                3 -> LyricsCaptionsPage(
+                    project = project,
+                    selectedClip = project.tracks.asSequence().flatMap { it.clips.asSequence() }.firstOrNull { it.id == selectedClipId },
+                    playheadMs = playheadMs,
+                    onProjectChange = { commitProject(it) }
+                )
                 else -> ExportPage(
                     project = project,
                     onSettingsChange = { next -> commitProject(next.copy(updatedAtEpochMs = System.currentTimeMillis())) },
@@ -918,65 +924,64 @@ private fun StudioPage(
 }
 
 @Composable
-private fun TimelinePreviewLayerContent(
-    layer: TimelineVideoPreviewLayer,
-    aspectRatio: Float,
-    beatPulseCount: Int
-) {
+private fun TimelinePreviewLayerContent(layer: TimelineVideoPreviewLayer, aspectRatio: Float, beatPulseCount: Int) {
     val pulse = remember(layer.clipId) { Animatable(0f) }
     LaunchedEffect(beatPulseCount, layer.beatResponse) {
         if (beatPulseCount > 0 && layer.beatResponse.enabled) {
             pulse.snapTo(0f)
             pulse.animateTo(1f, animationSpec = tween(durationMillis = 70))
             pulse.animateTo(0f, animationSpec = tween(durationMillis = 220))
-        } else {
-            pulse.snapTo(0f)
-        }
+        } else pulse.snapTo(0f)
     }
     val beatScale = layer.beatResponse.scaleForPulse(pulse.value)
     val videoPlayer = layer.player
-    if (videoPlayer != null) {
-        AndroidView(
-            factory = { ctx -> TextureView(ctx).also { videoPlayer.setVideoTextureView(it) } },
-            update = { videoPlayer.setVideoTextureView(it) },
-            modifier = Modifier.fillMaxSize().graphicsLayer {
-                val sourceAspect = layer.videoAspectRatio
-                val fitScaleX = when (layer.contentMode) {
-                    CanvasContentMode.FIT -> if (sourceAspect > 0f && sourceAspect < aspectRatio) sourceAspect / aspectRatio else 1f
-                    CanvasContentMode.CROP -> if (sourceAspect > aspectRatio && aspectRatio > 0f) sourceAspect / aspectRatio else 1f
-                    CanvasContentMode.FILL -> 1f
+    Box(Modifier.fillMaxSize()) {
+        if (videoPlayer != null) {
+            AndroidView(
+                factory = { ctx -> TextureView(ctx).also { videoPlayer.setVideoTextureView(it) } },
+                update = { videoPlayer.setVideoTextureView(it) },
+                modifier = Modifier.fillMaxSize().graphicsLayer {
+                    val sourceAspect = layer.videoAspectRatio
+                    val fitScaleX = when (layer.contentMode) {
+                        CanvasContentMode.FIT -> if (sourceAspect > 0f && sourceAspect < aspectRatio) sourceAspect / aspectRatio else 1f
+                        CanvasContentMode.CROP -> if (sourceAspect > aspectRatio && aspectRatio > 0f) sourceAspect / aspectRatio else 1f
+                        CanvasContentMode.FILL -> 1f
+                    }
+                    val fitScaleY = when (layer.contentMode) {
+                        CanvasContentMode.FIT -> if (sourceAspect > aspectRatio && sourceAspect > 0f) aspectRatio / sourceAspect else 1f
+                        CanvasContentMode.CROP -> if (sourceAspect in 0.0001f..aspectRatio && aspectRatio > 0f) aspectRatio / sourceAspect else 1f
+                        CanvasContentMode.FILL -> 1f
+                    }
+                    scaleX = layer.transform.scaleX * fitScaleX * beatScale
+                    scaleY = layer.transform.scaleY * fitScaleY * beatScale
+                    rotationZ = layer.transform.rotationDegrees
+                    alpha = layer.transform.opacity.coerceIn(0f, 1f)
+                    translationX = layer.transform.x
+                    translationY = layer.transform.y
                 }
-                val fitScaleY = when (layer.contentMode) {
-                    CanvasContentMode.FIT -> if (sourceAspect > aspectRatio && sourceAspect > 0f) aspectRatio / sourceAspect else 1f
-                    CanvasContentMode.CROP -> if (sourceAspect in 0.0001f..aspectRatio && aspectRatio > 0f) aspectRatio / sourceAspect else 1f
-                    CanvasContentMode.FILL -> 1f
-                }
-                scaleX = layer.transform.scaleX * fitScaleX * beatScale
-                scaleY = layer.transform.scaleY * fitScaleY * beatScale
-                rotationZ = layer.transform.rotationDegrees
-                alpha = layer.transform.opacity.coerceIn(0f, 1f)
-                translationX = layer.transform.x
-                translationY = layer.transform.y
-            }
-        )
-    } else if (layer.imageBitmap != null) {
-        Image(
-            bitmap = layer.imageBitmap.asImageBitmap(),
-            contentDescription = "Timeline image layer",
-            contentScale = when (layer.contentMode) {
-                CanvasContentMode.FIT -> ContentScale.Fit
-                CanvasContentMode.FILL -> ContentScale.FillBounds
-                CanvasContentMode.CROP -> ContentScale.Crop
-            },
-            modifier = Modifier.fillMaxSize().graphicsLayer {
-                scaleX = layer.transform.scaleX * beatScale
-                scaleY = layer.transform.scaleY * beatScale
-                rotationZ = layer.transform.rotationDegrees
-                alpha = layer.transform.opacity.coerceIn(0f, 1f)
-                translationX = layer.transform.x
-                translationY = layer.transform.y
-            }
-        )
+            )
+        } else if (layer.imageBitmap != null) {
+            Image(bitmap = layer.imageBitmap.asImageBitmap(), contentDescription = "Timeline image layer",
+                contentScale = when (layer.contentMode) {
+                    CanvasContentMode.FIT -> ContentScale.Fit
+                    CanvasContentMode.FILL -> ContentScale.FillBounds
+                    CanvasContentMode.CROP -> ContentScale.Crop
+                }, modifier = Modifier.fillMaxSize().graphicsLayer {
+                    scaleX = layer.transform.scaleX * beatScale
+                    scaleY = layer.transform.scaleY * beatScale
+                    rotationZ = layer.transform.rotationDegrees
+                    alpha = layer.transform.opacity.coerceIn(0f, 1f)
+                    translationX = layer.transform.x
+                    translationY = layer.transform.y
+                })
+        }
+        if (layer.activeCaptions.isNotEmpty()) {
+            Text(text = layer.activeCaptions.joinToString("\n") { it.text }, color = Color.White,
+                fontSize = 16.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp)
+                    .clip(RoundedCornerShape(8.dp)).background(Color.Black.copy(alpha = 0.68f))
+                    .padding(horizontal = 12.dp, vertical = 8.dp))
+        }
     }
 }
 
@@ -1302,6 +1307,81 @@ private fun ExportPage(
             color = Color(0xFF9AA4B8),
             fontSize = 10.sp
         )
+    }
+}
+
+@Composable
+private fun LyricsCaptionsPage(
+    project: EditorProject,
+    selectedClip: com.creatorstudio.app.editor.TimelineClip?,
+    playheadMs: Long,
+    onProjectChange: (EditorProject) -> Unit
+) {
+    var draftText by remember(selectedClip?.id) { mutableStateOf("") }
+    var draftStart by remember(selectedClip?.id) { mutableStateOf(selectedClip?.let { ((playheadMs-it.timelineStartMs).coerceIn(0L,(it.durationMs-1L).coerceAtLeast(0L))/1000f).toString() } ?: "0") }
+    var draftEnd by remember(selectedClip?.id) { mutableStateOf(selectedClip?.let { (minOf(it.durationMs,3000L)/1000f).toString() } ?: "3") }
+    var message by remember(selectedClip?.id) { mutableStateOf("Captions save with the project and appear in preview/export at clip-relative times.") }
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text("LYRICS & CAPTIONS", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 22.sp)
+        Text("Create and edit timed captions for the selected image/video clip.", color = Color(0xFF9AA4B8), fontSize = 12.sp)
+        if (selectedClip == null || selectedClip.kind !in setOf(MediaKind.VIDEO, MediaKind.IMAGE)) {
+            Text("Select a video or image clip on the timeline to add captions.", color = Color(0xFFFFC45C), fontSize = 13.sp)
+        } else {
+            Text("Selected clip • ${selectedClip.durationMs / 1000f}s", color = Mint, fontSize = 11.sp)
+            OutlinedTextField(value = draftText, onValueChange = { draftText=it }, label = { Text("Caption text") }, modifier = Modifier.fillMaxWidth(), minLines = 2)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(value = draftStart, onValueChange = { draftStart=it }, label = { Text("Start (seconds)") }, modifier = Modifier.weight(1f), singleLine = true)
+                OutlinedTextField(value = draftEnd, onValueChange = { draftEnd=it }, label = { Text("End (seconds)") }, modifier = Modifier.weight(1f), singleLine = true)
+            }
+            Button(onClick = {
+                val start=((draftStart.toDoubleOrNull() ?: -1.0)*1000.0).toLong()
+                val end=((draftEnd.toDoubleOrNull() ?: -1.0)*1000.0).toLong()
+                runCatching {
+                    require(draftText.isNotBlank()) { "Enter caption text first." }
+                    val caption=CaptionSegment(text=draftText.trim(),startMs=start,endMs=end)
+                    onProjectChange(TimelineEditor.setClipCaptions(project,selectedClip.id,selectedClip.captions+caption))
+                    draftText=""
+                    message="Caption added."
+                }.onFailure { message=it.message ?: "Could not add caption." }
+            }, modifier = Modifier.fillMaxWidth()) { Text("ADD TIMED CAPTION") }
+            Text(message, color = Color(0xFF9AA4B8), fontSize = 10.sp)
+            selectedClip.captions.forEach { caption ->
+                CaptionSegmentEditor(caption, selectedClip.durationMs,
+                    onTextChange = { value -> onProjectChange(TimelineEditor.setClipCaptions(project,selectedClip.id,selectedClip.captions.map { if(it.id==caption.id) it.copy(text=value) else it })) },
+                    onTimingChange = { start,end -> runCatching {
+                        onProjectChange(TimelineEditor.setClipCaptions(project,selectedClip.id,selectedClip.captions.map { if(it.id==caption.id) it.copy(startMs=start,endMs=end) else it }))
+                        message="Caption timing updated."
+                    }.onFailure { message=it.message ?: "Invalid caption timing." } },
+                    onDelete = { onProjectChange(TimelineEditor.setClipCaptions(project,selectedClip.id,selectedClip.captions.filterNot { it.id==caption.id })) }
+                )
+            }
+            if(selectedClip.captions.isEmpty()) Text("No captions on this clip yet.", color=Color(0xFF9AA4B8), fontSize=11.sp)
+        }
+        Text("Imported-audio auto-transcription and microphone voice typing are not connected in this build. This is manual timed-caption editing, not audio transcription.", color=Color(0xFFFFC45C), fontSize=10.sp)
+    }
+}
+
+@Composable
+private fun CaptionSegmentEditor(caption: CaptionSegment, durationMs: Long, onTextChange: (String)->Unit, onTimingChange: (Long,Long)->Unit, onDelete: ()->Unit) {
+    var startText by remember(caption.id,caption.startMs) { mutableStateOf((caption.startMs/1000f).toString()) }
+    var endText by remember(caption.id,caption.endMs) { mutableStateOf((caption.endMs/1000f).toString()) }
+    Card(colors=CardDefaults.cardColors(containerColor=Panel),shape=RoundedCornerShape(14.dp)) {
+        Column(Modifier.fillMaxWidth().padding(12.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(value=caption.text,onValueChange=onTextChange,label={Text("Caption")},modifier=Modifier.fillMaxWidth(),minLines=2)
+            Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(value=startText,onValueChange={startText=it},label={Text("Start s")},modifier=Modifier.weight(1f),singleLine=true)
+                OutlinedTextField(value=endText,onValueChange={endText=it},label={Text("End s")},modifier=Modifier.weight(1f),singleLine=true)
+            }
+            Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick={
+                    val start=((startText.toDoubleOrNull() ?: -1.0)*1000.0).toLong()
+                    val end=((endText.toDoubleOrNull() ?: -1.0)*1000.0).toLong()
+                    onTimingChange(start,end)
+                }) { Text("SAVE TIMING") }
+                TextButton(onClick=onDelete) { Text("DELETE",color=Pink) }
+            }
+            Text("Clip-relative • max ${durationMs/1000f}s",color=Color(0xFF9AA4B8),fontSize=9.sp)
+        }
     }
 }
 

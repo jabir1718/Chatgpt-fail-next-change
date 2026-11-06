@@ -11,6 +11,7 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import com.creatorstudio.app.editor.BeatResponseSettings
+import com.creatorstudio.app.editor.CaptionSegment
 import com.creatorstudio.app.editor.CanvasContentMode
 import com.creatorstudio.app.editor.EditorProject
 import com.creatorstudio.app.editor.MediaKind
@@ -31,7 +32,8 @@ data class TimelineVideoPreviewLayer(
     val videoAspectRatio: Float,
     val player: ExoPlayer?,
     val imageBitmap: Bitmap?,
-    val beatResponse: BeatResponseSettings = BeatResponseSettings()
+    val beatResponse: BeatResponseSettings = BeatResponseSettings(),
+    val activeCaptions: List<CaptionSegment> = emptyList()
 )
 
 data class TimelineVideoPreviewSnapshot(
@@ -48,7 +50,8 @@ class TimelineVideoPreviewController(context: Context) {
         var zOrder: Int,
         var transform: Transform,
         var contentMode: CanvasContentMode,
-        var beatResponse: BeatResponseSettings
+        var beatResponse: BeatResponseSettings,
+        var activeCaptions: List<CaptionSegment>
     )
 
     private val appContext = context.applicationContext
@@ -159,7 +162,8 @@ class TimelineVideoPreviewController(context: Context) {
                 clipId = clip.id, trackId = scheduled.trackId, zOrder = zOrder,
                 transform = clip.transform, contentMode = clip.contentMode,
                 videoAspectRatio = 0f, player = null, imageBitmap = bitmap,
-                beatResponse = clip.beatResponse
+                beatResponse = clip.beatResponse,
+                activeCaptions = activeCaptionsAt(clip, timelineMs)
             )
         }
         desired.forEach { scheduled ->
@@ -183,7 +187,7 @@ class TimelineVideoPreviewController(context: Context) {
                 )
                 player.prepare()
                 player.seekTo(scheduled.sourcePositionMs)
-                active = ActiveVideo(player, asset.uri, scheduled.trackId, zOrder, clip.transform, clip.contentMode, clip.beatResponse)
+                active = ActiveVideo(player, asset.uri, scheduled.trackId, zOrder, clip.transform, clip.contentMode, clip.beatResponse, activeCaptionsAt(clip, timelineMs))
                 activeVideos[clip.id] = active
             } else {
                 val drift = kotlin.math.abs(active.player.currentPosition - scheduled.sourcePositionMs)
@@ -195,12 +199,18 @@ class TimelineVideoPreviewController(context: Context) {
                 active.transform = clip.transform
                 active.contentMode = clip.contentMode
                 active.beatResponse = clip.beatResponse
+                active.activeCaptions = activeCaptionsAt(clip, timelineMs)
             }
 
             active.player.volume = 0f
             active.player.playbackParameters = PlaybackParameters(clip.audio.playbackRate, 1f)
             active.player.playWhenReady = isPlaying
         }
+    }
+
+    private fun activeCaptionsAt(clip: com.creatorstudio.app.editor.TimelineClip, timelineMs: Long): List<CaptionSegment> {
+        val elapsed = (timelineMs - clip.timelineStartMs).coerceAtLeast(0L)
+        return clip.captions.filter { elapsed >= it.startMs && elapsed < it.endMs }
     }
 
     private fun orderedLayers(): List<TimelineVideoPreviewLayer> =
@@ -220,7 +230,8 @@ class TimelineVideoPreviewController(context: Context) {
                 },
                 player = active.player,
                 imageBitmap = null,
-                beatResponse = active.beatResponse
+                beatResponse = active.beatResponse,
+                activeCaptions = active.activeCaptions
             )
         } + activeImages.values.toList()).sortedBy { it.zOrder }
 }

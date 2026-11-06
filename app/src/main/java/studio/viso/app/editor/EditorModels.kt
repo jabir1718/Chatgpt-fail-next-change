@@ -380,6 +380,20 @@ object TimelineEditor {
         })
     }
 
+    fun setClipCaptions(project: EditorProject, clipId: String, captions: List<CaptionSegment>): EditorProject {
+        val track = project.tracks.firstOrNull { candidate -> candidate.clips.any { it.id == clipId } } ?: error("Clip not found")
+        require(!track.locked) { "Track is locked" }
+        val clip = track.clips.first { it.id == clipId }
+        require(captions.map { it.id }.distinct().size == captions.size) { "Caption IDs must be unique" }
+        require(captions.all { it.endMs <= clip.durationMs }) { "Caption timing must stay within the clip duration" }
+        val ordered = captions.sortedWith(compareBy<CaptionSegment> { it.startMs }.thenBy { it.endMs })
+        return project.copy(updatedAtEpochMs = System.currentTimeMillis(), tracks = project.tracks.map { candidate ->
+            if (candidate.id == track.id) candidate.copy(clips = candidate.clips.map { item ->
+                if (item.id == clipId) item.copy(captions = ordered) else item
+            }) else candidate
+        })
+    }
+
     fun setClipContentMode(project: EditorProject, clipId: String, mode: CanvasContentMode): EditorProject {
         return project.copy(
             updatedAtEpochMs = System.currentTimeMillis(),

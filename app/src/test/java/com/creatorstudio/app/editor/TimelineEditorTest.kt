@@ -317,4 +317,36 @@ class TimelineEditorTest {
         assertEquals(3f, audio.pitchSemitones, 0.001f)
         assertEquals(1.25f, audio.playbackRate, 0.001f)
     }
+    @Test
+    fun setClipCaptionsSortsByStartAndPreservesCaptionIds() {
+        val asset=MediaAsset(uri="content://media/video/1",displayName="clip.mp4",kind=MediaKind.VIDEO)
+        val clip=TimelineClip(mediaId=asset.id,kind=MediaKind.VIDEO,timelineStartMs=0L,durationMs=10_000L)
+        val project=EditorProject(assets=listOf(asset),tracks=listOf(TimelineTrack(name="Video",kind=TrackKind.VIDEO,clips=listOf(clip))))
+        val later=CaptionSegment(id="later",text="Second",startMs=2_000L,endMs=3_000L)
+        val earlier=CaptionSegment(id="earlier",text="First",startMs=0L,endMs=1_000L)
+        val result=TimelineEditor.setClipCaptions(project,clip.id,listOf(later,earlier))
+        val captions=result.tracks.single().clips.single().captions
+        assertEquals(listOf("earlier","later"),captions.map { it.id })
+        assertEquals("Second",captions.last().text)
+    }
+
+    @Test
+    fun setClipCaptionsRejectsTimingOutsideClip() {
+        val asset=MediaAsset(uri="content://media/video/2",displayName="clip.mp4",kind=MediaKind.VIDEO)
+        val clip=TimelineClip(mediaId=asset.id,kind=MediaKind.VIDEO,timelineStartMs=0L,durationMs=1_000L)
+        val project=EditorProject(assets=listOf(asset),tracks=listOf(TimelineTrack(name="Video",kind=TrackKind.VIDEO,clips=listOf(clip))))
+        val invalid=CaptionSegment(text="Too long",startMs=500L,endMs=1_500L)
+        val error=runCatching { TimelineEditor.setClipCaptions(project,clip.id,listOf(invalid)) }.exceptionOrNull()
+        assertTrue(error is IllegalArgumentException)
+    }
+
+    @Test
+    fun setClipCaptionsRejectsLockedTrack() {
+        val asset=MediaAsset(uri="content://media/video/3",displayName="clip.mp4",kind=MediaKind.VIDEO)
+        val clip=TimelineClip(mediaId=asset.id,kind=MediaKind.VIDEO,timelineStartMs=0L,durationMs=1_000L)
+        val project=EditorProject(assets=listOf(asset),tracks=listOf(TimelineTrack(name="Video",kind=TrackKind.VIDEO,locked=true,clips=listOf(clip))))
+        val error=runCatching { TimelineEditor.setClipCaptions(project,clip.id,listOf(CaptionSegment(text="Locked",startMs=0L,endMs=500L))) }.exceptionOrNull()
+        assertTrue(error is IllegalArgumentException)
+    }
+
 }
