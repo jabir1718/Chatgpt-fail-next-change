@@ -18,6 +18,7 @@ Last updated: 2026-11-06
 - Run #242 — active-word karaoke highlighting in live preview and offline MP4 renderer; configured tests, debug APK build and artifact upload succeeded.
 - Run #243 — editable karaoke word timing controls and SRT/WebVTT codec tests; configured tests, debug APK build and artifact upload succeeded.
 - Run #244, ID `42195434454`, commit `9fb8f1be7bc018cb28e5ec718410e9ee6a74f3ee` — Lyrics UI SRT/WebVTT import/export wiring and clip-duration validation; configured tests, Debug APK build and artifact upload succeeded.
+- Run #246, ID `42196065481`, commit `9d63e81d0ec1ea9d163c736403b8370fdb08debc` — quick emoji insertion in caption drafts and Unicode/emoji subtitle round-trip regression test; configured workflow, Debug APK build and artifact upload succeeded.
 - Run #230 — initial imported audio/video offline Whisper transcription integration, model download flow, and decoder fix; configured tests, debug APK build and artifact upload succeeded.
 - Run #228 — sherpa-onnx Whisper model store/dependency and on-demand model download implementation; CI build/artifact succeeded.
 - Run #227 — Lyrics stale voice-typing disclaimer corrected; CI build/artifact succeeded.
@@ -82,6 +83,7 @@ Last updated: 2026-11-06
 - Output script control keeps Whisper's detected Urdu/English script or applies best-effort Urdu-to-Roman-Urdu transliteration; English and punctuation are retained. This is transliteration, not translation.
 - Whisper token timestamps form phrase captions and per-word timings. Word timing is estimated from token starts; active word highlight is rendered in Compose preview and offline MP4. Manual word timing edits persist in projects.
 - Lyrics imports/exports SRT and WebVTT phrase cues. Those standard formats do not preserve the project's per-word karaoke timing metadata.
+- Quick emoji insertion in the timed-caption draft and emoji/Urdu subtitle round-trip regression test passed in Run #246.
 - Run #244 verified the latest SRT/VTT UI wiring, configured tests, Debug APK build and artifact upload. All speech/preview/export behavior still needs device acceptance.
 
 ## Current milestone status
@@ -89,7 +91,7 @@ Last updated: 2026-11-06
 - M1: Timeline/project foundation and synchronized multi-video preview/canvas mode controls are source-implemented and CI-verified through Run #208; device acceptance open.
 - M2: Partial. Waveform, timeline preview scheduling, native live EQ/bass/compressor, disk-backed PCM decode, offline mix and AAC-LC M4A export are source-implemented and CI-verified; device verification and preview/export parity remain open.
 - M3: Partial. Live/offline audio-reactive visualizers, live timeline image/video overlays, multi-session beat analysis, independent live/offline per-layer beat response, still-image/source-video frame decoding, Canvas compositing and H.264/AAC MP4 export are source-implemented and CI-verified through Run #218. Device acceptance, accurate post-mixer analysis, preview/render parity and true 3D/GPU remain open.
-- M4: Imported-media Whisper transcription, script output choice, manual timed captions, microphone voice typing, token-timed karaoke preview/offline MP4, editable word timing and SRT/VTT exchange are source-implemented and CI-verified through Run #244. Emoji/richer styling and all real-device acceptance remain open.
+- M4: Imported-media Whisper transcription, script output choice, manual timed captions, microphone voice typing, token-timed karaoke preview/offline MP4, editable word timing and SRT/VTT exchange are source-implemented and CI-verified through Run #244. Richer styling and all real-device acceptance remain open; quick emoji insertion passed Run #246.
 - M5–M8: Not complete. See roadmap.
 
 ## Next engineering priorities
@@ -115,5 +117,5 @@ Latest source verification: Run #218 successfully built and uploaded the APK for
 ## Latest transcription implementation
 - Imported audio/video transcription uses the on-device sherpa-onnx multilingual Whisper model after its first model download; no cloud transcription is used by this path.
 - Run #231 optimized PCM window reads with contiguous disk reads and stereo-to-mono conversion. Run #230 verified the initial decode/recognize/caption insertion path in CI.
-- Latest Lyrics milestone: SRT/WebVTT import/export UI and clip-duration validation completed in Run #244. Quick emoji insertion and Unicode subtitle round-trip tests are in the current unverified change; richer styling and accessibility/readability controls remain next.
+- Latest Lyrics milestones: SRT/WebVTT import/export UI passed Run #244; quick emoji insertion and Unicode subtitle round-trip passed Run #246. Per-caption styling controls are in the current unverified change; accessibility/readability refinements remain open.
 - Model download size/network behavior, native model load, actual transcription accuracy/language detection, Urdu/Roman Urdu script behavior, speed/memory and caption sync are not device-verified. Roman Urdu transliteration and karaoke highlighting are source-implemented and CI-verified; device language accuracy and timing parity remain pending.

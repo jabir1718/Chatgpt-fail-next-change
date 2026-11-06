@@ -993,30 +993,24 @@ private fun TimelinePreviewLayerContent(layer: TimelineVideoPreviewLayer, aspect
                 })
         }
         if (layer.activeCaptions.isNotEmpty()) {
-            val captionText = buildAnnotatedString {
-                layer.activeCaptions.forEachIndexed { captionIndex, caption ->
-                    if (captionIndex > 0) append("\n")
-                    var cursor = 0
-                    val activeIndex = caption.wordTimings.indexOfFirst {
-                        layer.clipLocalTimeMs >= it.startMs && layer.clipLocalTimeMs < it.endMs
-                    }
-                    caption.wordTimings.forEachIndexed { wordIndex, timing ->
-                        val wordStart = caption.text.indexOf(timing.word, cursor)
-                        if (wordStart >= cursor) {
-                            append(caption.text.substring(cursor, wordStart))
-                            if (wordIndex == activeIndex) {
-                                withStyle(SpanStyle(color = Ink, background = Mint)) { append(timing.word) }
-                            } else append(timing.word)
-                            cursor = wordStart + timing.word.length
+            Column(modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                layer.activeCaptions.forEach { caption ->
+                    val captionText = buildAnnotatedString {
+                        var cursor = 0
+                        val activeIndex = caption.wordTimings.indexOfFirst { layer.clipLocalTimeMs >= it.startMs && layer.clipLocalTimeMs < it.endMs }
+                        caption.wordTimings.forEachIndexed { wordIndex, timing ->
+                            val wordStart = caption.text.indexOf(timing.word, cursor)
+                            if (wordStart >= cursor) {
+                                append(caption.text.substring(cursor, wordStart))
+                                if (wordIndex == activeIndex) withStyle(SpanStyle(color = Ink, background = Mint)) { append(timing.word) } else append(timing.word)
+                                cursor = wordStart + timing.word.length
+                            }
                         }
+                        if (cursor < caption.text.length) append(caption.text.substring(cursor))
                     }
-                    if (cursor < caption.text.length) append(caption.text.substring(cursor))
+                    Text(text = captionText, color = Color(caption.textColorArgb), fontSize = caption.fontSizeSp.coerceIn(10f, 48f).sp, fontWeight = FontWeight.Bold, modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Color(caption.backgroundColorArgb)).padding(horizontal = 12.dp, vertical = 8.dp))
                 }
             }
-            Text(text = captionText, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold,
-                modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp)
-                    .clip(RoundedCornerShape(8.dp)).background(Color.Black.copy(alpha = 0.68f))
-                    .padding(horizontal = 12.dp, vertical = 8.dp))
         }
     }
 }
@@ -1451,6 +1445,7 @@ private fun LyricsCaptionsPage(
                         onProjectChange(TimelineEditor.setClipCaptions(project,selectedClip.id,selectedClip.captions.map { if(it.id==caption.id) it.copy(wordTimings=timings) else it }))
                         message="Karaoke word timings updated."
                     }.onFailure { message=it.message ?: "Invalid word timing." } },
+                    onStyleChange = { style -> onProjectChange(TimelineEditor.setClipCaptions(project,selectedClip.id,selectedClip.captions.map { if(it.id==caption.id) style else it })) },
                     onDelete = { onProjectChange(TimelineEditor.setClipCaptions(project,selectedClip.id,selectedClip.captions.filterNot { it.id==caption.id })) }
                 )
             }
@@ -1809,6 +1804,7 @@ private fun CaptionSegmentEditor(
     onTextChange: (String) -> Unit,
     onTimingChange: (Long, Long) -> Unit,
     onWordTimingsChange: (List<CaptionWordTiming>) -> Unit,
+    onStyleChange: (CaptionSegment) -> Unit,
     onDelete: () -> Unit
 ) {
     var startText by remember(caption.id, caption.startMs) { mutableStateOf((caption.startMs / 1000f).toString()) }
@@ -1830,6 +1826,18 @@ private fun CaptionSegmentEditor(
                     onTimingChange(start, end)
                 }) { Text("SAVE TIMING") }
                 TextButton(onClick = onDelete) { Text("DELETE", color = Pink) }
+            }
+            Text("CAPTION STYLE", color = Mint, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                listOf("WHITE" to -1, "YELLOW" to 0xFFFFD54F.toInt(), "CYAN" to 0xFF22E6FF.toInt(), "PINK" to 0xFFFF3EA5.toInt()).forEach { (label, colorValue) ->
+                    TextButton(onClick = { onStyleChange(caption.copy(textColorArgb = colorValue)) }) { Text(label, color = Color(colorValue), fontSize = 9.sp) }
+                }
+            }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                TextButton(onClick = { onStyleChange(caption.copy(backgroundColorArgb = if (caption.backgroundColorArgb == 0) 0xB3000000.toInt() else 0)) }) { Text(if (caption.backgroundColorArgb == 0) "BACKGROUND ON" else "BACKGROUND OFF", fontSize = 9.sp) }
+                TextButton(onClick = { onStyleChange(caption.copy(fontSizeSp = (caption.fontSizeSp - 2f).coerceIn(10f, 48f))) }) { Text("A−") }
+                Text("SIZE " + caption.fontSizeSp.toInt() + "sp", color = Color(0xFF9AA4B8), fontSize = 9.sp)
+                TextButton(onClick = { onStyleChange(caption.copy(fontSizeSp = (caption.fontSizeSp + 2f).coerceIn(10f, 48f))) }) { Text("A+") }
             }
             Text("KARAOKE WORD TIMINGS", color = Mint, fontSize = 10.sp, fontWeight = FontWeight.Bold)
             caption.wordTimings.forEachIndexed { index, timing ->

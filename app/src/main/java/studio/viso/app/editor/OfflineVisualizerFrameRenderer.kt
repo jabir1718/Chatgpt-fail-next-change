@@ -200,39 +200,45 @@ class OfflineVisualizerFrameRenderer {
 
     private fun drawCaptions(canvas: Canvas, captions: List<CaptionSegment>, clipLocalTimeMs: Long, width: Int, height: Int) {
         if (captions.isEmpty()) return
-        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.WHITE
-            textAlign = Paint.Align.LEFT
-            textSize = height * 0.035f
-            typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.BOLD)
-            setShadowLayer(height * 0.006f, 0f, height * 0.002f, Color.BLACK)
-        }
-        val activePaint = Paint(paint).apply { color = Color.rgb(8, 10, 18); clearShadowLayer() }
-        val highlightPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(52, 216, 197) }
-        val lineHeight = paint.textSize * 1.25f
-        val startY = height * 0.84f - (captions.size - 1) * lineHeight * 0.5f
+        val lineHeights = captions.map { height * 0.035f * (it.fontSizeSp.coerceIn(10f, 48f) / 16f) * 1.25f }
+        val totalHeight = lineHeights.sum()
+        var baseline = height * 0.84f - totalHeight * 0.5f
         captions.forEachIndexed { index, caption ->
-            val baseline = startY + index * lineHeight
+            val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = caption.textColorArgb
+                textAlign = Paint.Align.LEFT
+                textSize = height * 0.035f * (caption.fontSizeSp.coerceIn(10f, 48f) / 16f)
+                typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.BOLD)
+                setShadowLayer(height * 0.006f, 0f, height * 0.002f, Color.BLACK)
+            }
+            val activePaint = Paint(paint).apply { color = Color.rgb(8, 10, 18); clearShadowLayer() }
+            val highlightPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(52, 216, 197) }
+            val textWidth = paint.measureText(caption.text)
+            val x = (width - textWidth) * 0.5f
+            if (caption.backgroundColorArgb != 0) {
+                val padX = paint.textSize * 0.38f
+                val padY = paint.textSize * 0.24f
+                val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = caption.backgroundColorArgb }
+                canvas.drawRoundRect(RectF(x - padX, baseline - paint.textSize - padY, x + textWidth + padX, baseline + padY), paint.textSize * 0.2f, paint.textSize * 0.2f, bgPaint)
+            }
             val activeIndex = caption.wordTimings.indexOfFirst { clipLocalTimeMs >= it.startMs && clipLocalTimeMs < it.endMs }
             val activeWord = caption.wordTimings.getOrNull(activeIndex)
             val wordStart = activeWord?.let { caption.text.indexOf(it.word) } ?: -1
             if (activeWord == null || wordStart < 0) {
-                canvas.drawText(caption.text, (width - paint.measureText(caption.text)) * 0.5f, baseline, paint)
+                canvas.drawText(caption.text, x, baseline, paint)
             } else {
                 val before = caption.text.substring(0, wordStart)
                 val after = caption.text.substring(wordStart + activeWord.word.length)
-                val totalWidth = paint.measureText(caption.text)
-                var x = (width - totalWidth) * 0.5f
+                var wordX = x + paint.measureText(before)
                 canvas.drawText(before, x, baseline, paint)
-                x += paint.measureText(before)
                 val wordWidth = paint.measureText(activeWord.word)
-                val padX = paint.textSize * 0.16f
-                val rect = RectF(x - padX, baseline - paint.textSize * 0.88f, x + wordWidth + padX, baseline + paint.textSize * 0.18f)
+                val pad = paint.textSize * 0.16f
+                val rect = RectF(wordX - pad, baseline - paint.textSize * 0.88f, wordX + wordWidth + pad, baseline + paint.textSize * 0.18f)
                 canvas.drawRoundRect(rect, paint.textSize * 0.18f, paint.textSize * 0.18f, highlightPaint)
-                canvas.drawText(activeWord.word, x, baseline, activePaint)
-                x += wordWidth
-                canvas.drawText(after, x, baseline, paint)
+                canvas.drawText(activeWord.word, wordX, baseline, activePaint)
+                wordX += wordWidth
+                canvas.drawText(after, wordX, baseline, paint)
             }
+            baseline += lineHeights[index]
         }
-    }
-}
+    }}

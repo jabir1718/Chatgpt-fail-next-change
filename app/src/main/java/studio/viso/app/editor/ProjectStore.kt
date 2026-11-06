@@ -161,6 +161,7 @@ class ProjectStore(context: Context) {
             put(JSONObject().apply {
                 put("id", caption.id); put("text", caption.text); put("startMs", caption.startMs)
                 put("endMs", caption.endMs); put("languageTag", caption.languageTag ?: JSONObject.NULL)
+                put("textColorArgb", caption.textColorArgb); put("backgroundColorArgb", caption.backgroundColorArgb); put("fontSizeSp", caption.fontSizeSp.toDouble())
                 put("wordTimings", JSONArray().apply { caption.wordTimings.forEach { word -> put(JSONObject().apply { put("word", word.word); put("startMs", word.startMs); put("endMs", word.endMs) }) } })
             })
         } })
@@ -244,7 +245,10 @@ class ProjectStore(context: Context) {
                     id = caption.getString("id"), text = caption.getString("text"),
                     startMs = caption.getLong("startMs"), endMs = caption.getLong("endMs"),
                     languageTag = caption.stringOrNull("languageTag"),
-                    wordTimings = (caption.optJSONArray("wordTimings") ?: JSONArray()).mapObjects { word -> CaptionWordTiming(word.getString("word"), word.getLong("startMs"), word.getLong("endMs")) }
+                    wordTimings = (caption.optJSONArray("wordTimings") ?: JSONArray()).mapObjects { word -> CaptionWordTiming(word.getString("word"), word.getLong("startMs"), word.getLong("endMs")) },
+                    textColorArgb = caption.optInt("textColorArgb", -1),
+                    backgroundColorArgb = caption.optInt("backgroundColorArgb", 0xB3000000.toInt()),
+                    fontSizeSp = caption.optDouble("fontSizeSp", 16.0).toFloat().coerceIn(10f, 48f)
                 )
             }
         )

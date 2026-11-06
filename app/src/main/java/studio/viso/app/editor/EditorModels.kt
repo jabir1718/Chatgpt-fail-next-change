@@ -56,6 +56,7 @@ data class CaptionSegment(
         require(startMs >= 0L) { "Caption start must not be negative" }
         require(endMs > startMs) { "Caption end must be after start" }
         require(wordTimings.all { it.startMs >= startMs && it.endMs <= endMs }) { "Word timings must stay inside caption range" }
+        require(fontSizeSp.isFinite() && fontSizeSp in 10f..48f) { "Caption font size must be between 10 and 48sp" }
     }
 }
 
