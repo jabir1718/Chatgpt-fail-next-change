@@ -47,7 +47,7 @@ import com.creatorstudio.app.editor.OfflineWhisperTranscriber
 import com.creatorstudio.app.editor.alignTranscriptionChunks
 import com.creatorstudio.app.editor.MediaAsset
 import com.creatorstudio.app.editor.TimelineClip
-import studio.viso.app.editor.MediaCodecPcmDecoder
+import com.creatorstudio.app.editor.MediaCodecPcmDecoder
 import android.content.Intent
 import android.os.Bundle
 import android.speech.RecognitionListener
@@ -1370,7 +1370,7 @@ private fun LyricsCaptionsPage(
             }
             if(selectedClip.captions.isEmpty()) Text("No captions on this clip yet.", color=Color(0xFF9AA4B8), fontSize=11.sp)
         }
-        Text("Imported audio/video transcription is not connected yet. Voice typing above captures live microphone speech only; it does not transcribe the selected media.", color = Color(0xFFFFC45C), fontSize = 10.sp)
+        Text("Imported-media transcription above creates editable 25-second draft blocks on-device. Microphone voice typing is separate; word-synced karaoke and Roman Urdu transliteration are still pending.", color = Color(0xFFFFC45C), fontSize = 10.sp)
     }
 }
 
