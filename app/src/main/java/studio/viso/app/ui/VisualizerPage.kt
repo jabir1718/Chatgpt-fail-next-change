@@ -176,7 +176,7 @@ fun VisualizerPage(
             }
         }
         Text(
-            "Background and foreground image choices are saved in this project. Foreground PNG reacts to detected beats. Android audio permission is used to read live playback levels; this preview does not save or upload audio. 3D Orb uses an OpenGL ES 2.0 live-preview renderer with a 2D Spectrum fallback on unsupported devices; offline MP4 remains on established 2D modes until GPU parity is implemented.",
+            "Background and foreground image choices are saved in this project. Foreground PNG reacts to detected beats. Android audio permission is used to read live playback levels; this preview does not save or upload audio. 3D Orb uses OpenGL ES 2.0 in live preview. Offline MP4 now renders a deterministic shaded orb from the same per-frame FFT and beat snapshots using the software Canvas renderer; its appearance is designed to match the live style, but is not pixel-identical to the GPU shader.",
             color = Color(0xFF7F8BA2), fontSize = 9.sp, modifier = Modifier.padding(top = 8.dp)
         )
     }

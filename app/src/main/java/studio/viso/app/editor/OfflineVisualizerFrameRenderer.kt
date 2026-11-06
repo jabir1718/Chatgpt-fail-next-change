@@ -6,6 +6,8 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
+import android.graphics.RadialGradient
+import android.graphics.Shader
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.min
@@ -130,6 +132,7 @@ class OfflineVisualizerFrameRenderer {
         val secondary = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(155, 123, 255); style = Paint.Style.STROKE; strokeWidth = minDimension * 0.004f }
 
         when (mode) {
+            "3D Orb" -> drawOfflineOrb(canvas, frame, centerX, centerY, minDimension)
             "Spectrum" -> {
                 val count = bands.size
                 val gap = width * 0.004f
@@ -196,6 +199,98 @@ class OfflineVisualizerFrameRenderer {
                 }
             }
         }
+    }
+
+    /**
+     * Deterministic software-rendered shaded orb for offline frames. It uses the
+     * same 32-band/beat snapshot as live preview, without requiring a GL surface
+     * or a device-specific GPU context inside the export worker.
+     */
+    private fun drawOfflineOrb(
+        canvas: Canvas,
+        frame: OfflineVisualizerFrameData,
+        centerX: Float,
+        centerY: Float,
+        minDimension: Float
+    ) {
+        val geometry = OfflineOrbFrameMath.geometry(frame, minDimension.toInt(), minDimension.toInt())
+        val radius = geometry.radiusPx
+        val pulse = geometry.beatPulse
+        val shadow = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(72, 0, 0, 0) }
+        canvas.drawOval(
+            RectF(centerX - radius * 0.78f, centerY + radius * 0.78f,
+                centerX + radius * 0.78f, centerY + radius * 1.02f),
+            shadow
+        )
+
+        val halo = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb((34 + pulse * 42f).toInt(), 37, 218, 208) }
+        canvas.drawCircle(centerX, centerY, radius * 1.72f, halo)
+        val orbit = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.argb(115, 115, 151, 255)
+            style = Paint.Style.STROKE
+            strokeWidth = minDimension * 0.0035f
+        }
+        canvas.drawCircle(centerX, centerY, radius * 1.43f, orbit)
+
+        val bands = frame.spectrumBands
+        bands.forEachIndexed { index, raw ->
+            val level = raw.takeIf { it.isFinite() }?.coerceIn(0f, 1f) ?: 0f
+            val angle = (2.0 * PI * index / bands.size.coerceAtLeast(1) + geometry.rotationRadians).toFloat()
+            val inner = radius * 1.22f
+            val outer = inner + minDimension * (0.018f + level * 0.092f) * (1f + pulse * 0.2f)
+            val startX = centerX + cos(angle) * inner
+            val startY = centerY + sin(angle) * inner
+            val endX = centerX + cos(angle) * outer
+            val endY = centerY + sin(angle) * outer
+            val tint = if (index % 4 == 0) Color.rgb(155, 123, 255) else Color.rgb(52, 216, 205)
+            val glow = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.argb((55 + level * 95f).toInt().coerceIn(0, 150), Color.red(tint), Color.green(tint), Color.blue(tint))
+                strokeWidth = minDimension * 0.012f
+                strokeCap = Paint.Cap.ROUND
+            }
+            val core = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.argb((120 + level * 135f).toInt().coerceIn(0, 255), Color.red(tint), Color.green(tint), Color.blue(tint))
+                strokeWidth = minDimension * 0.0045f
+                strokeCap = Paint.Cap.ROUND
+            }
+            canvas.drawLine(startX, startY, endX, endY, glow)
+            canvas.drawLine(startX, startY, endX, endY, core)
+        }
+
+        val spherePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            shader = RadialGradient(
+                centerX - radius * 0.34f,
+                centerY - radius * 0.40f,
+                radius * 1.48f,
+                intArrayOf(
+                    Color.rgb(232, 255, 255),
+                    Color.rgb(91, 231, 218),
+                    Color.rgb(27, 112, 164),
+                    Color.rgb(5, 11, 34)
+                ),
+                floatArrayOf(0f, 0.22f, 0.62f, 1f),
+                Shader.TileMode.CLAMP
+            )
+        }
+        canvas.drawCircle(centerX, centerY, radius, spherePaint)
+
+        val highlightPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            shader = RadialGradient(
+                centerX - radius * 0.34f,
+                centerY - radius * 0.40f,
+                radius * 0.52f,
+                intArrayOf(Color.argb(150, 255, 255, 255), Color.argb(0, 255, 255, 255)),
+                null,
+                Shader.TileMode.CLAMP
+            )
+        }
+        canvas.drawCircle(centerX, centerY, radius, highlightPaint)
+        val rim = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.argb(170, 117, 245, 239)
+            style = Paint.Style.STROKE
+            strokeWidth = minDimension * 0.004f
+        }
+        canvas.drawCircle(centerX, centerY, radius, rim)
     }
 
     private fun drawCaptions(canvas: Canvas, captions: List<CaptionSegment>, clipLocalTimeMs: Long, width: Int, height: Int) {
