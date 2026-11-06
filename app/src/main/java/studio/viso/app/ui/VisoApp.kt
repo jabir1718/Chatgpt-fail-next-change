@@ -1363,7 +1363,7 @@ private fun LyricsCaptionsPage(
             }
             if(selectedClip.captions.isEmpty()) Text("No captions on this clip yet.", color=Color(0xFF9AA4B8), fontSize=11.sp)
         }
-        Text("Imported-audio auto-transcription and microphone voice typing are not connected in this build. This is manual timed-caption editing, not audio transcription.", color=Color(0xFFFFC45C), fontSize=10.sp)
+        Text("Imported audio/video transcription is not connected yet. Voice typing above captures live microphone speech only; it does not transcribe the selected media.", color = Color(0xFFFFC45C), fontSize = 10.sp)
     }
 }
 
