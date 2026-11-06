@@ -49,12 +49,20 @@ object OfflineWhisperTranscriber {
             while (processedFrames < totalFrames) {
                 if (shouldCancel()) throw CancellationException("Transcription cancelled")
                 val frameCount = min(windowFrames, totalFrames - processedFrames).toInt()
-                val samples = FloatArray(frameCount) { index ->
-                    source.sampleAt(
-                        framePosition = (startFrame + processedFrames + index).toDouble(),
-                        outputChannel = 0,
-                        outputChannelCount = 1
-                    )
+                val windowStartFrame = startFrame + processedFrames
+                val samples = if (source is PcmFileAudioSource) {
+                    source.readMonoSamples(windowStartFrame, frameCount)
+                } else {
+                    FloatArray(frameCount) { index ->
+                        source.sampleAt(
+                            framePosition = (windowStartFrame + index).toDouble(),
+                            outputChannel = 0,
+                            outputChannelCount = 1
+                        )
+                    }
+                }
+                require(samples.size == frameCount) {
+                    "The decoded audio ended before the selected transcription range."
                 }
                 val stream = recognizer.createStream()
                 try {

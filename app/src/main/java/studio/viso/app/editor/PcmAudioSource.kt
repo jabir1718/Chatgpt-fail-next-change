@@ -95,6 +95,30 @@ class PcmFileAudioSource(
         return a + (b - a) * fraction
     }
 
+    /**
+     * Reads a contiguous source range into mono Float32 samples with one disk read.
+     * Speech recognition uses this instead of calling sampleAt once per frame,
+     * avoiding millions of synchronized random-access/cache lookups on long audio.
+     */
+    @Synchronized
+    fun readMonoSamples(startFrame: Long, requestedFrames: Int): FloatArray {
+        require(startFrame >= 0L) { "Start frame cannot be negative" }
+        require(requestedFrames >= 0) { "Requested frame count cannot be negative" }
+        if (requestedFrames == 0 || startFrame >= frameCount) return FloatArray(0)
+        val frames = min(requestedFrames.toLong(), frameCount - startFrame).toInt()
+        val byteCount = Math.multiplyExact(Math.multiplyExact(frames, channelCount), 4)
+        val bytes = ByteArray(byteCount)
+        randomAccess.seek(startFrame * channelCount * 4L)
+        randomAccess.readFully(bytes)
+        val interleaved = FloatArray(frames * channelCount)
+        ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
+            .asFloatBuffer().get(interleaved)
+        if (channelCount == 1) return interleaved
+        return FloatArray(frames) { index ->
+            (interleaved[index * 2] + interleaved[index * 2 + 1]) * 0.5f
+        }
+    }
+
     private fun channelSample(frame: Long, outputChannel: Int, outputChannelCount: Int): Float {
         ensureCached(frame)
         val base = ((frame - cacheStart).toInt()) * channelCount

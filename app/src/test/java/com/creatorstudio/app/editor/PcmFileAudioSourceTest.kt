@@ -30,6 +30,28 @@ class PcmFileAudioSourceTest {
     }
 
     @Test
+    fun readsContiguousMonoSamplesEfficientlyFromStereoFrames() {
+        val file = File.createTempFile("creator-pcm-range", ".f32")
+        try {
+            val samples = floatArrayOf(0.1f, 0.3f, -0.4f, 0.2f, 0.8f, 0.6f)
+            val bytes = ByteBuffer.allocate(samples.size * 4).order(ByteOrder.LITTLE_ENDIAN)
+            samples.forEach(bytes::putFloat)
+            file.writeBytes(bytes.array())
+
+            PcmFileAudioSource(file, sampleRate = 16_000, channelCount = 2).use { source ->
+                val mono = source.readMonoSamples(startFrame = 1L, requestedFrames = 5)
+                assertEquals(2, mono.size)
+                assertEquals(-0.1f, mono[0], 0.0001f)
+                assertEquals(0.7f, mono[1], 0.0001f)
+                assertTrue(source.readMonoSamples(99L, 4).isEmpty())
+                assertTrue(source.readMonoSamples(0L, 0).isEmpty())
+            }
+        } finally {
+            file.delete()
+        }
+    }
+
+    @Test
     fun validatesPcmFileFrameAlignment() {
         val file = File.createTempFile("creator-pcm-invalid", ".f32")
         try {
