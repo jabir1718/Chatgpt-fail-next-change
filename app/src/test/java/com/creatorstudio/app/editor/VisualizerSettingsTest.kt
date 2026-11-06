@@ -6,13 +6,13 @@ import org.junit.Test
 class VisualizerSettingsTest {
     @Test
     fun acceptsAllImplementedVisualizerModes() {
-        listOf("Spectrum", "Radial", "Waveform", "Rings", "Particles").forEach { mode ->
+        listOf("Spectrum", "Radial", "Waveform", "Rings", "Particles", "3D Orb").forEach { mode ->
             assertEquals(mode, VisualizerSettings(mode = mode).mode)
         }
     }
 
     @Test(expected = IllegalArgumentException::class)
     fun rejectsUnimplementedVisualizerMode() {
-        VisualizerSettings(mode = "3D")
+        VisualizerSettings(mode = "unsupported")
     }
 }

@@ -80,4 +80,9 @@ Keep future expansion at the END of the roadmap: cloud sync, templates/presets m
 
 ## Latest continuation — export sharing
 - Run #255 completed successfully: caption bold/italic style persistence and preview/offline renderer mapping passed configured unit tests, Debug APK build and artifact upload.
-- Next source change adds Android share-sheet fallback for the last successfully saved MP4/M4A using its SAF URI, MIME type, ClipData and read grant. Share action is exposed only after successful export. CI/device verification pending.
+- Next source change adds Android share-sheet fallback for the last successfully saved MP4/M4A using its SAF URI, MIME type, ClipData and read grant. Share action is exposed only after successful export. Run #256 CI passed; recipient-app behavior remains device-unverified.
+
+
+## Next implementation slice — GPU visualizer
+- Run #256 completed successfully: all workflow steps passed, including tests, Debug APK build and artifact upload.
+- Begin a true live OpenGL ES 2.0 3D Orb preview with capability fallback and regression tests. Track offline render parity and physical-device performance separately; do not claim them complete from CI alone.

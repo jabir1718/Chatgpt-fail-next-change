@@ -91,7 +91,7 @@ Last updated: 2026-11-06
 - M0: CI foundation/debug artifact pipeline complete; device install/launch acceptance open.
 - M1: Timeline/project foundation and synchronized multi-video preview/canvas mode controls are source-implemented and CI-verified through Run #208; device acceptance open.
 - M2: Partial. Waveform, timeline preview scheduling, native live EQ/bass/compressor, disk-backed PCM decode, offline mix and AAC-LC M4A export are source-implemented and CI-verified; device verification and preview/export parity remain open.
-- M3: Partial. Live/offline audio-reactive visualizers, live timeline image/video overlays, multi-session beat analysis, independent live/offline per-layer beat response, still-image/source-video frame decoding, Canvas compositing and H.264/AAC MP4 export are source-implemented and CI-verified through Run #218. Device acceptance, accurate post-mixer analysis, preview/render parity and true 3D/GPU remain open.
+- M3: Partial. Live/offline audio-reactive visualizers, live timeline image/video overlays, multi-session beat analysis, independent live/offline per-layer beat response, still-image/source-video frame decoding, Canvas compositing and H.264/AAC MP4 export are source-implemented and CI-verified through Run #218. First live OpenGL ES 2.0 3D Orb slice is now source-implemented; CI/device verification and offline 3D parity remain open.
 - M4: Imported-media Whisper transcription, script output choice, manual timed captions, microphone voice typing, token-timed karaoke preview/offline MP4, editable word timing and SRT/VTT exchange are source-implemented and CI-verified through Run #244. Richer styling and all real-device acceptance remain open; quick emoji insertion passed Run #246.
 - M5–M8: Not complete. See roadmap.
 
@@ -133,4 +133,10 @@ Latest source verification: Run #218 successfully built and uploaded the APK for
 
 ## Export sharing update (2026-11-06)
 - Run #255 verified caption bold/italic controls: configured unit tests, Debug APK build and artifact upload all passed. Device font rendering remains unverified.
-- Added Android ACTION_SEND share-sheet wiring for the last successfully saved MP4 or M4A document URI, including MIME type, ClipData and temporary read permission grant. The export screen only enables sharing after a successful save. CI verification pending; recipient-app behavior needs device testing.
+- Added Android ACTION_SEND share-sheet wiring for the last successfully saved MP4 or M4A document URI, including MIME type, ClipData and temporary read permission grant. The export screen only enables sharing after a successful save. Run #256, workflow ID `42202755024`, completed successfully with all 12 steps, including configured tests, Debug APK build and artifact upload. Recipient-app behavior still needs device testing.
+
+
+## True 3D visualizer — first implementation slice
+- Added a persisted `3D Orb` visualizer mode selection and a live OpenGL ES 2.0 preview renderer with a ray-marched lit sphere, frequency-band deformation, beat pulse and animated background.
+- Unsupported GLES 2.0 devices must use the existing 2D Spectrum fallback. Offline MP4 rendering intentionally remains on established 2D modes until deterministic GPU/offline parity is implemented and tested.
+- CI and physical-device performance verification pending.

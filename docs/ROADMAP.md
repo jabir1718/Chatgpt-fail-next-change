@@ -39,7 +39,7 @@ A polished, original Android creator studio for TikTok, YouTube Shorts, Instagra
 ## M3 — Visualizer Studio (signature priority)
 - [x] Live FFT/spectrum, waveform, onset/beat pulse and rough BPM analysis.
 - [x] Spectrum, radial, waveform, rings and particle previews (rings/particles are 2D Canvas).
-- [ ] True 3D/GPU renderer, quality settings and fallback.
+- [ ] Complete true 3D/GPU renderer, quality settings and fallback. (First live OpenGL ES 2.0 3D Orb slice implemented; offline parity and device performance remain open.)
 - [x] Offline audio analysis produces per-frame RMS/FFT/waveform/beat snapshots from timeline PCM (Run #157 CI build/tests/artifact verified).
 - [x] Android Bitmap/Canvas renderer for Spectrum, Radial, Waveform, Rings and Particles with supplied image/video-frame layers and captions (Run #159 CI build/artifact verified).
 - [x] Bounded H.264 video-only encoder using flexible YUV input and deterministic frame timestamps (Run #161 CI build/tests/artifact verified).
@@ -69,7 +69,7 @@ A polished, original Android creator studio for TikTok, YouTube Shorts, Instagra
 - [x] Per-caption text color, background visibility and font-size controls shared by preview/offline render (Run #248 CI build/tests/artifact verified; device preview/export parity open).
 - [x] Per-caption left/center/right alignment shared by live preview and offline MP4 renderer (Runs #249–#250 CI verified).
 - [x] Per-caption Sans/Serif/Monospace/Cursive font family, persisted with legacy Sans fallback and mapped in live preview/offline MP4 (Run #254 CI verified).
-- [ ] Per-caption bold/italic typography toggles persisted and matched in live preview/offline MP4 (current implementation; CI verification pending).
+- [x] Per-caption bold/italic typography toggles persisted and matched in live preview/offline MP4 (Run #255 CI verified; device font rendering remains open).
 - [ ] Device acceptance of transcription, script output, timing and export.
 **Gate:** Transcribe, correct, select script, edit word timing, exchange SRT/VTT and retain sync through preview/export. CI verifies source/build only; real model and language acceptance requires Android device testing.
 
@@ -89,7 +89,7 @@ A polished, original Android creator studio for TikTok, YouTube Shorts, Instagra
 - [x] Visualizer export canvas presets (9:16, 1:1, 4:5, 16:9), 24/30/60 FPS and 4/8/12/20 Mbps H.264 bitrate; project-persisted settings (Runs #183 and #185 CI-verified, including regression tests). Codec remains H.264 + AAC and is not user-selectable.
 - [x] Export progress/cancel and conservative storage preflight for audio/video visualizer export (Run #173 latest source build; retry/recovery remains open).
 - [x] Failed visualizer/audio export retry action (Run #184 CI-verified; restart only, no partial resume).
-- [ ] Android share-sheet fallback for saved MP4/M4A exports (current implementation; CI verification pending); direct social upload only through permitted official APIs/OAuth.
+- [x] Android share-sheet fallback for last saved MP4/M4A exports using ACTION_SEND, ClipData and temporary read permission (Run #256 CI verified; recipient-app behavior remains device-unverified); direct social upload only through permitted official APIs/OAuth.
 **Gate:** Valid portrait/landscape files, share locally, official integrations only.
 
 ## M8 — Reliability/release
@@ -116,4 +116,4 @@ Cloud sync, templates marketplace, AI beat cuts/auto-edit, advanced tracking/ref
 
 ## Caption typography
 - [x] Per-caption font family selector (Sans, Serif, Monospace, Cursive) with project persistence and live/offline renderer mapping; Run #254 CI verified.
-- [ ] Per-caption bold and italic toggles with project persistence and live/offline renderer parity; implementation now queued for CI verification.
+- [x] Per-caption bold and italic toggles with project persistence and live/offline renderer parity; Run #255 CI verified.

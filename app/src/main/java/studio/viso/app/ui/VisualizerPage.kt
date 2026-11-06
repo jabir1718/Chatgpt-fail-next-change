@@ -74,7 +74,7 @@ fun VisualizerPage(
         Text("Live FFT, waveform and beat response from the selected audio output", color = Color(0xFF9AA4B8), fontSize = 11.sp)
         Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            listOf("Spectrum", "Radial", "Waveform", "Rings", "Particles").forEach { item ->
+            listOf("Spectrum", "Radial", "Waveform", "Rings", "Particles", "3D Orb").forEach { item ->
                 FilterChip(
                     selected = settings.mode == item,
                     onClick = { onSettingsChange(settings.copy(mode = item)) },
@@ -119,6 +119,7 @@ fun VisualizerPage(
                 "Waveform" -> WaveformDisplay(waveform)
                 "Rings" -> RingsVisualizer(spectrum, beatPulse)
                 "Particles" -> ParticleVisualizer(spectrum, beatPulse)
+                "3D Orb" -> GpuOrbVisualizer(spectrum, beatPulse, Modifier.fillMaxSize())
                 else -> SpectrumDisplay(spectrum)
             }
             if (foregroundBitmap != null) {
@@ -175,7 +176,7 @@ fun VisualizerPage(
             }
         }
         Text(
-            "Background and foreground image choices are saved in this project. Foreground PNG reacts to detected beats. Android audio permission is used to read live playback levels; this preview does not save or upload audio. Offline rendering and GPU/3D modes are separate milestones.",
+            "Background and foreground image choices are saved in this project. Foreground PNG reacts to detected beats. Android audio permission is used to read live playback levels; this preview does not save or upload audio. 3D Orb uses an OpenGL ES 2.0 live-preview renderer with a 2D Spectrum fallback on unsupported devices; offline MP4 remains on established 2D modes until GPU parity is implemented.",
             color = Color(0xFF7F8BA2), fontSize = 9.sp, modifier = Modifier.padding(top = 8.dp)
         )
     }
