@@ -45,6 +45,7 @@ import com.creatorstudio.app.editor.OfflineVisualizerVideoExportPipeline
 import com.creatorstudio.app.editor.OfflineWhisperModelStore
 import com.creatorstudio.app.editor.OfflineWhisperTranscriber
 import com.creatorstudio.app.editor.alignTranscriptionChunks
+import com.creatorstudio.app.editor.transliterateUrduToRoman
 import com.creatorstudio.app.editor.MediaAsset
 import com.creatorstudio.app.editor.TimelineClip
 import com.creatorstudio.app.editor.MediaCodecPcmDecoder
