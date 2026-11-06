@@ -120,3 +120,7 @@ Latest source verification: Run #218 successfully built and uploaded the APK for
 - Run #231 optimized PCM window reads with contiguous disk reads and stereo-to-mono conversion. Run #230 verified the initial decode/recognize/caption insertion path in CI.
 - Latest Lyrics milestones: SRT/WebVTT import/export UI passed Run #244; quick emoji insertion and Unicode subtitle round-trip passed Run #246; per-caption color/background/font-size styling passed Run #248. Per-caption alignment is the next source change and awaits CI.
 - Model download size/network behavior, native model load, actual transcription accuracy/language detection, Urdu/Roman Urdu script behavior, speed/memory and caption sync are not device-verified. Roman Urdu transliteration and karaoke highlighting are source-implemented and CI-verified; device language accuracy and timing parity remain pending.
+
+
+## Latest caption typography source change
+- Added per-caption Sans/Serif/Monospace/Cursive selection; old projects default to Sans. The selection is wired to live Compose preview and offline MP4 text rendering and is persisted. Latest CI result pending; device typography parity remains unverified.

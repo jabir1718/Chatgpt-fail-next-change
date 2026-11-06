@@ -11,6 +11,7 @@ class CaptionStyleTest {
         assertEquals(-1, caption.textColorArgb)
         assertEquals(0xB3000000.toInt(), caption.backgroundColorArgb)
         assertEquals(16f, caption.fontSizeSp)
+        assertEquals(CaptionFontFamily.SANS, caption.fontFamily)
         assertEquals(CaptionAlignment.CENTER, caption.alignment)
         assertEquals(84f, caption.verticalPositionPercent)
         assertEquals(0xFF000000.toInt(), caption.outlineColorArgb)
@@ -22,13 +23,14 @@ class CaptionStyleTest {
     fun styleCanBeChangedWithoutLosingCaptionTimingOrKaraokeWords() {
         val word = CaptionWordTiming("Hello", 100L, 400L)
         val caption = CaptionSegment(text = "Hello world", startMs = 0L, endMs = 1_000L, wordTimings = listOf(word))
-        val styled = caption.copy(textColorArgb = 0xFFFFD54F.toInt(), backgroundColorArgb = 0, fontSizeSp = 24f)
+        val styled = caption.copy(textColorArgb = 0xFFFFD54F.toInt(), backgroundColorArgb = 0, fontSizeSp = 24f, fontFamily = CaptionFontFamily.SERIF)
         assertEquals(caption.startMs, styled.startMs)
         assertEquals(caption.endMs, styled.endMs)
         assertEquals(caption.wordTimings, styled.wordTimings)
         assertEquals(0xFFFFD54F.toInt(), styled.textColorArgb)
         assertEquals(0, styled.backgroundColorArgb)
         assertEquals(24f, styled.fontSizeSp)
+        assertEquals(CaptionFontFamily.SERIF, styled.fontFamily)
         assertEquals(CaptionAlignment.CENTER, styled.alignment)
     }
 

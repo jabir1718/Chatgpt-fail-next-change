@@ -110,3 +110,7 @@ Cloud sync, templates marketplace, AI beat cuts/auto-edit, advanced tracking/ref
 8. Preserve working behavior and inspect full files/callers before replacement.
 9. Read state, roadmap and exact sources before each session.
 10. Update roadmap/state with every material change.
+
+
+## Caption typography
+- [x] Per-caption font family selector (Sans, Serif, Monospace, Cursive) with project persistence and live/offline renderer mapping; CI verification pending for the latest source change.

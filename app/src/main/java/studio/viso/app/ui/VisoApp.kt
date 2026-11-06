@@ -1019,10 +1019,20 @@ private fun TimelinePreviewLayerContent(layer: TimelineVideoPreviewLayer, aspect
                                 androidx.compose.ui.geometry.Offset(-0.7f, -0.7f), androidx.compose.ui.geometry.Offset(0.7f, -0.7f),
                                 androidx.compose.ui.geometry.Offset(-0.7f, 0.7f), androidx.compose.ui.geometry.Offset(0.7f, 0.7f)
                             ).forEach { direction ->
-                                Text(text = captionText, color = Color(caption.outlineColorArgb), fontSize = caption.fontSizeSp.coerceIn(10f, 48f).sp, fontWeight = FontWeight.Bold, textAlign = when (caption.alignment) { CaptionAlignment.LEFT -> TextAlign.Start; CaptionAlignment.CENTER -> TextAlign.Center; CaptionAlignment.RIGHT -> TextAlign.End }, modifier = Modifier.offset(x = outlineOffset * direction.x, y = outlineOffset * direction.y))
+                                Text(text = captionText, color = Color(caption.outlineColorArgb), fontSize = caption.fontSizeSp.coerceIn(10f, 48f).sp, fontFamily = when (caption.fontFamily) {
+                                    CaptionFontFamily.SANS -> androidx.compose.ui.text.font.FontFamily.SansSerif
+                                    CaptionFontFamily.SERIF -> androidx.compose.ui.text.font.FontFamily.Serif
+                                    CaptionFontFamily.MONOSPACE -> androidx.compose.ui.text.font.FontFamily.Monospace
+                                    CaptionFontFamily.CURSIVE -> androidx.compose.ui.text.font.FontFamily.Cursive
+                                }, fontWeight = FontWeight.Bold, textAlign = when (caption.alignment) { CaptionAlignment.LEFT -> TextAlign.Start; CaptionAlignment.CENTER -> TextAlign.Center; CaptionAlignment.RIGHT -> TextAlign.End }, modifier = Modifier.offset(x = outlineOffset * direction.x, y = outlineOffset * direction.y))
                             }
                         }
-                        Text(text = captionText, color = Color(caption.textColorArgb), fontSize = caption.fontSizeSp.coerceIn(10f, 48f).sp, fontWeight = FontWeight.Bold, textAlign = when (caption.alignment) { CaptionAlignment.LEFT -> TextAlign.Start; CaptionAlignment.CENTER -> TextAlign.Center; CaptionAlignment.RIGHT -> TextAlign.End }, style = androidx.compose.ui.text.TextStyle(shadow = if (caption.shadowStrength > 0f) androidx.compose.ui.graphics.Shadow(color = Color.Black.copy(alpha = caption.shadowStrength.coerceIn(0f, 1f)), offset = androidx.compose.ui.geometry.Offset(0f, 2f), blurRadius = caption.shadowStrength * 8f) else null))
+                        Text(text = captionText, color = Color(caption.textColorArgb), fontSize = caption.fontSizeSp.coerceIn(10f, 48f).sp, fontFamily = when (caption.fontFamily) {
+                                    CaptionFontFamily.SANS -> androidx.compose.ui.text.font.FontFamily.SansSerif
+                                    CaptionFontFamily.SERIF -> androidx.compose.ui.text.font.FontFamily.Serif
+                                    CaptionFontFamily.MONOSPACE -> androidx.compose.ui.text.font.FontFamily.Monospace
+                                    CaptionFontFamily.CURSIVE -> androidx.compose.ui.text.font.FontFamily.Cursive
+                                }, fontWeight = FontWeight.Bold, textAlign = when (caption.alignment) { CaptionAlignment.LEFT -> TextAlign.Start; CaptionAlignment.CENTER -> TextAlign.Center; CaptionAlignment.RIGHT -> TextAlign.End }, style = androidx.compose.ui.text.TextStyle(shadow = if (caption.shadowStrength > 0f) androidx.compose.ui.graphics.Shadow(color = Color.Black.copy(alpha = caption.shadowStrength.coerceIn(0f, 1f)), offset = androidx.compose.ui.geometry.Offset(0f, 2f), blurRadius = caption.shadowStrength * 8f) else null))
                     }
                 }
             }
@@ -1853,6 +1863,14 @@ private fun CaptionSegmentEditor(
                 TextButton(onClick = { onStyleChange(caption.copy(fontSizeSp = (caption.fontSizeSp - 2f).coerceIn(10f, 48f))) }) { Text("A−") }
                 Text("SIZE " + caption.fontSizeSp.toInt() + "sp", color = Color(0xFF9AA4B8), fontSize = 9.sp)
                 TextButton(onClick = { onStyleChange(caption.copy(fontSizeSp = (caption.fontSizeSp + 2f).coerceIn(10f, 48f))) }) { Text("A+") }
+            }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("FONT", color = Color(0xFF9AA4B8), fontSize = 9.sp)
+                listOf(CaptionFontFamily.SANS, CaptionFontFamily.SERIF, CaptionFontFamily.MONOSPACE, CaptionFontFamily.CURSIVE).forEach { family ->
+                    TextButton(onClick = { onStyleChange(caption.copy(fontFamily = family)) }) {
+                        Text(family.name, color = if (caption.fontFamily == family) Mint else Color(0xFF9AA4B8), fontSize = 9.sp)
+                    }
+                }
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text("ALIGN", color = Color(0xFF9AA4B8), fontSize = 9.sp)

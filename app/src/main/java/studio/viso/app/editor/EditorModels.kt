@@ -6,6 +6,7 @@ enum class MediaKind { VIDEO, AUDIO, IMAGE, TEXT }
 enum class CanvasContentMode { FIT, FILL, CROP }
 enum class TrackKind { VIDEO, AUDIO, OVERLAY, CAPTION, EFFECT }
 enum class CaptionAlignment { LEFT, CENTER, RIGHT }
+enum class CaptionFontFamily { SANS, SERIF, MONOSPACE, CURSIVE }
 
 data class Transform(
     val x: Float = 0f,
@@ -55,6 +56,7 @@ data class CaptionSegment(
     val textColorArgb: Int = -1,
     val backgroundColorArgb: Int = 0xB3000000.toInt(),
     val fontSizeSp: Float = 16f,
+    val fontFamily: CaptionFontFamily = CaptionFontFamily.SANS,
     val alignment: CaptionAlignment = CaptionAlignment.CENTER,
     val verticalPositionPercent: Float = 84f,
     val outlineColorArgb: Int = 0xFF000000.toInt(),
