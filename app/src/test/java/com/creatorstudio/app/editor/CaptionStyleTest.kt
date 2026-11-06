@@ -13,6 +13,9 @@ class CaptionStyleTest {
         assertEquals(16f, caption.fontSizeSp)
         assertEquals(CaptionAlignment.CENTER, caption.alignment)
         assertEquals(84f, caption.verticalPositionPercent)
+        assertEquals(0xFF000000.toInt(), caption.outlineColorArgb)
+        assertEquals(0f, caption.outlineWidthSp)
+        assertEquals(0.65f, caption.shadowStrength)
     }
 
     @Test
@@ -37,6 +40,23 @@ class CaptionStyleTest {
         assertEquals(caption.text, aligned.text)
         assertEquals(caption.startMs, aligned.startMs)
         assertEquals(caption.endMs, aligned.endMs)
+    }
+
+    @Test
+    fun outlineAndShadowCanBeAdjustedWithoutChangingCaptionTiming() {
+        val caption = CaptionSegment(text = "Readable", startMs = 100L, endMs = 900L)
+        val styled = caption.copy(outlineColorArgb = 0xFFFF3EA5.toInt(), outlineWidthSp = 3.5f, shadowStrength = 0.2f)
+        assertEquals(caption.startMs, styled.startMs)
+        assertEquals(caption.endMs, styled.endMs)
+        assertEquals(0xFFFF3EA5.toInt(), styled.outlineColorArgb)
+        assertEquals(3.5f, styled.outlineWidthSp)
+        assertEquals(0.2f, styled.shadowStrength)
+    }
+
+    @Test
+    fun rejectsInvalidOutlineAndShadowValues() {
+        assertThrows(IllegalArgumentException::class.java) { CaptionSegment(text = "Bad", startMs = 0L, endMs = 100L, outlineWidthSp = 7f) }
+        assertThrows(IllegalArgumentException::class.java) { CaptionSegment(text = "Bad", startMs = 0L, endMs = 100L, shadowStrength = Float.NaN) }
     }
 
     @Test

@@ -161,7 +161,7 @@ class ProjectStore(context: Context) {
             put(JSONObject().apply {
                 put("id", caption.id); put("text", caption.text); put("startMs", caption.startMs)
                 put("endMs", caption.endMs); put("languageTag", caption.languageTag ?: JSONObject.NULL)
-                put("textColorArgb", caption.textColorArgb); put("backgroundColorArgb", caption.backgroundColorArgb); put("fontSizeSp", caption.fontSizeSp.toDouble()); put("alignment", caption.alignment.name); put("verticalPositionPercent", caption.verticalPositionPercent.toDouble())
+                put("textColorArgb", caption.textColorArgb); put("backgroundColorArgb", caption.backgroundColorArgb); put("fontSizeSp", caption.fontSizeSp.toDouble()); put("alignment", caption.alignment.name); put("verticalPositionPercent", caption.verticalPositionPercent.toDouble()); put("outlineColorArgb", caption.outlineColorArgb); put("outlineWidthSp", caption.outlineWidthSp.toDouble()); put("shadowStrength", caption.shadowStrength.toDouble())
                 put("wordTimings", JSONArray().apply { caption.wordTimings.forEach { word -> put(JSONObject().apply { put("word", word.word); put("startMs", word.startMs); put("endMs", word.endMs) }) } })
             })
         } })
@@ -250,7 +250,10 @@ class ProjectStore(context: Context) {
                     backgroundColorArgb = caption.optInt("backgroundColorArgb", 0xB3000000.toInt()),
                     fontSizeSp = caption.optDouble("fontSizeSp", 16.0).toFloat().coerceIn(10f, 48f),
                     alignment = runCatching { CaptionAlignment.valueOf(caption.optString("alignment", "CENTER")) }.getOrDefault(CaptionAlignment.CENTER),
-                    verticalPositionPercent = caption.optDouble("verticalPositionPercent", 84.0).toFloat().coerceIn(10f, 90f)
+                    verticalPositionPercent = caption.optDouble("verticalPositionPercent", 84.0).toFloat().coerceIn(10f, 90f),
+                    outlineColorArgb = caption.optInt("outlineColorArgb", 0xFF000000.toInt()),
+                    outlineWidthSp = caption.optDouble("outlineWidthSp", 0.0).toFloat().coerceIn(0f, 6f),
+                    shadowStrength = caption.optDouble("shadowStrength", 0.65).toFloat().coerceIn(0f, 1f)
                 )
             }
         )

@@ -56,7 +56,10 @@ data class CaptionSegment(
     val backgroundColorArgb: Int = 0xB3000000.toInt(),
     val fontSizeSp: Float = 16f,
     val alignment: CaptionAlignment = CaptionAlignment.CENTER,
-    val verticalPositionPercent: Float = 84f
+    val verticalPositionPercent: Float = 84f,
+    val outlineColorArgb: Int = 0xFF000000.toInt(),
+    val outlineWidthSp: Float = 0f,
+    val shadowStrength: Float = 0.65f
 ) {
     init {
         require(startMs >= 0L) { "Caption start must not be negative" }
@@ -64,6 +67,8 @@ data class CaptionSegment(
         require(wordTimings.all { it.startMs >= startMs && it.endMs <= endMs }) { "Word timings must stay inside caption range" }
         require(fontSizeSp.isFinite() && fontSizeSp in 10f..48f) { "Caption font size must be between 10 and 48sp" }
         require(verticalPositionPercent.isFinite() && verticalPositionPercent in 10f..90f) { "Caption vertical position must be between 10 and 90 percent" }
+        require(outlineWidthSp.isFinite() && outlineWidthSp in 0f..6f) { "Caption outline width must be between 0 and 6sp" }
+        require(shadowStrength.isFinite() && shadowStrength in 0f..1f) { "Caption shadow strength must be between 0 and 1" }
     }
 }
 

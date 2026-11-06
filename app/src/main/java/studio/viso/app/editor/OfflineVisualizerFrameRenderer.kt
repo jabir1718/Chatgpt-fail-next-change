@@ -209,7 +209,18 @@ class OfflineVisualizerFrameRenderer {
                 textAlign = Paint.Align.LEFT
                 textSize = height * 0.035f * (caption.fontSizeSp.coerceIn(10f, 48f) / 16f)
                 typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.BOLD)
-                setShadowLayer(height * 0.006f, 0f, height * 0.002f, Color.BLACK)
+                if (caption.shadowStrength > 0f) {
+                    val strength = caption.shadowStrength.coerceIn(0f, 1f)
+                    setShadowLayer(height * 0.006f * strength, 0f, height * 0.002f * strength,
+                        Color.argb((strength * 190f).toInt().coerceIn(0, 190), 0, 0, 0))
+                }
+            }
+            val outlinePaint = Paint(paint).apply {
+                color = caption.outlineColorArgb
+                style = Paint.Style.STROKE
+                strokeJoin = Paint.Join.ROUND
+                strokeWidth = height * 0.035f * (caption.outlineWidthSp.coerceIn(0f, 6f) / 16f) * 2f
+                clearShadowLayer()
             }
             val activePaint = Paint(paint).apply { color = Color.rgb(8, 10, 18); clearShadowLayer() }
             val highlightPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(52, 216, 197) }
@@ -229,6 +240,7 @@ class OfflineVisualizerFrameRenderer {
             val activeIndex = caption.wordTimings.indexOfFirst { clipLocalTimeMs >= it.startMs && clipLocalTimeMs < it.endMs }
             val activeWord = caption.wordTimings.getOrNull(activeIndex)
             val wordStart = activeWord?.let { caption.text.indexOf(it.word) } ?: -1
+            if (outlinePaint.strokeWidth > 0f) canvas.drawText(caption.text, x, baseline, outlinePaint)
             if (activeWord == null || wordStart < 0) {
                 canvas.drawText(caption.text, x, baseline, paint)
             } else {

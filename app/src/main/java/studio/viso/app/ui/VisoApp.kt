@@ -1010,7 +1010,20 @@ private fun TimelinePreviewLayerContent(layer: TimelineVideoPreviewLayer, aspect
                     if (cursor < caption.text.length) append(caption.text.substring(cursor))
                 }
                 Box(modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter).offset(y = maxHeight * (caption.verticalPositionPercent.coerceIn(10f, 90f) / 100f)).padding(horizontal = 16.dp), contentAlignment = when (caption.alignment) { CaptionAlignment.LEFT -> Alignment.CenterStart; CaptionAlignment.CENTER -> Alignment.Center; CaptionAlignment.RIGHT -> Alignment.CenterEnd }) {
-                    Text(text = captionText, color = Color(caption.textColorArgb), fontSize = caption.fontSizeSp.coerceIn(10f, 48f).sp, fontWeight = FontWeight.Bold, textAlign = when (caption.alignment) { CaptionAlignment.LEFT -> TextAlign.Start; CaptionAlignment.CENTER -> TextAlign.Center; CaptionAlignment.RIGHT -> TextAlign.End }, modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Color(caption.backgroundColorArgb)).padding(horizontal = 12.dp, vertical = 8.dp))
+                    Box(modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Color(caption.backgroundColorArgb)).padding(horizontal = 12.dp, vertical = 8.dp)) {
+                        val outlineOffset = (caption.outlineWidthSp.coerceIn(0f, 6f) * 0.5f).dp
+                        if (outlineOffset > 0.dp) {
+                            listOf(
+                                androidx.compose.ui.geometry.Offset(-1f, 0f), androidx.compose.ui.geometry.Offset(1f, 0f),
+                                androidx.compose.ui.geometry.Offset(0f, -1f), androidx.compose.ui.geometry.Offset(0f, 1f),
+                                androidx.compose.ui.geometry.Offset(-0.7f, -0.7f), androidx.compose.ui.geometry.Offset(0.7f, -0.7f),
+                                androidx.compose.ui.geometry.Offset(-0.7f, 0.7f), androidx.compose.ui.geometry.Offset(0.7f, 0.7f)
+                            ).forEach { direction ->
+                                Text(text = captionText, color = Color(caption.outlineColorArgb), fontSize = caption.fontSizeSp.coerceIn(10f, 48f).sp, fontWeight = FontWeight.Bold, textAlign = when (caption.alignment) { CaptionAlignment.LEFT -> TextAlign.Start; CaptionAlignment.CENTER -> TextAlign.Center; CaptionAlignment.RIGHT -> TextAlign.End }, modifier = Modifier.offset(x = outlineOffset * direction.x, y = outlineOffset * direction.y))
+                            }
+                        }
+                        Text(text = captionText, color = Color(caption.textColorArgb), fontSize = caption.fontSizeSp.coerceIn(10f, 48f).sp, fontWeight = FontWeight.Bold, textAlign = when (caption.alignment) { CaptionAlignment.LEFT -> TextAlign.Start; CaptionAlignment.CENTER -> TextAlign.Center; CaptionAlignment.RIGHT -> TextAlign.End }, style = androidx.compose.ui.text.TextStyle(shadow = if (caption.shadowStrength > 0f) androidx.compose.ui.graphics.Shadow(color = Color.Black.copy(alpha = caption.shadowStrength.coerceIn(0f, 1f)), offset = androidx.compose.ui.geometry.Offset(0f, 2f), blurRadius = caption.shadowStrength * 8f) else null))
+                    }
                 }
             }
         }
@@ -1851,6 +1864,16 @@ private fun CaptionSegmentEditor(
             }
             Text("VERTICAL POSITION  " + caption.verticalPositionPercent.toInt() + "%", color = Color(0xFF9AA4B8), fontSize = 9.sp)
             Slider(value = caption.verticalPositionPercent, onValueChange = { onStyleChange(caption.copy(verticalPositionPercent = it.coerceIn(10f, 90f))) }, valueRange = 10f..90f)
+            Text("OUTLINE", color = Color(0xFF9AA4B8), fontSize = 9.sp)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                listOf("BLACK" to 0xFF000000.toInt(), "WHITE" to -1, "CYAN" to 0xFF22E6FF.toInt(), "PINK" to 0xFFFF3EA5.toInt()).forEach { (label, colorValue) ->
+                    TextButton(onClick = { onStyleChange(caption.copy(outlineColorArgb = colorValue)) }) { Text(label, color = Color(colorValue), fontSize = 9.sp) }
+                }
+            }
+            Text("OUTLINE WIDTH  " + caption.outlineWidthSp.toInt() + "sp", color = Color(0xFF9AA4B8), fontSize = 9.sp)
+            Slider(value = caption.outlineWidthSp, onValueChange = { onStyleChange(caption.copy(outlineWidthSp = it.coerceIn(0f, 6f))) }, valueRange = 0f..6f)
+            Text("SHADOW  " + (caption.shadowStrength * 100f).toInt() + "%", color = Color(0xFF9AA4B8), fontSize = 9.sp)
+            Slider(value = caption.shadowStrength, onValueChange = { onStyleChange(caption.copy(shadowStrength = it.coerceIn(0f, 1f))) }, valueRange = 0f..1f)
             Text("KARAOKE WORD TIMINGS", color = Mint, fontSize = 10.sp, fontWeight = FontWeight.Bold)
             caption.wordTimings.forEachIndexed { index, timing ->
                 CaptionWordTimingEditor(
