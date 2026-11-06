@@ -42,6 +42,14 @@ import com.creatorstudio.app.editor.createStarterProject
 import com.creatorstudio.app.editor.importAsset
 import com.creatorstudio.app.editor.OfflineAudioExportPipeline
 import com.creatorstudio.app.editor.OfflineVisualizerVideoExportPipeline
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Bundle
+import android.speech.RecognitionListener
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
+import androidx.core.content.ContextCompat
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -1329,6 +1337,7 @@ private fun LyricsCaptionsPage(
         } else {
             Text("Selected clip • ${selectedClip.durationMs / 1000f}s", color = Mint, fontSize = 11.sp)
             OutlinedTextField(value = draftText, onValueChange = { draftText=it }, label = { Text("Caption text") }, modifier = Modifier.fillMaxWidth(), minLines = 2)
+            VoiceTypingControl(currentText = draftText, onTextChange = { draftText = it })
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(value = draftStart, onValueChange = { draftStart=it }, label = { Text("Start (seconds)") }, modifier = Modifier.weight(1f), singleLine = true)
                 OutlinedTextField(value = draftEnd, onValueChange = { draftEnd=it }, label = { Text("End (seconds)") }, modifier = Modifier.weight(1f), singleLine = true)
@@ -1359,6 +1368,101 @@ private fun LyricsCaptionsPage(
         }
         Text("Imported-audio auto-transcription and microphone voice typing are not connected in this build. This is manual timed-caption editing, not audio transcription.", color=Color(0xFFFFC45C), fontSize=10.sp)
     }
+}
+
+@Composable
+private fun VoiceTypingControl(currentText: String, onTextChange: (String) -> Unit) {
+    val context = LocalContext.current
+    var listening by remember { mutableStateOf(false) }
+    var message by remember { mutableStateOf("Tap Start to dictate caption text.") }
+    var baseText by remember { mutableStateOf("") }
+    val latestTextChange by rememberUpdatedState(onTextChange)
+    val recognizer = remember(context) {
+        if (SpeechRecognizer.isRecognitionAvailable(context)) SpeechRecognizer.createSpeechRecognizer(context) else null
+    }
+
+    fun startRecognition() {
+        val speech = recognizer
+        if (speech == null) {
+            message = "No speech recognition service is available on this device."
+            listening = false
+            return
+        }
+        baseText = currentText.trimEnd()
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
+            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
+        }
+        runCatching {
+            speech.startListening(intent)
+            listening = true
+            message = "Listening… speak clearly, then tap Stop."
+        }.onFailure {
+            listening = false
+            message = "Could not start voice typing: ${it.message ?: "speech service error"}"
+        }
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) startRecognition()
+        else message = "Microphone permission was denied. You can still type captions."
+    }
+
+    DisposableEffect(recognizer) {
+        recognizer?.setRecognitionListener(object : RecognitionListener {
+            private fun publish(bundle: Bundle?, partial: Boolean) {
+                val phrase = bundle?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull().orEmpty()
+                if (phrase.isNotBlank()) {
+                    latestTextChange(if (baseText.isBlank()) phrase else "$baseText $phrase")
+                    message = if (partial) "Listening… live words are appearing in the caption field." else "Voice text received. Review it and add the timed caption."
+                }
+            }
+            override fun onReadyForSpeech(params: Bundle?) { message = "Ready — start speaking." }
+            override fun onBeginningOfSpeech() { message = "Listening…" }
+            override fun onRmsChanged(rmsdB: Float) = Unit
+            override fun onBufferReceived(buffer: ByteArray?) = Unit
+            override fun onEndOfSpeech() { listening = false; message = "Speech ended. Review the text." }
+            override fun onError(error: Int) {
+                listening = false
+                message = when (error) {
+                    SpeechRecognizer.ERROR_NO_MATCH -> "No speech recognized. Try again or type manually."
+                    SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "No speech detected. Tap Start to try again."
+                    SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Microphone permission is required."
+                    else -> "Speech recognition stopped (code $error). You can retry."
+                }
+            }
+            override fun onResults(results: Bundle?) { publish(results, false); listening = false }
+            override fun onPartialResults(partialResults: Bundle?) { publish(partialResults, true) }
+            override fun onEvent(eventType: Int, params: Bundle?) = Unit
+        })
+        onDispose {
+            runCatching { recognizer?.cancel() }
+            recognizer?.destroy()
+        }
+    }
+
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Button(
+            onClick = {
+                if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) startRecognition()
+                else permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+            },
+            enabled = !listening && recognizer != null,
+            modifier = Modifier.weight(1f)
+        ) { Text("START VOICE TYPING") }
+        OutlinedButton(
+            onClick = {
+                runCatching { recognizer?.stopListening() }
+                listening = false
+                message = "Stopped. Review the recognized words in the caption field."
+            },
+            enabled = listening,
+            modifier = Modifier.weight(1f)
+        ) { Text("STOP") }
+    }
+    Text(message, color = if (listening) Mint else Color(0xFF9AA4B8), fontSize = 10.sp)
 }
 
 @Composable
