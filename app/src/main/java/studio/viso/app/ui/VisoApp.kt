@@ -30,6 +30,7 @@ import com.creatorstudio.app.editor.scaleForPulse
 import com.creatorstudio.app.editor.CanvasContentMode
 import com.creatorstudio.app.editor.CaptionSegment
 import com.creatorstudio.app.editor.CaptionAlignment
+import com.creatorstudio.app.editor.CaptionFontFamily
 import com.creatorstudio.app.editor.CaptionSubtitleCodec
 import com.creatorstudio.app.editor.CaptionWordTiming
 import com.creatorstudio.app.editor.EditorProject
