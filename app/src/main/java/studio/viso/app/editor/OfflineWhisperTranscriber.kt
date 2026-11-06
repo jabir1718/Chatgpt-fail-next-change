@@ -3,6 +3,7 @@ package com.creatorstudio.app.editor
 import android.content.Context
 import java.util.concurrent.CancellationException
 import kotlin.math.min
+import kotlin.math.max
 
 data class OfflineTranscriptionChunk(
     val text: String,
@@ -19,7 +20,8 @@ data class OfflineTranscriptionResult(
 /**
  * Offline Whisper transcription over a disk-backed decoded media source.
  * Audio is read in short windows so long media files are never copied wholesale
- * into a FloatArray. Current draft caption timing is window-level (25 seconds).
+ * into a FloatArray. Whisper token timestamps are grouped into short caption segments;
+ * if timing metadata is absent or malformed, the recognizer window is retained as fallback.
  */
 object OfflineWhisperTranscriber {
     private const val WINDOW_SECONDS = 25L
@@ -73,10 +75,12 @@ object OfflineWhisperTranscriber {
                     if (text.isNotBlank()) {
                         val chunkStartMs = processedFrames * 1_000L / sampleRate
                         val chunkEndMs = (processedFrames + frameCount) * 1_000L / sampleRate
-                        chunks += OfflineTranscriptionChunk(
-                            text = text,
-                            startMs = chunkStartMs,
-                            endMs = chunkEndMs,
+                        chunks += buildTokenTimedCaptionChunks(
+                            tokens = recognized.tokens.toList(),
+                            timestampsSeconds = recognized.timestamps.toList(),
+                            fallbackText = text,
+                            chunkStartMs = chunkStartMs,
+                            chunkEndMs = chunkEndMs,
                             languageTag = recognized.lang.takeIf { it.isNotBlank() }
                         )
                     }
@@ -98,6 +102,86 @@ object OfflineWhisperTranscriber {
             ?.key
         return OfflineTranscriptionResult(chunks, detectedLanguage)
     }
+}
+
+
+/**
+ * Converts Whisper's per-token start timestamps into readable phrase-sized captions.
+ * Token times are relative to the current recognizer window. Missing/mismatched timing
+ * metadata falls back to one window-level caption rather than inventing precision.
+ */
+internal fun buildTokenTimedCaptionChunks(
+    tokens: List<String>,
+    timestampsSeconds: List<Float>,
+    fallbackText: String,
+    chunkStartMs: Long,
+    chunkEndMs: Long,
+    languageTag: String?,
+    maxCaptionMs: Long = 4_500L,
+    maxCaptionChars: Int = 42
+): List<OfflineTranscriptionChunk> {
+    require(chunkStartMs >= 0L && chunkEndMs >= chunkStartMs)
+    require(maxCaptionMs > 0L && maxCaptionChars > 0)
+    fun fallback(): List<OfflineTranscriptionChunk> =
+        if (fallbackText.isBlank() || chunkEndMs <= chunkStartMs) emptyList()
+        else listOf(OfflineTranscriptionChunk(fallbackText.trim(), chunkStartMs, chunkEndMs, languageTag))
+
+    if (tokens.isEmpty() || tokens.size != timestampsSeconds.size) return fallback()
+    data class TimedToken(val text: String, val startMs: Long)
+    val duration = chunkEndMs - chunkStartMs
+    val clean = tokens.indices.mapNotNull { index ->
+        val raw = tokens[index]
+        if (raw.startsWith("<|") && raw.endsWith("|>")) return@mapNotNull null
+        val value = raw.replace("▁", " ").replace("Ġ", " ").trim()
+        if (value.isBlank()) return@mapNotNull null
+        val seconds = timestampsSeconds[index]
+        if (!seconds.isFinite() || seconds < 0f) return@mapNotNull null
+        TimedToken(value, (seconds * 1_000f).toLong().coerceIn(0L, duration))
+    }.sortedBy { it.startMs }
+    if (clean.isEmpty()) return fallback()
+
+    fun join(parts: List<String>): String {
+        val out = StringBuilder()
+        parts.forEach { part ->
+            val punctuation = part.firstOrNull()?.let { it in ".,!?;:%)]}»”’" } ?: false
+            if (out.isNotEmpty() && !punctuation) out.append(' ')
+            out.append(part)
+        }
+        return out.toString().trim()
+    }
+
+    val groups = mutableListOf<MutableList<TimedToken>>()
+    var current = mutableListOf<TimedToken>()
+    for (token in clean) {
+        if (current.isNotEmpty()) {
+            val currentText = join(current.map { it.text })
+            val gap = token.startMs - current.last().startMs
+            val elapsed = token.startMs - current.first().startMs
+            val endsSentence = current.last().text.lastOrNull()?.let { it in ".!?;:" } ?: false
+            val wouldOverflow = join(current.map { it.text } + token.text).length > maxCaptionChars
+            if (endsSentence || gap > 800L || elapsed >= maxCaptionMs || wouldOverflow) {
+                groups += current
+                current = mutableListOf()
+            }
+        }
+        current += token
+    }
+    if (current.isNotEmpty()) groups += current
+
+    return groups.mapIndexedNotNull { index, group ->
+        val start = (chunkStartMs + group.first().startMs).coerceIn(chunkStartMs, chunkEndMs)
+        val nextStart = groups.getOrNull(index + 1)?.first()?.startMs
+        val lastToken = group.last().startMs
+        val estimatedEnd = if (nextStart != null) chunkStartMs + nextStart
+            else chunkStartMs + lastToken + 400L
+        val end = min(chunkEndMs, max(start + 1L, estimatedEnd))
+        if (end <= start) null else OfflineTranscriptionChunk(
+            text = join(group.map { it.text }),
+            startMs = start,
+            endMs = end,
+            languageTag = languageTag
+        )
+    }.ifEmpty { fallback() }
 }
 
 /**

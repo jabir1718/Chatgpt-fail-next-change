@@ -11,6 +11,12 @@ Last updated: 2026-11-06
 - Handoff instructions: `docs/CONTINUATION.md`
 
 ## Verified CI evidence
+- Run #231, ID `42189714215`, commit `63360976433bdc85fb8a9f63f32b0b6d032f79f6` — contiguous PCM window reads for transcription and stereo/EOF regression test; configured build, debug APK build and artifact upload succeeded.
+- Run #230 — initial imported audio/video offline Whisper transcription integration, model download flow, and decoder fix; configured tests, debug APK build and artifact upload succeeded.
+- Run #228 — sherpa-onnx Whisper model store/dependency and on-demand model download implementation; CI build/artifact succeeded.
+- Run #227 — Lyrics stale voice-typing disclaimer corrected; CI build/artifact succeeded.
+- Run #220 — manual editable timed captions; CI build/artifact succeeded.
+- Run #223 — microphone voice typing with explicit Start/Stop and runtime permission; CI build/artifact succeeded; device speech provider remains unverified.
 - Latest source verification: Run #223, ID `42187782306`, commit `70ef8bf5751f41acac80b6237d5a6ee342e86eef8` — voice-typing duplicate-import fix; configured build completed, Android debug APK build and artifact upload all successful. This verifies compilation/build, not device speech recognition.
 - Previous major visual-preview verification: Run #218, ID `42136858074`, commit `41e2380a2712b83407785f35328cada5f36a6a4b` — configured tests, Android debug APK build and artifact upload all successful.
 - Run #218 artifact `Creator-Studio-debug-apk`, 19,788,638 bytes, SHA-256 `a62be5d05d0d1da60cae44550a5bbe3d4bdcf7c4d81969d67dfc10a1ca73c0b6`.
@@ -86,3 +92,10 @@ Last updated: 2026-11-06
 
 
 Latest source verification: Run #218 successfully built and uploaded the APK for live independent beat pulses on timeline image/video layers. Run #216 verified incremental multi-session audio analysis. Physical-device playback, analysis accuracy, image/video decoder performance and preview/export parity remain open.
+
+
+## Latest transcription implementation
+- Imported audio/video transcription uses the on-device sherpa-onnx multilingual Whisper model after its first model download; no cloud transcription is used by this path.
+- Run #231 optimized PCM window reads with contiguous disk reads and stereo-to-mono conversion. Run #230 verified the initial decode/recognize/caption insertion path in CI.
+- Next improvement in progress: consume Whisper token timestamps to form short caption phrases; malformed/missing timestamps must retain a safe window-level fallback.
+- Model download size/network behavior, native model load, actual transcription accuracy/language detection, Urdu/Roman Urdu script behavior, speed/memory and caption sync are not device-verified. Roman Urdu transliteration and karaoke highlighting remain pending.

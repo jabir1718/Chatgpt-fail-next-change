@@ -57,4 +57,53 @@ class OfflineWhisperTranscriberTest {
             // expected
         }
     }
+    @Test
+    fun tokenTimestampsCreateShortPunctuatedCaptionSegments() {
+        val chunks = buildTokenTimedCaptionChunks(
+            tokens = listOf("▁Hello", "▁there.", "▁How", "▁are", "▁you?"),
+            timestampsSeconds = listOf(0f, 0.4f, 2f, 2.2f, 2.5f),
+            fallbackText = "Hello there. How are you?",
+            chunkStartMs = 1_000L,
+            chunkEndMs = 5_000L,
+            languageTag = "en"
+        )
+        assertEquals(2, chunks.size)
+        assertEquals("Hello there.", chunks[0].text)
+        assertEquals(1_000L, chunks[0].startMs)
+        assertEquals(3_000L, chunks[1].startMs)
+        assertEquals("How are you?", chunks[1].text)
+        assertEquals("en", chunks[1].languageTag)
+    }
+
+    @Test
+    fun malformedTokenTimingFallsBackToWindowCaption() {
+        val chunks = buildTokenTimedCaptionChunks(
+            tokens = listOf("▁not", "▁timed"),
+            timestampsSeconds = listOf(0f),
+            fallbackText = "Fallback sentence",
+            chunkStartMs = 2_000L,
+            chunkEndMs = 7_000L,
+            languageTag = "ur"
+        )
+        assertEquals(1, chunks.size)
+        assertEquals("Fallback sentence", chunks.single().text)
+        assertEquals(2_000L, chunks.single().startMs)
+        assertEquals(7_000L, chunks.single().endMs)
+    }
+
+    @Test
+    fun tokenCaptionGroupsRespectCharacterLimitAndClampToWindow() {
+        val chunks = buildTokenTimedCaptionChunks(
+            tokens = listOf("▁Averylongtoken", "▁secondlongtoken", "▁thirdlongtoken"),
+            timestampsSeconds = listOf(0f, 1f, 20f),
+            fallbackText = "Fallback",
+            chunkStartMs = 500L,
+            chunkEndMs = 3_000L,
+            languageTag = null,
+            maxCaptionChars = 12
+        )
+        assertEquals(3, chunks.size)
+        assertTrue(chunks.all { it.startMs >= 500L && it.endMs <= 3_000L && it.endMs > it.startMs })
+    }
+
 }

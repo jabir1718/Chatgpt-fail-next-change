@@ -58,12 +58,13 @@ A polished, original Android creator studio for TikTok, YouTube Shorts, Instagra
 **Gate:** Imported song drives animation; foreground reacts independently; export matches preview.
 
 ## M4 — Lyrics/captions/voice input
-- [ ] Imported audio/video transcription provider with explicit Start/Stop, clear consent and permissions (microphone voice typing is not file transcription).
-- [ ] Language identification; Urdu, Roman Urdu, Roman English and other supported scripts.
+- [x] Imported audio/video offline Whisper transcription path with on-demand model download, media PCM decode, chunked recognition and caption insertion (Runs #228–#231 CI build/artifact verified; device/model download/recognition acceptance open).
+- [x] Whisper automatic language detection is configured for multilingual recognition; actual language accuracy/device validation open.
+- [ ] Urdu-script/Roman Urdu/Roman English script selection and Roman Urdu transliteration.
 - [x] Manual editable timed captions and live timeline preview (Run #220 CI-verified; device timing/parity open).
 - [x] Microphone voice typing with explicit Start/Stop and runtime RECORD_AUDIO permission; partial/final SpeechRecognizer results insert into caption draft (Run #223 CI build/artifact verified; device speech provider/accuracy unverified; offline preference is not a guarantee).
-- [ ] Editable word timing, karaoke highlight, emoji captions, SRT/VTT.
-**Gate:** Transcribe, correct, select script, retain sync through edits.
+- [ ] Token-timed phrase captions (next implementation step); editable word timing, karaoke highlight, emoji captions, SRT/VTT.
+**Gate:** Transcribe, correct, select script, retain sync through edits. CI verifies source/build only; real model and language acceptance requires Android device testing.
 
 ## M5 — Cutout/chroma/compositing
 - [ ] Validated on-device/online subject segmentation and transparent PNG output.
