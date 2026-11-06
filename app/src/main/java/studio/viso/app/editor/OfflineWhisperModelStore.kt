@@ -69,12 +69,12 @@ object OfflineWhisperModelStore {
             Triple("$MODEL_BASE/decoder.int8.onnx", files.decoder, MIN_MODEL_BYTES),
             Triple(TOKENS_URL, files.tokens, MIN_TOKENS_BYTES)
         )
-        val missingEstimate = specs.filterNot { (_, destination, minimum) ->
-            destination.isFile && destination.length() >= minimum
-        }.sumOf { (_, _, minimum) -> if (minimum == MIN_MODEL_BYTES) 180L * 1024L * 1024L else 0L }
+        val missingEstimate = (if (!files.encoder.isFile || files.encoder.length() < MIN_MODEL_BYTES) 120L * 1024L * 1024L else 0L) +
+            (if (!files.decoder.isFile || files.decoder.length() < MIN_MODEL_BYTES) 270L * 1024L * 1024L else 0L) +
+            (if (!files.tokens.isFile || files.tokens.length() < MIN_TOKENS_BYTES) 2L * 1024L * 1024L else 0L)
         val available = StatFs(context.filesDir.absolutePath).availableBytes
         if (available < missingEstimate + 32L * 1024L * 1024L) {
-            throw IOException("Not enough free app storage for the speech model. Free at least 400 MB and try again.")
+            throw IOException("Not enough free app storage for the remaining speech model files. Free about 430 MB and try again.")
         }
 
         specs.forEachIndexed { index, (url, destination, minimumBytes) ->

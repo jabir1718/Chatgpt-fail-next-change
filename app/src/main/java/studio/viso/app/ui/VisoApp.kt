@@ -42,6 +42,12 @@ import com.creatorstudio.app.editor.createStarterProject
 import com.creatorstudio.app.editor.importAsset
 import com.creatorstudio.app.editor.OfflineAudioExportPipeline
 import com.creatorstudio.app.editor.OfflineVisualizerVideoExportPipeline
+import com.creatorstudio.app.editor.OfflineWhisperModelStore
+import com.creatorstudio.app.editor.OfflineWhisperTranscriber
+import com.creatorstudio.app.editor.alignTranscriptionChunks
+import com.creatorstudio.app.editor.MediaAsset
+import com.creatorstudio.app.editor.TimelineClip
+import studio.viso.app.editor.MediaCodecPcmDecoder
 import android.content.Intent
 import android.os.Bundle
 import android.speech.RecognitionListener
@@ -1335,6 +1341,7 @@ private fun LyricsCaptionsPage(
             Text("Selected clip • ${selectedClip.durationMs / 1000f}s", color = Mint, fontSize = 11.sp)
             OutlinedTextField(value = draftText, onValueChange = { draftText=it }, label = { Text("Caption text") }, modifier = Modifier.fillMaxWidth(), minLines = 2)
             VoiceTypingControl(currentText = draftText, onTextChange = { draftText = it })
+            OfflineTranscriptionControl(project = project, targetClip = selectedClip, onProjectChange = onProjectChange)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(value = draftStart, onValueChange = { draftStart=it }, label = { Text("Start (seconds)") }, modifier = Modifier.weight(1f), singleLine = true)
                 OutlinedTextField(value = draftEnd, onValueChange = { draftEnd=it }, label = { Text("End (seconds)") }, modifier = Modifier.weight(1f), singleLine = true)
@@ -1364,6 +1371,242 @@ private fun LyricsCaptionsPage(
             if(selectedClip.captions.isEmpty()) Text("No captions on this clip yet.", color=Color(0xFF9AA4B8), fontSize=11.sp)
         }
         Text("Imported audio/video transcription is not connected yet. Voice typing above captures live microphone speech only; it does not transcribe the selected media.", color = Color(0xFFFFC45C), fontSize = 10.sp)
+    }
+}
+
+private data class TranscriptionSourceOption(
+    val clip: TimelineClip,
+    val asset: MediaAsset,
+    val trackName: String
+)
+
+@Composable
+private fun OfflineTranscriptionControl(
+    project: EditorProject,
+    targetClip: TimelineClip,
+    onProjectChange: (EditorProject) -> Unit
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val latestProject by rememberUpdatedState(project)
+    val latestTarget by rememberUpdatedState(targetClip)
+    val sourceOptions = project.tracks.flatMap { track ->
+        track.clips
+            .filter { it.kind == MediaKind.AUDIO || it.kind == MediaKind.VIDEO }
+            .mapNotNull { clip ->
+                project.assets.firstOrNull { it.id == clip.mediaId }
+                    ?.let { TranscriptionSourceOption(clip, it, track.name) }
+            }
+    }
+    var selectedSourceClipId by remember(project.id) { mutableStateOf<String?>(null) }
+    val selectedSource = sourceOptions.firstOrNull { it.clip.id == selectedSourceClipId }
+        ?: sourceOptions.firstOrNull()
+    var sourceMenuExpanded by remember { mutableStateOf(false) }
+    var modelReady by remember(context) { mutableStateOf(OfflineWhisperModelStore.isInstalled(context)) }
+    var busy by remember { mutableStateOf(false) }
+    var progress by remember { mutableFloatStateOf(0f) }
+    var status by remember {
+        mutableStateOf(
+            if (OfflineWhisperModelStore.isInstalled(context)) {
+                "On-device speech model is ready. Choose an audio/video timeline clip."
+            } else {
+                "Download the speech model once (about 360 MB). Media stays on this phone."
+            }
+        )
+    }
+    var activeCancel by remember { mutableStateOf<AtomicBoolean?>(null) }
+
+    fun cancelTask() {
+        activeCancel?.set(true)
+        status = "Cancelling safely…"
+    }
+
+    fun downloadModel() {
+        if (busy) return
+        val cancel = AtomicBoolean(false)
+        activeCancel = cancel
+        busy = true
+        progress = 0f
+        status = "Downloading multilingual Whisper model…"
+        scope.launch {
+            try {
+                val installed = withContext(Dispatchers.IO) {
+                    OfflineWhisperModelStore.download(
+                        context = context,
+                        shouldCancel = { cancel.get() }
+                    ) { fileIndex, downloaded, total ->
+                        val fileProgress = if (total > 0L) {
+                            (downloaded.toFloat() / total.toFloat()).coerceIn(0f, 1f)
+                        } else 0f
+                        val overall = ((fileIndex + fileProgress) / 3f).coerceIn(0f, 1f)
+                        scope.launch {
+                            progress = overall
+                            status = "Downloading model file ${fileIndex + 1}/3 · ${downloaded / (1024L * 1024L)} MB"
+                        }
+                    }
+                }
+                modelReady = installed.isComplete
+                status = "Speech model installed. Transcription can now run offline."
+            } catch (_: CancellationException) {
+                status = "Model download cancelled. Completed files are kept; you can resume later."
+            } catch (error: Exception) {
+                status = error.message ?: "Could not download the speech model."
+            } finally {
+                busy = false
+                activeCancel = null
+            }
+        }
+    }
+
+    fun transcribeSelectedMedia() {
+        val source = selectedSource
+        if (busy || source == null || !modelReady) return
+        val cancel = AtomicBoolean(false)
+        activeCancel = cancel
+        busy = true
+        progress = 0f
+        status = "Preparing selected audio/video…"
+        scope.launch {
+            val temporaryPcm = File(context.cacheDir, "transcription_${UUID.randomUUID()}.f32")
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    val decoded = MediaCodecPcmDecoder().decodeToFile(
+                        context = context,
+                        uri = Uri.parse(source.asset.uri),
+                        outputFile = temporaryPcm,
+                        shouldCancel = { cancel.get() }
+                    ) { decodeProgress ->
+                        scope.launch {
+                            progress = (decodeProgress.coerceIn(0f, 1f) * 0.35f)
+                            status = "Decoding source audio… ${(decodeProgress * 100).toInt()}%"
+                        }
+                    }
+                    try {
+                        OfflineWhisperTranscriber.transcribe(
+                            context = context,
+                            source = decoded.source,
+                            sourceStartMs = source.clip.sourceStartMs,
+                            durationMs = source.clip.durationMs,
+                            shouldCancel = { cancel.get() }
+                        ) { inferenceProgress ->
+                            scope.launch {
+                                progress = 0.35f + inferenceProgress.coerceIn(0f, 1f) * 0.65f
+                                status = "Recognizing speech… ${(inferenceProgress * 100).toInt()}%"
+                            }
+                        }
+                    } finally {
+                        decoded.source.close()
+                        temporaryPcm.delete()
+                    }
+                }
+                val currentProject = latestProject
+                val currentTarget = currentProject.tracks.asSequence()
+                    .flatMap { it.clips.asSequence() }
+                    .firstOrNull { it.id == latestTarget.id }
+                    ?: error("The target caption clip no longer exists.")
+                val currentSource = currentProject.tracks.asSequence()
+                    .flatMap { it.clips.asSequence() }
+                    .firstOrNull { it.id == source.clip.id }
+                    ?: error("The selected audio source clip no longer exists.")
+                val captions = alignTranscriptionChunks(
+                    chunks = result.chunks,
+                    sourceTimelineStartMs = currentSource.timelineStartMs,
+                    targetTimelineStartMs = currentTarget.timelineStartMs,
+                    targetDurationMs = currentTarget.durationMs,
+                    sourcePlaybackRate = currentSource.audio.playbackRate
+                )
+                require(captions.isNotEmpty()) {
+                    "The selected audio does not overlap the target video/image clip."
+                }
+                onProjectChange(
+                    TimelineEditor.setClipCaptions(
+                        currentProject,
+                        currentTarget.id,
+                        currentTarget.captions + captions
+                    )
+                )
+                val language = result.detectedLanguage?.uppercase() ?: "not detected"
+                status = "Added ${captions.size} timed draft caption blocks · detected language: $language. Review the wording and timing."
+                progress = 1f
+            } catch (_: CancellationException) {
+                status = "Transcription cancelled."
+            } catch (error: Exception) {
+                status = error.message ?: "Transcription failed. Try another source clip."
+            } finally {
+                temporaryPcm.delete()
+                busy = false
+                activeCancel = null
+            }
+        }
+    }
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text("ON-DEVICE AUTO TRANSCRIPTION", color = Mint, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+        Text(
+            "Automatically detects the spoken language. The model downloads once; imported audio/video is decoded and transcribed locally, never uploaded. Music and singing may need manual correction.",
+            color = Color(0xFF9AA4B8),
+            fontSize = 10.sp
+        )
+        if (sourceOptions.isEmpty()) {
+            Text("Add an audio or video clip to the timeline first.", color = Color(0xFFFFC45C), fontSize = 11.sp)
+        } else {
+            Box(Modifier.fillMaxWidth()) {
+                OutlinedButton(
+                    onClick = { sourceMenuExpanded = true },
+                    enabled = !busy,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        selectedSource?.let { "${it.asset.displayName} · ${it.trackName}" }
+                            ?: "Select audio/video source",
+                        maxLines = 1
+                    )
+                }
+                DropdownMenu(
+                    expanded = sourceMenuExpanded,
+                    onDismissRequest = { sourceMenuExpanded = false }
+                ) {
+                    sourceOptions.forEach { option ->
+                        DropdownMenuItem(
+                            text = { Text("${option.asset.displayName} · ${option.trackName}") },
+                            onClick = {
+                                selectedSourceClipId = option.clip.id
+                                sourceMenuExpanded = false
+                            }
+                        )
+                    }
+                }
+            }
+        }
+        if (!modelReady) {
+            Button(
+                onClick = { downloadModel() },
+                enabled = !busy,
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("DOWNLOAD SPEECH MODEL · ~360 MB") }
+        } else {
+            Text("MODEL READY · multilingual Whisper-small", color = Mint, fontSize = 10.sp)
+        }
+        Button(
+            onClick = { transcribeSelectedMedia() },
+            enabled = !busy && modelReady && selectedSource != null,
+            modifier = Modifier.fillMaxWidth()
+        ) { Text("TRANSCRIBE SELECTED MEDIA") }
+        if (busy) {
+            LinearProgressIndicator(progress = progress.coerceIn(0f, 1f), modifier = Modifier.fillMaxWidth())
+            OutlinedButton(onClick = { cancelTask() }, modifier = Modifier.fillMaxWidth()) {
+                Text("CANCEL")
+            }
+        }
+        Text(status, color = if (status.contains("failed", ignoreCase = true) || status.contains("Could not", ignoreCase = true)) Pink else Color(0xFF9AA4B8), fontSize = 10.sp)
+        Text(
+            "Draft captions are currently grouped into 25-second blocks. Word-by-word karaoke timing and Roman Urdu transliteration are separate follow-up work.",
+            color = Color(0xFFFFC45C),
+            fontSize = 10.sp
+        )
     }
 }
 
