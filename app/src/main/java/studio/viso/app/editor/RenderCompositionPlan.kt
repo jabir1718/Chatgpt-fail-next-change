@@ -18,7 +18,8 @@ data class RenderLayerPlan(
     val transform: Transform,
     val contentMode: CanvasContentMode = CanvasContentMode.FIT,
     val beatResponse: BeatResponseSettings = BeatResponseSettings(),
-    val activeCaptions: List<CaptionSegment> = emptyList()
+    val activeCaptions: List<CaptionSegment> = emptyList(),
+    val clipLocalTimeMs: Long = 0L
 )
 
 data class RenderFramePlan(
@@ -94,7 +95,8 @@ object RenderCompositionPlan {
                     transform = clip.transform,
                     contentMode = clip.contentMode,
                     beatResponse = clip.beatResponse,
-                    activeCaptions = captions
+                    activeCaptions = captions,
+                    clipLocalTimeMs = elapsedMs
                 )
             }
         }

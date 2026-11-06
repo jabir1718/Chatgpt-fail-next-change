@@ -18,7 +18,7 @@ class RenderCompositionPlanTest {
             id = "video-clip", mediaId = "video", kind = MediaKind.VIDEO,
             timelineStartMs = 0L, durationMs = 2000L, sourceEndMs = 2000L,
             audio = ClipAudioSettings(playbackRate = 2f),
-            captions = listOf(CaptionSegment(id = "line", text = "Hello", startMs = 400L, endMs = 700L))
+            captions = listOf(CaptionSegment(id = "line", text = "Hello", startMs = 400L, endMs = 700L, wordTimings = listOf(CaptionWordTiming("Hello", 400L, 700L))))
         )
         val audioClip = TimelineClip(
             id = "audio-clip", mediaId = "audio", kind = MediaKind.AUDIO,
@@ -106,6 +106,8 @@ class RenderCompositionPlanTest {
         val frame = RenderCompositionPlan.frameAt(project(), 15L)
         val video = frame.layers.first { it.role == RenderLayerRole.VIDEO }
         assertEquals(listOf("Hello"), video.activeCaptions.map { it.text })
+        assertEquals(500L, video.clipLocalTimeMs)
+        assertEquals(0, video.activeCaptions.single().wordTimings.indexOfFirst { video.clipLocalTimeMs >= it.startMs && video.clipLocalTimeMs < it.endMs })
     }
 
     @Test

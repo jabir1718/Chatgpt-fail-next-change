@@ -33,7 +33,8 @@ data class TimelineVideoPreviewLayer(
     val player: ExoPlayer?,
     val imageBitmap: Bitmap?,
     val beatResponse: BeatResponseSettings = BeatResponseSettings(),
-    val activeCaptions: List<CaptionSegment> = emptyList()
+    val activeCaptions: List<CaptionSegment> = emptyList(),
+    val clipLocalTimeMs: Long = 0L
 )
 
 data class TimelineVideoPreviewSnapshot(
@@ -51,7 +52,8 @@ class TimelineVideoPreviewController(context: Context) {
         var transform: Transform,
         var contentMode: CanvasContentMode,
         var beatResponse: BeatResponseSettings,
-        var activeCaptions: List<CaptionSegment>
+        var activeCaptions: List<CaptionSegment>,
+        var clipLocalTimeMs: Long
     )
 
     private val appContext = context.applicationContext
@@ -163,7 +165,8 @@ class TimelineVideoPreviewController(context: Context) {
                 transform = clip.transform, contentMode = clip.contentMode,
                 videoAspectRatio = 0f, player = null, imageBitmap = bitmap,
                 beatResponse = clip.beatResponse,
-                activeCaptions = activeCaptionsAt(clip, timelineMs)
+                activeCaptions = activeCaptionsAt(clip, timelineMs),
+                clipLocalTimeMs = (timelineMs - clip.timelineStartMs).coerceAtLeast(0L)
             )
         }
         desired.forEach { scheduled ->
@@ -187,7 +190,7 @@ class TimelineVideoPreviewController(context: Context) {
                 )
                 player.prepare()
                 player.seekTo(scheduled.sourcePositionMs)
-                active = ActiveVideo(player, asset.uri, scheduled.trackId, zOrder, clip.transform, clip.contentMode, clip.beatResponse, activeCaptionsAt(clip, timelineMs))
+                active = ActiveVideo(player, asset.uri, scheduled.trackId, zOrder, clip.transform, clip.contentMode, clip.beatResponse, activeCaptionsAt(clip, timelineMs), (timelineMs - clip.timelineStartMs).coerceAtLeast(0L))
                 activeVideos[clip.id] = active
             } else {
                 val drift = kotlin.math.abs(active.player.currentPosition - scheduled.sourcePositionMs)
@@ -200,6 +203,7 @@ class TimelineVideoPreviewController(context: Context) {
                 active.contentMode = clip.contentMode
                 active.beatResponse = clip.beatResponse
                 active.activeCaptions = activeCaptionsAt(clip, timelineMs)
+                active.clipLocalTimeMs = (timelineMs - clip.timelineStartMs).coerceAtLeast(0L)
             }
 
             active.player.volume = 0f
@@ -231,7 +235,8 @@ class TimelineVideoPreviewController(context: Context) {
                 player = active.player,
                 imageBitmap = null,
                 beatResponse = active.beatResponse,
-                activeCaptions = active.activeCaptions
+                activeCaptions = active.activeCaptions,
+                clipLocalTimeMs = active.clipLocalTimeMs
             )
         } + activeImages.values.toList()).sortedBy { it.zOrder }
 }

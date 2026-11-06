@@ -94,6 +94,9 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.layout.ContentScale
@@ -988,8 +991,27 @@ private fun TimelinePreviewLayerContent(layer: TimelineVideoPreviewLayer, aspect
                 })
         }
         if (layer.activeCaptions.isNotEmpty()) {
-            Text(text = layer.activeCaptions.joinToString("\n") { it.text }, color = Color.White,
-                fontSize = 16.sp, fontWeight = FontWeight.Bold,
+            val captionText = buildAnnotatedString {
+                layer.activeCaptions.forEachIndexed { captionIndex, caption ->
+                    if (captionIndex > 0) append("\n")
+                    var cursor = 0
+                    val activeIndex = caption.wordTimings.indexOfFirst {
+                        layer.clipLocalTimeMs >= it.startMs && layer.clipLocalTimeMs < it.endMs
+                    }
+                    caption.wordTimings.forEachIndexed { wordIndex, timing ->
+                        val wordStart = caption.text.indexOf(timing.word, cursor)
+                        if (wordStart >= cursor) {
+                            append(caption.text.substring(cursor, wordStart))
+                            if (wordIndex == activeIndex) {
+                                withStyle(SpanStyle(color = Ink, background = Mint)) { append(timing.word) }
+                            } else append(timing.word)
+                            cursor = wordStart + timing.word.length
+                        }
+                    }
+                    if (cursor < caption.text.length) append(caption.text.substring(cursor))
+                }
+            }
+            Text(text = captionText, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold,
                 modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp)
                     .clip(RoundedCornerShape(8.dp)).background(Color.Black.copy(alpha = 0.68f))
                     .padding(horizontal = 12.dp, vertical = 8.dp))

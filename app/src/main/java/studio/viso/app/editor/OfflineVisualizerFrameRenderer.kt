@@ -49,16 +49,16 @@ class OfflineVisualizerFrameRenderer {
                     decodedFrames[layer.assetId]?.let { bitmap ->
                         drawLayerBitmap(canvas, bitmap, layer.transform, framePlan.width, framePlan.height, layerBeatScale(layer, framePlan), layer.contentMode)
                     }
-                    drawCaptions(canvas, layer.activeCaptions.map { it.text }, framePlan.width, framePlan.height)
+                    drawCaptions(canvas, layer.activeCaptions, layer.clipLocalTimeMs, framePlan.width, framePlan.height)
                 }
                 RenderLayerRole.VIDEO -> {
                     decodedFrames[layer.clipId ?: layer.assetId]?.let { bitmap ->
                         drawLayerBitmap(canvas, bitmap, layer.transform, framePlan.width, framePlan.height, 1f, layer.contentMode)
                     }
-                    drawCaptions(canvas, layer.activeCaptions.map { it.text }, framePlan.width, framePlan.height)
+                    drawCaptions(canvas, layer.activeCaptions, layer.clipLocalTimeMs, framePlan.width, framePlan.height)
                 }
                 RenderLayerRole.TEXT -> {
-                    drawCaptions(canvas, layer.activeCaptions.map { it.text }, framePlan.width, framePlan.height)
+                    drawCaptions(canvas, layer.activeCaptions, layer.clipLocalTimeMs, framePlan.width, framePlan.height)
                 }
             }
         }
@@ -198,19 +198,41 @@ class OfflineVisualizerFrameRenderer {
         }
     }
 
-    private fun drawCaptions(canvas: Canvas, captions: List<String>, width: Int, height: Int) {
+    private fun drawCaptions(canvas: Canvas, captions: List<CaptionSegment>, clipLocalTimeMs: Long, width: Int, height: Int) {
         if (captions.isEmpty()) return
         val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.WHITE
-            textAlign = Paint.Align.CENTER
+            textAlign = Paint.Align.LEFT
             textSize = height * 0.035f
             typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.BOLD)
             setShadowLayer(height * 0.006f, 0f, height * 0.002f, Color.BLACK)
         }
+        val activePaint = Paint(paint).apply { color = Color.rgb(8, 10, 18); clearShadowLayer() }
+        val highlightPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(52, 216, 197) }
         val lineHeight = paint.textSize * 1.25f
         val startY = height * 0.84f - (captions.size - 1) * lineHeight * 0.5f
-        captions.forEachIndexed { index, text ->
-            canvas.drawText(text, width * 0.5f, startY + index * lineHeight, paint)
+        captions.forEachIndexed { index, caption ->
+            val baseline = startY + index * lineHeight
+            val activeIndex = caption.wordTimings.indexOfFirst { clipLocalTimeMs >= it.startMs && clipLocalTimeMs < it.endMs }
+            val activeWord = caption.wordTimings.getOrNull(activeIndex)
+            val wordStart = activeWord?.let { caption.text.indexOf(it.word) } ?: -1
+            if (activeWord == null || wordStart < 0) {
+                canvas.drawText(caption.text, (width - paint.measureText(caption.text)) * 0.5f, baseline, paint)
+            } else {
+                val before = caption.text.substring(0, wordStart)
+                val after = caption.text.substring(wordStart + activeWord.word.length)
+                val totalWidth = paint.measureText(caption.text)
+                var x = (width - totalWidth) * 0.5f
+                canvas.drawText(before, x, baseline, paint)
+                x += paint.measureText(before)
+                val wordWidth = paint.measureText(activeWord.word)
+                val padX = paint.textSize * 0.16f
+                val rect = RectF(x - padX, baseline - paint.textSize * 0.88f, x + wordWidth + padX, baseline + paint.textSize * 0.18f)
+                canvas.drawRoundRect(rect, paint.textSize * 0.18f, paint.textSize * 0.18f, highlightPaint)
+                canvas.drawText(activeWord.word, x, baseline, activePaint)
+                x += wordWidth
+                canvas.drawText(after, x, baseline, paint)
+            }
         }
     }
 }
